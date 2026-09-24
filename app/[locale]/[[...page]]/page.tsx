@@ -3,9 +3,7 @@ import { getContent, getLiveVisibility } from "@/lib/content";
 import { requireSiteAccess } from "@/lib/site-access";
 import { isLocale } from "@/lib/model";
 import { Frame } from "@/components/site/frame";
-import { HomeView } from "@/components/site/home";
-import { GalleryView } from "@/components/site/gallery";
-import { AboutView, ContactView, ShopView } from "@/components/site/pages";
+import type { Section } from "@/components/site/frame";
 import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
@@ -74,18 +72,7 @@ export default async function Portfolio({
       locale={locale}
       locales={visibility.locales}
       shopVisible={visibility.shopVisible}
-    >
-      {section === "home" ? (
-        <HomeView content={content} locale={locale} />
-      ) : section === "gallery" ? (
-        <GalleryView content={content} />
-      ) : section === "about" ? (
-        <AboutView content={content} />
-      ) : section === "contact" ? (
-        <ContactView content={content} />
-      ) : (
-        <ShopView content={content} />
-      )}
-    </Frame>
+      section={section as Section}
+    />
   );
 }

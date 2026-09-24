@@ -1,0 +1,92 @@
+/* React supplies the states that the reference page's inline script supplied. */
+.portfolio{position:fixed;inset:0;overflow:hidden;background:#fff;color:#080808;font-family:Arial,Helvetica,sans-serif;--paper:#fff;--ink:#080808}
+.portfolio .stage{opacity:1;visibility:visible}
+.portfolio .media{visibility:visible}
+.portfolio.zeudi-subpage-open .stage{pointer-events:none}
+.portfolio .media-layer{background:#fff}
+.portfolio .media-layer img,.portfolio .media-layer video{object-fit:contain;max-width:none}
+.portfolio .social-icon{display:block;width:100%;height:100%}
+.portfolio .social-icon svg{display:block;width:100%;height:100%}
+.portfolio .social-icon-text{display:block;font-size:11px;font-weight:700;line-height:13px;text-align:center}
+.portfolio .reference-skip{position:fixed;top:-100px;left:16px;z-index:6000;background:#fff;padding:12px;font-size:12px}
+.portfolio .reference-skip:focus{top:12px}
+.portfolio .reference-preview-banner{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:5000;background:#fff8e1;border:1px solid #080808;padding:7px 12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.portfolio .reference-preview-banner a{text-decoration:underline}
+.portfolio .language-switcher a{font-size:inherit;letter-spacing:inherit;line-height:inherit;padding:0;margin:0;opacity:.45}
+.portfolio .language-switcher a[aria-current="page"]{opacity:1}
+.portfolio .language-switcher a:focus-visible{outline:1px solid currentColor;outline-offset:5px}
+.portfolio .mobile-nav-panel.is-open{visibility:visible!important;opacity:1!important;pointer-events:auto!important;clip-path:inset(0)!important}
+.portfolio .mobile-nav-panel:not(.is-open){pointer-events:none!important}
+.portfolio .mobile-nav-panel .mobile-nav-link{display:block;text-align:left;text-decoration:none}
+.portfolio .filmstrip__track{justify-content:center}
+.portfolio .thumb-active-marker{pointer-events:none}
+.portfolio .reference-loader{display:grid;place-items:center;animation:reference-loader-out .55s ease 1.15s both}
+.portfolio .reference-loader .loader__signature-wrap{visibility:visible;opacity:1}
+.portfolio .reference-loader .loader__signature path{opacity:1;animation:reference-signature 1.2s ease both}
+.portfolio .reference-loader .loader__signature path:nth-child(2n){animation-delay:.11s}
+@keyframes reference-signature{from{opacity:0;stroke-dasharray:1800;stroke-dashoffset:1800}to{opacity:1;stroke-dasharray:1800;stroke-dashoffset:0}}
+@keyframes reference-loader-out{0%,70%{opacity:1}100%{opacity:0}}
+.portfolio .home-music-player{position:fixed;right:var(--side);bottom:70px;z-index:100;visibility:hidden;opacity:0;pointer-events:none;width:min(356px,calc(100vw - 32px));background:#fff;box-shadow:0 6px 40px #0002;transition:opacity .25s}
+.portfolio .home-music-player.is-open{visibility:visible;opacity:1;pointer-events:auto}
+.portfolio .home-music-player iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
+.portfolio .home-music-toggle svg{width:16px;height:16px}
+.portfolio .gallery-panel.open{visibility:visible;opacity:1;pointer-events:auto;animation:reference-gallery-in .55s ease both}
+@keyframes reference-gallery-in{from{opacity:0}to{opacity:1}}
+.portfolio .gallery-panel .gallery-intro-assets.is-sphere .gallery-intro-card{opacity:1;visibility:visible}
+.portfolio .gallery-intro-assets.is-three{opacity:0;pointer-events:none!important;transition:opacity .45s ease}
+.portfolio .gallery-intro-assets.is-grid{inset:76px var(--side) 96px!important;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-content:center;justify-content:center;gap:clamp(8px,1.5vw,24px);overflow-y:auto;max-width:1100px;margin:auto;pointer-events:auto}
+.portfolio .gallery-intro-assets.is-grid .gallery-intro-card{position:relative;left:auto;top:auto;width:100%!important;max-width:110px;transform:none!important;justify-self:center;aspect-ratio:3/4}
+.portfolio .gallery-intro-assets.is-grid .gallery-intro-card img{width:100%;height:100%;object-fit:cover}
+.portfolio .gallery-intro-assets.is-grid + .gallery-semantic-list{position:absolute;clip:rect(0 0 0 0);width:1px;height:1px;overflow:hidden}
+.portfolio .gallery-semantic-list{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+.portfolio .reference-three-sphere{position:absolute;inset:0;z-index:11;touch-action:none}
+.portfolio .reference-three-sphere canvas{display:block;width:100%;height:100%}
+.portfolio .gallery-focus.is-open .gallery-focus__veil{opacity:1}
+.portfolio .gallery-focus.is-open .reference-focus-media{opacity:1;display:block}
+.portfolio .reference-focus-controls{position:absolute;left:var(--side);right:var(--side);bottom:22px;z-index:8;display:flex;justify-content:space-between;align-items:center;font-size:8px;letter-spacing:.13em;text-transform:uppercase}
+.portfolio .reference-focus-controls button{font-size:inherit;letter-spacing:inherit}
+.portfolio .about-panel.open{visibility:visible;pointer-events:auto;clip-path:inset(0)!important;-webkit-clip-path:inset(0)!important;animation:reference-about-in .7s cubic-bezier(.22,1,.36,1) both}
+@keyframes reference-about-in{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+.portfolio .about-close{opacity:1!important}
+.portfolio .about-portrait{opacity:1}
+.portfolio .about-chapter{transition:opacity .65s ease,transform .65s ease}
+.portfolio .about-chapter:not(.is-visible){opacity:.48;transform:translateY(18px)}
+.portfolio .about-chapter.is-visible{opacity:1;transform:none}
+.portfolio .about-portrait img,.portfolio .about-portrait video{width:100%;height:100%;object-fit:cover}
+.portfolio .contact-panel.open{visibility:visible!important;pointer-events:auto!important;clip-path:inset(0)!important;-webkit-clip-path:inset(0)!important;animation:reference-contact-in .7s cubic-bezier(.22,1,.36,1) both}
+@keyframes reference-contact-in{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0)}}
+.portfolio .contact-panel .contact-inner{opacity:1;transform:none}
+.portfolio .contact-panel .contact-close{opacity:1!important}
+.portfolio .shop-panel.open{animation:reference-shop-in .72s cubic-bezier(.22,1,.36,1) both}
+@keyframes reference-shop-in{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0)}}
+.portfolio .shop-card__visual>img,.portfolio .shop-card__visual>video,.portfolio .shop-card__visual>.shop-card__placeholder{display:block;width:100%;height:100%;object-fit:cover}
+.portfolio .shop-card__placeholder{display:grid!important;place-items:center;background:#efefed;color:#777;font-size:8px;letter-spacing:.12em}
+.portfolio .shop-product__visual>img,.portfolio .shop-product__visual>video{width:100%;height:100%;object-fit:contain}
+.portfolio .shop-panel.is-detail .shop-detail{visibility:visible;pointer-events:auto}
+.portfolio .shop-panel.is-detail .shop-detail-backdrop{visibility:visible;pointer-events:auto}
+.portfolio .shop-panel.is-bag-open .shop-bag,.portfolio .shop-panel.is-bag-open .shop-bag-backdrop{visibility:visible;pointer-events:auto;transform:none;opacity:1}
+.portfolio .reference-bag-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:15px 0;border-bottom:1px solid #ddd;font-size:10px}
+.portfolio .reference-bag-row button{grid-column:1/-1;text-align:left;font-size:8px;letter-spacing:.12em}
+.portfolio.is-leaving .gallery-panel{animation:reference-gallery-out .5s ease both}
+.portfolio.is-leaving .about-panel{animation:reference-about-out .55s ease both}
+.portfolio.is-leaving .contact-panel{animation:reference-contact-out .55s ease both}
+.portfolio.is-leaving .shop-panel{animation:reference-shop-out .55s ease both}
+@keyframes reference-gallery-out{to{opacity:0}}
+@keyframes reference-about-out{to{clip-path:inset(0 100% 0 0)}}
+@keyframes reference-contact-out{to{clip-path:inset(100% 0 0 0)}}
+@keyframes reference-shop-out{to{clip-path:inset(0 0 0 100%)}}
+@media(max-width:800px){
+ .portfolio .gallery-intro-assets.is-grid{inset:100px 16px 100px!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+ .portfolio .gallery-intro-assets.is-grid .gallery-intro-card{max-width:84px}
+ .portfolio .reference-focus-controls{left:16px;right:16px}
+ .portfolio .home-music-player{right:16px;bottom:70px}
+}
+@media(max-width:520px){
+ .portfolio .gallery-intro-assets.is-grid{grid-template-columns:repeat(3,minmax(0,1fr));align-content:start;padding-top:55px}
+ .portfolio .gallery-intro-assets.is-grid .gallery-intro-card{max-width:88px}
+}
+@media(prefers-reduced-motion:reduce){
+ .portfolio .reference-loader{display:none}
+ .portfolio .gallery-panel.open,.portfolio .about-panel.open,.portfolio .contact-panel.open,.portfolio .shop-panel.open{animation:none!important}
+ .portfolio .about-chapter:not(.is-visible){opacity:1;transform:none}
+}

@@ -2,9 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { loadEditor } from "@/app/admin/actions";
 import { isLocale, locales } from "@/lib/model";
 import { Frame } from "@/components/site/frame";
-import { HomeView } from "@/components/site/home";
-import { GalleryView } from "@/components/site/gallery";
-import { AboutView, ContactView, ShopView } from "@/components/site/pages";
+import type { Section } from "@/components/site/frame";
 export const dynamic = "force-dynamic";
 export default async function Preview({
   params,
@@ -30,19 +28,8 @@ export default async function Preview({
       locale={locale}
       locales={[...locales]}
       shopVisible={true}
+      section={section as Section}
       preview
-    >
-      {section === "home" ? (
-        <HomeView content={content} locale={locale} preview />
-      ) : section === "gallery" ? (
-        <GalleryView content={content} preview />
-      ) : section === "about" ? (
-        <AboutView content={content} preview />
-      ) : section === "shop" ? (
-        <ShopView content={content} preview />
-      ) : (
-        <ContactView content={content} />
-      )}
-    </Frame>
+    />
   );
 }

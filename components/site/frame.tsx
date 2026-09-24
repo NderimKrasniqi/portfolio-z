@@ -1,69 +1,85 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Content, Locale } from "@/lib/model";
 import { LocaleDocument } from "./locale-document";
-export function Frame({
-  content,
-  locale,
-  locales,
-  shopVisible,
-  children,
-  preview = false,
-}: {
+import { HomeView } from "./home";
+import { GalleryView } from "./gallery";
+import { AboutView, ContactView, ShopView } from "./pages";
+import { socialIcons } from "./social-icons";
+
+export type Section = "home" | "gallery" | "about" | "shop" | "contact";
+
+const referenceSocials = {
+  X: "https://x.com/zeudidipalma",
+};
+
+export function SocialLinks({ content, className }: { content: Content; className: string }) {
+  const links = [...content.social];
+  if (!links.some((social) => social.label.toLowerCase() === "x")) {
+    const twitchIndex = links.findIndex((social) => social.label.toLowerCase() === "twitch");
+    links.splice(twitchIndex < 0 ? links.length : twitchIndex, 0, { label: "X", url: referenceSocials.X });
+  }
+  return (
+    <nav className={className} aria-label="Social links">
+      {links.map((social) => (
+        <a key={social.url} href={social.url} target="_blank" rel="noreferrer" aria-label={social.label} title={social.label}>
+          {socialIcons[social.label] ? (
+            <span className="social-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: socialIcons[social.label] }} />
+          ) : (
+            <span className="social-icon-text" aria-hidden="true">{social.label.slice(0, 1)}</span>
+          )}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+export function BackButton({ onBack, className }: { onBack: () => void; className: string }) {
+  return (
+    <button type="button" className={`${className} unified-back`} onClick={onBack} aria-label="Back to main page">
+      <span className="unified-back__arrow" aria-hidden="true">←</span><span>BACK</span>
+    </button>
+  );
+}
+
+export function Frame({ content, locale, locales, shopVisible, section, preview = false }: {
   content: Content;
   locale: Locale;
   locales: Locale[];
   shopVisible: boolean;
-  children: React.ReactNode;
+  section: Section;
   preview?: boolean;
 }) {
+  const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
   const base = preview ? `/admin/preview/${locale}` : `/${locale}`;
+  const goHome = useCallback(() => {
+    if (leaving) return;
+    setLeaving(true);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => router.push(base), reduced ? 0 : 560);
+  }, [base, leaving, router]);
+
   return (
-    <div className="site">
+    <div className={`portfolio zeudi-preload-complete${section !== "home" ? " zeudi-subpage-open" : ""}${leaving ? " is-leaving" : ""}`}>
       <LocaleDocument locale={locale} />
-      <a className="skip-link" href="#main">
-        Skip to content
-      </a>
-      {preview && (
-        <div className="preview-banner">
-          DRAFT PREVIEW — not published{" "}
-          <Link href="/admin">Return to editor ↗</Link>
-        </div>
-      )}
-      <header className="site-header">
-        <Link href={base} className="wordmark">
-          ZEUDI DI PALMA.
-        </Link>
-        <nav aria-label="Main navigation">
-          <Link href={`${base}/gallery`}>{content.nav.gallery}</Link>
-          <Link href={`${base}/about`}>{content.nav.about}</Link>
-          {shopVisible && <Link href={`${base}/shop`}>{content.nav.shop}</Link>}
-          <Link href={`${base}/contact`}>{content.nav.contact}</Link>
+      <a className="reference-skip" href="#main">Skip to content</a>
+      {preview && <div className="reference-preview-banner">Draft preview · <Link href="/admin">Return to editor</Link></div>}
+      <HomeView content={content} base={base} active={section === "home"} shopVisible={shopVisible} preview={preview} />
+      {section === "home" && (
+        <nav className="language-switcher" aria-label="Language">
+          {locales.map((language) => (
+            <Link key={language} href={preview ? `/admin/preview/${language}` : `/${language}`} hrefLang={language} aria-current={language === locale ? "page" : undefined} aria-label={`Switch language to ${language.toUpperCase()}`}>{language.toUpperCase()}</Link>
+          ))}
         </nav>
-        <div className="languages" aria-label="Language">
-          {locales.map((l) => (
-            <Link
-              key={l}
-              href={preview ? `/admin/preview/${l}` : `/${l}`}
-              hrefLang={l}
-              aria-current={l === locale ? "page" : undefined}
-            >
-              {l.toUpperCase()}
-            </Link>
-          ))}
-        </div>
-      </header>
-      {children}
-      <footer className="site-footer">
-        <span>{content.location}</span>
-        <div>
-          {content.social.map((s) => (
-            <a key={s.url} href={s.url} target="_blank" rel="noreferrer">
-              {s.label}
-            </a>
-          ))}
-        </div>
-        <span>© {new Date().getFullYear()} ZEUDI DI PALMA</span>
-      </footer>
+      )}
+      {section === "gallery" && <GalleryView content={content} preview={preview} base={base} onBack={goHome} />}
+      {section === "about" && <AboutView content={content} preview={preview} onBack={goHome} />}
+      {section === "shop" && <ShopView content={content} preview={preview} onBack={goHome} />}
+      {section === "contact" && <ContactView content={content} onBack={goHome} />}
     </div>
   );
 }
