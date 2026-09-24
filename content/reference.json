@@ -1,0 +1,1139 @@
+{
+  "en": {
+    "name": "Zeudi Di Palma",
+    "location": "NAPOLI, ITALY",
+    "description": "Zeudi Di Palma — selected work, biography and contact.",
+    "nav": {
+      "home": "HOME",
+      "gallery": "GALLERY",
+      "about": "ABOUT",
+      "shop": "SHOP",
+      "contact": "CONTACT"
+    },
+    "aboutTitle": "MY STORY",
+    "aboutLead": "I grew up in Scampia, in Naples. For me, it has always been home before it was ever a place other people had opinions about. My family, my neighbourhood and the people around me shaped the way I see the world, and they are still part of everything I do.",
+    "chapters": [
+      {
+        "id": "chapter-1",
+        "label": "HOME",
+        "title": "Home is where I first learned how much people can carry for one another.",
+        "body": "I grew up with my mother, my brother Joe, my sister Asia and my grandmother close to us. Some of my strongest memories are of the women in my family and the way they kept everything together. My father left when I was two, so most of the responsibility fell on my mother, with my grandmother helping her raise us. When I was around ten, my grandmother died, and around the same time my mother lost her job. I watched her find new ways to keep us going, taking whatever work she could and never letting us feel that we had to stop looking forward. I think a lot of who I am comes from those years. Not from one single moment, but from watching the people I loved keep going, again and again."
+      },
+      {
+        "id": "chapter-2",
+        "label": "INDEPENDENCE",
+        "title": "I wanted to help before anyone ever asked me to.",
+        "body": "My mother never asked me to carry her responsibilities, but watching how hard she worked made me want to help in my own way. At twelve, I had my first modelling experience with Le Vele in Moda. Later, while continuing my studies, I worked as an usher at Teatro di San Carlo. Working young gave me independence, but it also gave me perspective. I learned that there is dignity in any job when you understand why you are doing it. At the same time, I stayed close to La Lampada di Scampia, the association founded by my mother to create opportunities for young people in the neighbourhood. I chose to study Sociology because I wanted to understand more about how people, places and opportunities shape one another. Even then, I was learning that I did not have to fit into one definition."
+      },
+      {
+        "id": "chapter-3",
+        "label": "VISIBILITY",
+        "title": "When things began to open up for me, I wanted Scampia to come with me.",
+        "body": "Miss Italia changed the scale of my life. I arrived there as Miss Napoli and, in 2022, became Miss Italia 2021. Suddenly there was a crown, a title and a much larger audience looking at me. I was grateful for the opportunity, but I also realised how quickly visibility can reduce a person to an image. I wanted people to see more than that. I wanted to talk about Scampia as I knew it. It is complicated, yes, but it is also full of families, talent and young people working hard to build a different future. Beauty may have opened that door for me, but I never wanted beauty to be the only reason I was allowed to stay in the room."
+      },
+      {
+        "id": "chapter-4",
+        "label": "OPENNESS",
+        "title": "Being seen is one thing. Letting people see you honestly is another.",
+        "body": "Grande Fratello brought me into a different kind of spotlight. There was no polished photograph and no carefully chosen moment to hide behind. People saw my emotions, my contradictions, my humour, my sensitivity and parts of my identity that had taken me years to understand and accept. It was not always easy, but it changed the way I thought about being seen. I stopped thinking strength meant having every answer. Sometimes it means letting yourself change in public, admitting when you are uncertain and choosing honesty even when it would be easier to become the version of you that other people already expect."
+      },
+      {
+        "id": "chapter-5",
+        "label": "ZEUDINERS",
+        "title": "Some connections do not end when the cameras do.",
+        "body": "During Grande Fratello, people from different countries, languages and lives began finding one another through my journey. What started as support around a television programme became the Zeudiners, a community that stayed after the cameras stopped. What touches me most is not only how far that community reached, but what people chose to do with that connection. Over time, their support became generosity too. They came together, helped causes they believed in and turned affection into something that could help other people. I would never call those gestures mine. They belong to the people who gave, organised and cared. I am just grateful that something in my story helped them find one another. They are still part of my life today. Twitch and live streaming have given us a different place to meet, one that feels more spontaneous and more everyday. Sometimes we talk, laugh, cook or simply spend an ordinary evening together. I like that our relationship did not end with a television programme. It changed as my life changed. The cameras are different now, but I still feel them beside me while I grow and try new things. That is what makes the Zeudiners special to me. They never felt like just an audience. What began with people watching my story became people choosing to stay for what came after."
+      },
+      {
+        "id": "chapter-6",
+        "label": "BECOMING",
+        "title": "I do not want my story to end at the moment people learned my name.",
+        "body": "Everything I have lived so far, from Scampia, work and university to Miss Italia, television, streaming, tattooing and the people I have met along the way, has given me another piece of myself. Now I want to keep building with intention. Acting is something I want to approach seriously. I want to study, train and earn the next opportunity rather than expect visibility to carry me there. I know attention can disappear as quickly as it arrives. What stays is the person you have become and the work you have done when nobody is looking. I still carry the girl who watched her mother start again, the neighbourhood that taught me not to accept other people's limits, and the instinct to keep moving even when I do not have a clear map. I do not know exactly what the next chapter will look like, and I like that. I want to keep enough freedom to change, enough curiosity to begin again and enough honesty to remain myself while I do it."
+      }
+    ],
+    "media": [
+      {
+        "id": "3918ebc57d4ba81d129d1e38",
+        "title": "PORTRAIT 01",
+        "alt": "Zeudi Di Palma — PORTRAIT 01",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "3918ebc57d4ba81d129d1e38-1600.webp",
+        "thumbKey": "3918ebc57d4ba81d129d1e38-320.webp",
+        "mediumKey": "3918ebc57d4ba81d129d1e38-960.webp",
+        "width": 1088,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "87890fae406c7889d50da0b6",
+        "title": "PORTRAIT 02",
+        "alt": "Zeudi Di Palma — PORTRAIT 02",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "87890fae406c7889d50da0b6-1600.webp",
+        "thumbKey": "87890fae406c7889d50da0b6-320.webp",
+        "mediumKey": "87890fae406c7889d50da0b6-960.webp",
+        "width": 1088,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "c98d09f982b59b4d7e9702a3",
+        "title": "PORTRAIT 03",
+        "alt": "Zeudi Di Palma — PORTRAIT 03",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "c98d09f982b59b4d7e9702a3-1600.webp",
+        "thumbKey": "c98d09f982b59b4d7e9702a3-320.webp",
+        "mediumKey": "c98d09f982b59b4d7e9702a3-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "dcddcfc75e5621c65488583e",
+        "title": "PORTRAIT 04",
+        "alt": "Zeudi Di Palma — PORTRAIT 04",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "dcddcfc75e5621c65488583e-1600.webp",
+        "thumbKey": "dcddcfc75e5621c65488583e-320.webp",
+        "mediumKey": "dcddcfc75e5621c65488583e-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "33fbc3022919188b2b991569",
+        "title": "PORTRAIT 05",
+        "alt": "Zeudi Di Palma — PORTRAIT 05",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "33fbc3022919188b2b991569-1600.webp",
+        "thumbKey": "33fbc3022919188b2b991569-320.webp",
+        "mediumKey": "33fbc3022919188b2b991569-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "43dfdecda5aaead3b8533917",
+        "title": "PORTRAIT 06",
+        "alt": "Zeudi Di Palma — PORTRAIT 06",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "43dfdecda5aaead3b8533917-1600.webp",
+        "thumbKey": "43dfdecda5aaead3b8533917-320.webp",
+        "mediumKey": "43dfdecda5aaead3b8533917-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "f67407cd6dbe8c198828197f",
+        "title": "PORTRAIT 07",
+        "alt": "Zeudi Di Palma — PORTRAIT 07",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "f67407cd6dbe8c198828197f-1600.webp",
+        "thumbKey": "f67407cd6dbe8c198828197f-320.webp",
+        "mediumKey": "f67407cd6dbe8c198828197f-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "67b806e210557fce82a4f6a6",
+        "title": "PORTRAIT 08",
+        "alt": "Zeudi Di Palma — PORTRAIT 08",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "67b806e210557fce82a4f6a6-1600.webp",
+        "thumbKey": "67b806e210557fce82a4f6a6-320.webp",
+        "mediumKey": "67b806e210557fce82a4f6a6-960.webp",
+        "width": 1537,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "ca8e659a4f70c19af590ebb1",
+        "title": "PORTRAIT 09",
+        "alt": "Zeudi Di Palma — PORTRAIT 09",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "ca8e659a4f70c19af590ebb1-1600.webp",
+        "thumbKey": "ca8e659a4f70c19af590ebb1-320.webp",
+        "mediumKey": "ca8e659a4f70c19af590ebb1-960.webp",
+        "width": 1537,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "7d73639c934e9107e0b6a876",
+        "title": "PORTRAIT 10",
+        "alt": "Zeudi Di Palma — PORTRAIT 10",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "7d73639c934e9107e0b6a876-1600.webp",
+        "thumbKey": "7d73639c934e9107e0b6a876-320.webp",
+        "mediumKey": "7d73639c934e9107e0b6a876-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "1751167d38e1704557803f61",
+        "title": "PORTRAIT 11",
+        "alt": "Zeudi Di Palma — PORTRAIT 11",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "1751167d38e1704557803f61-1600.webp",
+        "thumbKey": "1751167d38e1704557803f61-320.webp",
+        "mediumKey": "1751167d38e1704557803f61-960.webp",
+        "width": 1080,
+        "height": 1350,
+        "caption": "",
+        "featured": false
+      },
+      {
+        "id": "46cbd468b4947d0da474180f",
+        "title": "PORTRAIT 12",
+        "alt": "Zeudi Di Palma — PORTRAIT 12",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "46cbd468b4947d0da474180f-1600.webp",
+        "thumbKey": "46cbd468b4947d0da474180f-320.webp",
+        "mediumKey": "46cbd468b4947d0da474180f-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": false
+      }
+    ],
+    "products": [
+      {
+        "id": "closet-01",
+        "title": "LEATHER JACKET",
+        "description": "A demo of how one of my own pieces could live here, with a small note about when I wore it and why I am ready to pass it on.",
+        "price": 95,
+        "size": "M",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-02",
+        "title": "PINSTRIPE BLAZER",
+        "description": "A sold piece stays visible as part of the closet archive. I like the idea that the page remembers what has already found a new home.",
+        "price": 80,
+        "size": "S",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": true,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-03",
+        "title": "PURPLE BAG",
+        "description": "Personal accessories can sit beside clothes here too. The real listing can include wear, measurements and a quick note from me.",
+        "price": 55,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-04",
+        "title": "SUNGLASSES",
+        "description": "A small one-off piece from the closet. These quieter objects are part of what makes the shop feel personal rather than permanent merch.",
+        "price": 40,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-05",
+        "title": "GREY SNEAKERS",
+        "description": "A sold pair can remain in the archive after purchase, so the closet slowly builds a history of the pieces that passed through it.",
+        "price": 70,
+        "size": "EU 39",
+        "condition": "WORN",
+        "category": "closet",
+        "sold": true,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-06",
+        "title": "VINTAGE VARSITY",
+        "description": "Real closet photos could mix clean product shots with mirror pictures or more lived-in images, depending on the piece.",
+        "price": 60,
+        "size": "M",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-07",
+        "title": "WORKWEAR JACKET",
+        "description": "Not everything needs to feel precious. Everyday pieces make the closet more believable and more like a real extension of what I wear.",
+        "price": 75,
+        "size": "L",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-08",
+        "title": "SMALL HANDBAG",
+        "description": "Another one-off accessory to show how the closet can move between clothing, bags, shoes and objects without becoming a traditional store.",
+        "price": 50,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-01",
+        "title": "GRAPHIC HOODIE",
+        "description": "A demo merch drop. Small runs can live beside my own closet pieces without turning this space into a full fashion label.",
+        "price": 55,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-02",
+        "title": "CITY HOODIE",
+        "description": "Occasional related pieces could appear together as a very small capsule rather than a permanent collection.",
+        "price": 58,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-03",
+        "title": "SIGNATURE CAP",
+        "description": "A simple cap is the kind of low-key drop that fits the closet: small quantity, useful, and without a huge campaign around it.",
+        "price": 28,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-04",
+        "title": "ARCHIVE OBJECT",
+        "description": "A flexible final slot for small objects: a tote, print, signed piece, keychain or whatever feels right for a future drop.",
+        "price": 32,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      }
+    ],
+    "shopTitle": "ZEUDI’S CLOSET.",
+    "shopIntro": "Pieces from my closet, alongside occasional drops.",
+    "contactTitle": "Wannabe Management.",
+    "contactLabel": "PR & Commercial",
+    "contactEmail": "contact@wannabemgmt.com",
+    "social": [
+      {
+        "label": "Instagram",
+        "url": "https://www.instagram.com/zeudidipalma"
+      },
+      {
+        "label": "TikTok",
+        "url": "https://www.tiktok.com/@zeudidipalmaofficial"
+      },
+      {
+        "label": "YouTube",
+        "url": "https://www.youtube.com/@ZeudiDiPalmaOfficial"
+      },
+      {
+        "label": "Twitch",
+        "url": "https://www.twitch.tv/zeudidipalma01"
+      }
+    ]
+  },
+  "it": {
+    "name": "Zeudi Di Palma",
+    "location": "NAPOLI, ITALY",
+    "description": "Zeudi Di Palma — selected work, biography and contact.",
+    "nav": {
+      "home": "INIZIO",
+      "gallery": "GALLERIA",
+      "about": "CHI SONO",
+      "shop": "SHOP",
+      "contact": "CONTATTI"
+    },
+    "aboutTitle": "LA MIA STORIA",
+    "aboutLead": "Sono cresciuta a Scampia, a Napoli. Per me è sempre stata casa, prima ancora di essere un luogo su cui gli altri avevano qualcosa da dire. La mia famiglia, il mio quartiere e le persone che mi sono state accanto hanno formato il mio modo di vedere il mondo e fanno ancora parte di tutto ciò che faccio.",
+    "chapters": [
+      {
+        "id": "chapter-1",
+        "label": "CASA",
+        "title": "È a casa che ho imparato per la prima volta quanto le persone possano sostenersi a vicenda.",
+        "body": "Sono cresciuta con mia madre, mio fratello Joe, mia sorella Asia e mia nonna sempre vicina a noi. Alcuni dei ricordi più forti che ho sono legati alle donne della mia famiglia e al modo in cui riuscivano a tenere tutto insieme. Mio padre se n'è andato quando avevo due anni, quindi gran parte delle responsabilità è ricaduta su mia madre, con mia nonna che l'aiutava a crescerci. Quando avevo circa dieci anni, mia nonna è morta e, più o meno nello stesso periodo, mia madre ha perso il lavoro. L'ho vista trovare nuovi modi per farci andare avanti, accettando qualsiasi lavoro potesse fare e senza farci mai sentire che dovevamo smettere di guardare avanti. Credo che molto di quello che sono venga da quegli anni. Non da un singolo momento, ma dal vedere le persone che amavo continuare ad andare avanti, ancora e ancora."
+      },
+      {
+        "id": "chapter-2",
+        "label": "INDIPENDENZA",
+        "title": "Volevo dare una mano prima ancora che qualcuno me lo chiedesse.",
+        "body": "Mia madre non mi ha mai chiesto di portare sulle spalle le sue responsabilità, ma vedere quanto lavorava mi faceva venire voglia di aiutarla a modo mio. A dodici anni ho avuto la mia prima esperienza come modella con Le Vele in Moda. Più tardi, mentre continuavo a studiare, ho lavorato come maschera al Teatro di San Carlo. Iniziare a lavorare così giovane mi ha dato indipendenza, ma anche una prospettiva diversa. Ho imparato che c’è dignità in ogni lavoro quando sai perché lo stai facendo. Allo stesso tempo sono rimasta vicina a La Lampada di Scampia, l’associazione fondata da mia madre per creare opportunità per i giovani del quartiere. Ho scelto di studiare Sociologia perché volevo capire meglio come le persone, i luoghi e le opportunità si influenzano a vicenda. Già allora stavo imparando che non dovevo entrare in una sola definizione."
+      },
+      {
+        "id": "chapter-3",
+        "label": "VISIBILITÀ",
+        "title": "Quando le cose hanno iniziato ad aprirsi per me, volevo portare Scampia con me.",
+        "body": "Miss Italia ha cambiato la dimensione della mia vita. Sono arrivata come Miss Napoli e, nel 2022, sono diventata Miss Italia 2021. All’improvviso c’erano una corona, un titolo e un pubblico molto più grande che mi guardava. Ero grata per quell’opportunità, ma mi sono anche resa conto di quanto velocemente la visibilità possa ridurre una persona a un’immagine. Volevo che le persone vedessero qualcosa di più. Volevo parlare di Scampia per come la conosco io. È complessa, sì, ma è anche piena di famiglie, talento e giovani che lavorano duramente per costruire un futuro diverso. La bellezza può avermi aperto quella porta, ma non ho mai voluto che fosse l’unico motivo per cui mi fosse permesso restare nella stanza."
+      },
+      {
+        "id": "chapter-4",
+        "label": "APERTURA",
+        "title": "Essere visti è una cosa. Lasciare che le persone ti vedano davvero è un’altra.",
+        "body": "Grande Fratello mi ha portata sotto un tipo di luce diverso. Non c’era una fotografia perfetta né un momento scelto con cura dietro cui nascondermi. Le persone hanno visto le mie emozioni, le mie contraddizioni, il mio umorismo, la mia sensibilità e parti della mia identità che avevo impiegato anni a capire e accettare. Non è stato sempre facile, ma ha cambiato il mio modo di pensare all’essere vista. Ho smesso di credere che essere forti significasse avere tutte le risposte. A volte significa permettersi di cambiare davanti agli altri, ammettere di non essere sicuri e scegliere l’onestà anche quando sarebbe più facile diventare la versione di te che gli altri si aspettano già."
+      },
+      {
+        "id": "chapter-5",
+        "label": "ZEUDINERS",
+        "title": "Alcuni legami non finiscono quando si spengono le telecamere.",
+        "body": "Durante Grande Fratello, persone di paesi, lingue e vite diverse hanno iniziato a trovarsi attraverso il mio percorso. Quello che era iniziato come sostegno intorno a un programma televisivo ha dato vita agli Zeudiners, una comunità che è rimasta anche dopo che le telecamere si sono spente. Quello che mi tocca di più non è soltanto quanto lontano sia arrivata questa comunità, ma ciò che le persone hanno scelto di fare con quel legame. Con il tempo, il loro sostegno è diventato anche generosità. Si sono unite, hanno aiutato cause in cui credevano e hanno trasformato l’affetto in qualcosa capace di aiutare altre persone. Non direi mai che quei gesti sono miei. Appartengono alle persone che hanno donato, organizzato e avuto cura degli altri. Sono semplicemente grata che qualcosa nella mia storia le abbia aiutate a trovarsi. Fanno ancora parte della mia vita oggi. Twitch e le dirette ci hanno dato un luogo diverso in cui incontrarci, più spontaneo e più quotidiano. A volte parliamo, ridiamo, cuciniamo o passiamo semplicemente una serata normale insieme. Mi piace che il nostro rapporto non sia finito con un programma televisivo. È cambiato mentre cambiava la mia vita. Le telecamere sono diverse adesso, ma continuo a sentirli accanto a me mentre cresco e provo cose nuove. È questo che rende gli Zeudiners speciali per me. Non li ho mai sentiti soltanto come un pubblico. Quello che è iniziato con persone che guardavano la mia storia è diventato persone che hanno scelto di restare per quello che è venuto dopo."
+      },
+      {
+        "id": "chapter-6",
+        "label": "DIVENTARE",
+        "title": "Non voglio che la mia storia finisca nel momento in cui le persone hanno imparato il mio nome.",
+        "body": "Tutto quello che ho vissuto finora, da Scampia, il lavoro e l’università fino a Miss Italia, la televisione, lo streaming, i tatuaggi e le persone che ho incontrato lungo il cammino, mi ha dato un altro pezzo di me stessa. Ora voglio continuare a costruire con intenzione. La recitazione è qualcosa che voglio affrontare seriamente. Voglio studiare, allenarmi e guadagnarmi la prossima opportunità invece di aspettarmi che sia la visibilità a portarmi lì. So che l’attenzione può sparire con la stessa velocità con cui arriva. Quello che resta è la persona che sei diventata e il lavoro che hai fatto quando nessuno ti guardava. Porto ancora con me la ragazza che ha visto sua madre ricominciare, il quartiere che mi ha insegnato a non accettare i limiti degli altri e l’istinto di continuare a muovermi anche quando non ho una mappa chiara. Non so esattamente come sarà il prossimo capitolo, e mi piace così. Voglio avere abbastanza libertà per cambiare, abbastanza curiosità per ricominciare e abbastanza onestà per restare me stessa mentre lo faccio."
+      }
+    ],
+    "media": [
+      {
+        "id": "3918ebc57d4ba81d129d1e38",
+        "title": "PORTRAIT 01",
+        "alt": "Zeudi Di Palma — PORTRAIT 01",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "3918ebc57d4ba81d129d1e38-1600.webp",
+        "thumbKey": "3918ebc57d4ba81d129d1e38-320.webp",
+        "mediumKey": "3918ebc57d4ba81d129d1e38-960.webp",
+        "width": 1088,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "87890fae406c7889d50da0b6",
+        "title": "PORTRAIT 02",
+        "alt": "Zeudi Di Palma — PORTRAIT 02",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "87890fae406c7889d50da0b6-1600.webp",
+        "thumbKey": "87890fae406c7889d50da0b6-320.webp",
+        "mediumKey": "87890fae406c7889d50da0b6-960.webp",
+        "width": 1088,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "c98d09f982b59b4d7e9702a3",
+        "title": "PORTRAIT 03",
+        "alt": "Zeudi Di Palma — PORTRAIT 03",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "c98d09f982b59b4d7e9702a3-1600.webp",
+        "thumbKey": "c98d09f982b59b4d7e9702a3-320.webp",
+        "mediumKey": "c98d09f982b59b4d7e9702a3-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "dcddcfc75e5621c65488583e",
+        "title": "PORTRAIT 04",
+        "alt": "Zeudi Di Palma — PORTRAIT 04",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "dcddcfc75e5621c65488583e-1600.webp",
+        "thumbKey": "dcddcfc75e5621c65488583e-320.webp",
+        "mediumKey": "dcddcfc75e5621c65488583e-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "33fbc3022919188b2b991569",
+        "title": "PORTRAIT 05",
+        "alt": "Zeudi Di Palma — PORTRAIT 05",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "33fbc3022919188b2b991569-1600.webp",
+        "thumbKey": "33fbc3022919188b2b991569-320.webp",
+        "mediumKey": "33fbc3022919188b2b991569-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "43dfdecda5aaead3b8533917",
+        "title": "PORTRAIT 06",
+        "alt": "Zeudi Di Palma — PORTRAIT 06",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "43dfdecda5aaead3b8533917-1600.webp",
+        "thumbKey": "43dfdecda5aaead3b8533917-320.webp",
+        "mediumKey": "43dfdecda5aaead3b8533917-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "f67407cd6dbe8c198828197f",
+        "title": "PORTRAIT 07",
+        "alt": "Zeudi Di Palma — PORTRAIT 07",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "f67407cd6dbe8c198828197f-1600.webp",
+        "thumbKey": "f67407cd6dbe8c198828197f-320.webp",
+        "mediumKey": "f67407cd6dbe8c198828197f-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "67b806e210557fce82a4f6a6",
+        "title": "PORTRAIT 08",
+        "alt": "Zeudi Di Palma — PORTRAIT 08",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "67b806e210557fce82a4f6a6-1600.webp",
+        "thumbKey": "67b806e210557fce82a4f6a6-320.webp",
+        "mediumKey": "67b806e210557fce82a4f6a6-960.webp",
+        "width": 1537,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "ca8e659a4f70c19af590ebb1",
+        "title": "PORTRAIT 09",
+        "alt": "Zeudi Di Palma — PORTRAIT 09",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "ca8e659a4f70c19af590ebb1-1600.webp",
+        "thumbKey": "ca8e659a4f70c19af590ebb1-320.webp",
+        "mediumKey": "ca8e659a4f70c19af590ebb1-960.webp",
+        "width": 1537,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "7d73639c934e9107e0b6a876",
+        "title": "PORTRAIT 10",
+        "alt": "Zeudi Di Palma — PORTRAIT 10",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "7d73639c934e9107e0b6a876-1600.webp",
+        "thumbKey": "7d73639c934e9107e0b6a876-320.webp",
+        "mediumKey": "7d73639c934e9107e0b6a876-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "1751167d38e1704557803f61",
+        "title": "PORTRAIT 11",
+        "alt": "Zeudi Di Palma — PORTRAIT 11",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "1751167d38e1704557803f61-1600.webp",
+        "thumbKey": "1751167d38e1704557803f61-320.webp",
+        "mediumKey": "1751167d38e1704557803f61-960.webp",
+        "width": 1080,
+        "height": 1350,
+        "caption": "",
+        "featured": false
+      },
+      {
+        "id": "46cbd468b4947d0da474180f",
+        "title": "PORTRAIT 12",
+        "alt": "Zeudi Di Palma — PORTRAIT 12",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "46cbd468b4947d0da474180f-1600.webp",
+        "thumbKey": "46cbd468b4947d0da474180f-320.webp",
+        "mediumKey": "46cbd468b4947d0da474180f-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": false
+      }
+    ],
+    "products": [
+      {
+        "id": "closet-01",
+        "title": "LEATHER JACKET",
+        "description": "Una demo di come potrebbe apparire qui un mio capo, con una piccola nota su quando l’ho indossato e perché sono pronta a lasciarlo andare.",
+        "price": 95,
+        "size": "M",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-02",
+        "title": "PINSTRIPE BLAZER",
+        "description": "Un pezzo venduto resta visibile come parte dell’archivio del guardaroba. Mi piace che la pagina ricordi ciò che ha già trovato una nuova casa.",
+        "price": 80,
+        "size": "S",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": true,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-03",
+        "title": "PURPLE BAG",
+        "description": "Qui possono stare anche accessori personali insieme ai vestiti. La scheda reale potrà includere usura, misure e una breve nota da parte mia.",
+        "price": 55,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-04",
+        "title": "SUNGLASSES",
+        "description": "Un piccolo pezzo unico del guardaroba. Sono anche questi oggetti più semplici a rendere lo shop personale invece di un merch permanente.",
+        "price": 40,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-05",
+        "title": "GREY SNEAKERS",
+        "description": "Un paio venduto può restare nell’archivio dopo l’acquisto, così il guardaroba costruisce nel tempo una storia dei pezzi che lo hanno attraversato.",
+        "price": 70,
+        "size": "EU 39",
+        "condition": "WORN",
+        "category": "closet",
+        "sold": true,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-06",
+        "title": "VINTAGE VARSITY",
+        "description": "Le foto reali del guardaroba potrebbero alternare immagini pulite del prodotto, scatti allo specchio o foto più vissute, a seconda del pezzo.",
+        "price": 60,
+        "size": "M",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-07",
+        "title": "WORKWEAR JACKET",
+        "description": "Non tutto deve sembrare prezioso. I capi quotidiani rendono il guardaroba più credibile e più vicino a ciò che indosso davvero.",
+        "price": 75,
+        "size": "L",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-08",
+        "title": "SMALL HANDBAG",
+        "description": "Un altro accessorio unico per mostrare come il guardaroba possa passare tra vestiti, borse, scarpe e oggetti senza diventare un negozio tradizionale.",
+        "price": 50,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-01",
+        "title": "GRAPHIC HOODIE",
+        "description": "Un drop merch demo. Piccole tirature possono convivere con i miei capi personali senza trasformare questo spazio in un vero brand di moda.",
+        "price": 55,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-02",
+        "title": "CITY HOODIE",
+        "description": "Ogni tanto alcuni pezzi collegati potrebbero uscire insieme come una piccolissima capsule invece di una collezione permanente.",
+        "price": 58,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-03",
+        "title": "SIGNATURE CAP",
+        "description": "Un cappellino semplice è il tipo di drop discreto che funziona qui: pochi pezzi, utile e senza una grande campagna intorno.",
+        "price": 28,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-04",
+        "title": "ARCHIVE OBJECT",
+        "description": "Uno spazio flessibile per piccoli oggetti: una tote, una stampa, un pezzo firmato, un portachiavi o ciò che avrà senso per un futuro drop.",
+        "price": 32,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      }
+    ],
+    "shopTitle": "L’ARMADIO DI ZEUDI.",
+    "shopIntro": "Capi dal mio guardaroba e qualche drop occasionale.",
+    "contactTitle": "Wannabe Management.",
+    "contactLabel": "PR & Commercial",
+    "contactEmail": "contact@wannabemgmt.com",
+    "social": [
+      {
+        "label": "Instagram",
+        "url": "https://www.instagram.com/zeudidipalma"
+      },
+      {
+        "label": "TikTok",
+        "url": "https://www.tiktok.com/@zeudidipalmaofficial"
+      },
+      {
+        "label": "YouTube",
+        "url": "https://www.youtube.com/@ZeudiDiPalmaOfficial"
+      },
+      {
+        "label": "Twitch",
+        "url": "https://www.twitch.tv/zeudidipalma01"
+      }
+    ]
+  },
+  "pt": {
+    "name": "Zeudi Di Palma",
+    "location": "NAPOLI, ITALY",
+    "description": "Zeudi Di Palma — selected work, biography and contact.",
+    "nav": {
+      "home": "INÍCIO",
+      "gallery": "GALERIA",
+      "about": "SOBRE",
+      "shop": "LOJA",
+      "contact": "CONTATO"
+    },
+    "aboutTitle": "MINHA HISTÓRIA",
+    "aboutLead": "Cresci em Scampia, em Nápoles. Para mim, sempre foi casa antes de ser um lugar sobre o qual outras pessoas tinham opiniões. Minha família, meu bairro e as pessoas ao meu redor moldaram a forma como vejo o mundo, e continuam fazendo parte de tudo o que faço.",
+    "chapters": [
+      {
+        "id": "chapter-1",
+        "label": "CASA",
+        "title": "Foi em casa que aprendi pela primeira vez o quanto as pessoas podem carregar umas pelas outras.",
+        "body": "Cresci com minha mãe, meu irmão Joe, minha irmã Asia e minha avó sempre por perto. Algumas das minhas lembranças mais fortes são das mulheres da minha família e da forma como elas conseguiam manter tudo de pé. Meu pai foi embora quando eu tinha dois anos, então a maior parte da responsabilidade ficou com minha mãe, com minha avó ajudando a nos criar. Quando eu tinha por volta de dez anos, minha avó morreu e, mais ou menos na mesma época, minha mãe perdeu o emprego. Eu a vi encontrar novas maneiras de nos manter seguindo em frente, aceitando o trabalho que aparecesse e nunca deixando que sentíssemos que precisávamos parar de olhar para o futuro. Acho que muito de quem eu sou vem daqueles anos. Não de um único momento, mas de ver as pessoas que eu amava continuarem seguindo, uma vez depois da outra."
+      },
+      {
+        "id": "chapter-2",
+        "label": "INDEPENDÊNCIA",
+        "title": "Eu queria ajudar antes mesmo que alguém me pedisse.",
+        "body": "Minha mãe nunca me pediu para assumir as responsabilidades dela, mas ver o quanto ela trabalhava me fez querer ajudar do meu jeito. Aos doze anos, tive minha primeira experiência como modelo com Le Vele in Moda. Mais tarde, enquanto continuava estudando, trabalhei como recepcionista no Teatro di San Carlo. Começar a trabalhar cedo me deu independência, mas também me deu perspectiva. Aprendi que existe dignidade em qualquer trabalho quando você entende por que está fazendo aquilo. Ao mesmo tempo, continuei próxima de La Lampada di Scampia, a associação fundada pela minha mãe para criar oportunidades para os jovens do bairro. Escolhi estudar Sociologia porque queria entender melhor como pessoas, lugares e oportunidades influenciam uns aos outros. Mesmo naquela época, eu já estava aprendendo que não precisava caber em uma única definição."
+      },
+      {
+        "id": "chapter-3",
+        "label": "VISIBILIDADE",
+        "title": "Quando as coisas começaram a se abrir para mim, eu queria levar Scampia comigo.",
+        "body": "Miss Italia mudou a dimensão da minha vida. Cheguei como Miss Napoli e, em 2022, me tornei Miss Italia 2021. De repente havia uma coroa, um título e um público muito maior olhando para mim. Eu era grata pela oportunidade, mas também percebi como a visibilidade pode rapidamente reduzir uma pessoa a uma imagem. Eu queria que as pessoas vissem mais do que isso. Queria falar de Scampia como eu a conheço. É um lugar complexo, sim, mas também cheio de famílias, talento e jovens trabalhando duro para construir um futuro diferente. A beleza pode ter aberto aquela porta para mim, mas nunca quis que ela fosse o único motivo para eu poder continuar naquela sala."
+      },
+      {
+        "id": "chapter-4",
+        "label": "ABERTURA",
+        "title": "Ser vista é uma coisa. Deixar que as pessoas vejam você de verdade é outra.",
+        "body": "Grande Fratello me colocou sob um tipo diferente de atenção. Não havia uma fotografia perfeita nem um momento cuidadosamente escolhido para eu me esconder atrás. As pessoas viram minhas emoções, minhas contradições, meu humor, minha sensibilidade e partes da minha identidade que levei anos para entender e aceitar. Nem sempre foi fácil, mas isso mudou a forma como eu pensava sobre ser vista. Parei de achar que ser forte significava ter todas as respostas. Às vezes significa permitir que você mude diante das pessoas, admitir quando não tem certeza e escolher a honestidade mesmo quando seria mais fácil se tornar a versão de você que os outros já esperam."
+      },
+      {
+        "id": "chapter-5",
+        "label": "ZEUDINERS",
+        "title": "Algumas conexões não terminam quando as câmeras se desligam.",
+        "body": "Durante Grande Fratello, pessoas de diferentes países, idiomas e vidas começaram a encontrar umas às outras por meio da minha trajetória. O que começou como apoio em torno de um programa de televisão se tornou os Zeudiners, uma comunidade que permaneceu depois que as câmeras se desligaram. O que mais me toca não é apenas o alcance dessa comunidade, mas o que as pessoas escolheram fazer com essa conexão. Com o tempo, o apoio delas também se transformou em generosidade. Elas se uniram, ajudaram causas nas quais acreditavam e transformaram carinho em algo que pudesse ajudar outras pessoas. Eu nunca diria que esses gestos são meus. Eles pertencem às pessoas que doaram, organizaram e se importaram. Sou apenas grata porque alguma coisa na minha história ajudou essas pessoas a se encontrarem. Elas continuam fazendo parte da minha vida hoje. Twitch e as transmissões ao vivo nos deram um lugar diferente para nos encontrarmos, mais espontâneo e mais cotidiano. Às vezes conversamos, rimos, cozinhamos ou simplesmente passamos uma noite comum juntos. Gosto de saber que a nossa relação não terminou com um programa de televisão. Ela mudou conforme a minha vida mudou. As câmeras são diferentes agora, mas ainda sinto essa comunidade ao meu lado enquanto cresço e experimento coisas novas. É isso que torna os Zeudiners especiais para mim. Nunca pareceram apenas um público. O que começou com pessoas acompanhando a minha história se transformou em pessoas escolhendo ficar para o que veio depois."
+      },
+      {
+        "id": "chapter-6",
+        "label": "TORNAR-ME",
+        "title": "Não quero que a minha história termine no momento em que as pessoas aprenderam o meu nome.",
+        "body": "Tudo o que vivi até agora, desde Scampia, o trabalho e a universidade até Miss Italia, televisão, streaming, tatuagem e as pessoas que encontrei pelo caminho, me deu mais uma parte de mim mesma. Agora quero continuar construindo com intenção. Atuar é algo que quero levar a sério. Quero estudar, treinar e conquistar a próxima oportunidade em vez de esperar que a visibilidade me leve até ela. Sei que a atenção pode desaparecer tão rápido quanto chega. O que fica é a pessoa que você se tornou e o trabalho que fez quando ninguém estava olhando. Ainda carrego comigo a garota que viu a mãe recomeçar, o bairro que me ensinou a não aceitar os limites dos outros e o instinto de continuar me movendo mesmo quando não tenho um mapa claro. Não sei exatamente como será o próximo capítulo, e gosto disso. Quero ter liberdade suficiente para mudar, curiosidade suficiente para começar de novo e honestidade suficiente para continuar sendo eu mesma enquanto faço isso."
+      }
+    ],
+    "media": [
+      {
+        "id": "3918ebc57d4ba81d129d1e38",
+        "title": "PORTRAIT 01",
+        "alt": "Zeudi Di Palma — PORTRAIT 01",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "3918ebc57d4ba81d129d1e38-1600.webp",
+        "thumbKey": "3918ebc57d4ba81d129d1e38-320.webp",
+        "mediumKey": "3918ebc57d4ba81d129d1e38-960.webp",
+        "width": 1088,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "87890fae406c7889d50da0b6",
+        "title": "PORTRAIT 02",
+        "alt": "Zeudi Di Palma — PORTRAIT 02",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "87890fae406c7889d50da0b6-1600.webp",
+        "thumbKey": "87890fae406c7889d50da0b6-320.webp",
+        "mediumKey": "87890fae406c7889d50da0b6-960.webp",
+        "width": 1088,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "c98d09f982b59b4d7e9702a3",
+        "title": "PORTRAIT 03",
+        "alt": "Zeudi Di Palma — PORTRAIT 03",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "c98d09f982b59b4d7e9702a3-1600.webp",
+        "thumbKey": "c98d09f982b59b4d7e9702a3-320.webp",
+        "mediumKey": "c98d09f982b59b4d7e9702a3-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "dcddcfc75e5621c65488583e",
+        "title": "PORTRAIT 04",
+        "alt": "Zeudi Di Palma — PORTRAIT 04",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "dcddcfc75e5621c65488583e-1600.webp",
+        "thumbKey": "dcddcfc75e5621c65488583e-320.webp",
+        "mediumKey": "dcddcfc75e5621c65488583e-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "33fbc3022919188b2b991569",
+        "title": "PORTRAIT 05",
+        "alt": "Zeudi Di Palma — PORTRAIT 05",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "33fbc3022919188b2b991569-1600.webp",
+        "thumbKey": "33fbc3022919188b2b991569-320.webp",
+        "mediumKey": "33fbc3022919188b2b991569-960.webp",
+        "width": 1080,
+        "height": 1440,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "43dfdecda5aaead3b8533917",
+        "title": "PORTRAIT 06",
+        "alt": "Zeudi Di Palma — PORTRAIT 06",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "43dfdecda5aaead3b8533917-1600.webp",
+        "thumbKey": "43dfdecda5aaead3b8533917-320.webp",
+        "mediumKey": "43dfdecda5aaead3b8533917-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "f67407cd6dbe8c198828197f",
+        "title": "PORTRAIT 07",
+        "alt": "Zeudi Di Palma — PORTRAIT 07",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "f67407cd6dbe8c198828197f-1600.webp",
+        "thumbKey": "f67407cd6dbe8c198828197f-320.webp",
+        "mediumKey": "f67407cd6dbe8c198828197f-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "67b806e210557fce82a4f6a6",
+        "title": "PORTRAIT 08",
+        "alt": "Zeudi Di Palma — PORTRAIT 08",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "67b806e210557fce82a4f6a6-1600.webp",
+        "thumbKey": "67b806e210557fce82a4f6a6-320.webp",
+        "mediumKey": "67b806e210557fce82a4f6a6-960.webp",
+        "width": 1537,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "ca8e659a4f70c19af590ebb1",
+        "title": "PORTRAIT 09",
+        "alt": "Zeudi Di Palma — PORTRAIT 09",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "ca8e659a4f70c19af590ebb1-1600.webp",
+        "thumbKey": "ca8e659a4f70c19af590ebb1-320.webp",
+        "mediumKey": "ca8e659a4f70c19af590ebb1-960.webp",
+        "width": 1537,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "7d73639c934e9107e0b6a876",
+        "title": "PORTRAIT 10",
+        "alt": "Zeudi Di Palma — PORTRAIT 10",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "7d73639c934e9107e0b6a876-1600.webp",
+        "thumbKey": "7d73639c934e9107e0b6a876-320.webp",
+        "mediumKey": "7d73639c934e9107e0b6a876-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": true
+      },
+      {
+        "id": "1751167d38e1704557803f61",
+        "title": "PORTRAIT 11",
+        "alt": "Zeudi Di Palma — PORTRAIT 11",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "1751167d38e1704557803f61-1600.webp",
+        "thumbKey": "1751167d38e1704557803f61-320.webp",
+        "mediumKey": "1751167d38e1704557803f61-960.webp",
+        "width": 1080,
+        "height": 1350,
+        "caption": "",
+        "featured": false
+      },
+      {
+        "id": "46cbd468b4947d0da474180f",
+        "title": "PORTRAIT 12",
+        "alt": "Zeudi Di Palma — PORTRAIT 12",
+        "category": "PORTRAIT",
+        "kind": "image",
+        "key": "46cbd468b4947d0da474180f-1600.webp",
+        "thumbKey": "46cbd468b4947d0da474180f-320.webp",
+        "mediumKey": "46cbd468b4947d0da474180f-960.webp",
+        "width": 1536,
+        "height": 2048,
+        "caption": "",
+        "featured": false
+      }
+    ],
+    "products": [
+      {
+        "id": "closet-01",
+        "title": "LEATHER JACKET",
+        "description": "Uma demonstração de como uma peça minha poderia aparecer aqui, com uma nota sobre quando usei e por que estou pronta para passá-la adiante.",
+        "price": 95,
+        "size": "M",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-02",
+        "title": "PINSTRIPE BLAZER",
+        "description": "Uma peça vendida continua visível no arquivo do closet. Gosto da ideia de a página lembrar o que já encontrou uma nova casa.",
+        "price": 80,
+        "size": "S",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": true,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-03",
+        "title": "PURPLE BAG",
+        "description": "Acessórios pessoais também podem aparecer ao lado das roupas. O anúncio real pode incluir uso, medidas e uma nota minha.",
+        "price": 55,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-04",
+        "title": "SUNGLASSES",
+        "description": "Uma peça pequena e única do closet. Esses objetos mais simples ajudam a deixar a loja pessoal, e não um catálogo permanente de merch.",
+        "price": 40,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-05",
+        "title": "GREY SNEAKERS",
+        "description": "Um par vendido pode continuar no arquivo depois da compra, para o closet criar uma história das peças que passaram por ele.",
+        "price": 70,
+        "size": "EU 39",
+        "condition": "WORN",
+        "category": "closet",
+        "sold": true,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-06",
+        "title": "VINTAGE VARSITY",
+        "description": "As fotos reais podem misturar imagens limpas do produto, fotos no espelho ou imagens mais vividas, dependendo da peça.",
+        "price": 60,
+        "size": "M",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-07",
+        "title": "WORKWEAR JACKET",
+        "description": "Nem tudo precisa parecer precioso. Peças do dia a dia deixam o closet mais crível e mais próximo do que eu realmente uso.",
+        "price": 75,
+        "size": "L",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "closet-08",
+        "title": "SMALL HANDBAG",
+        "description": "Outro acessório único para mostrar como o closet pode misturar roupas, bolsas, sapatos e objetos sem virar uma loja tradicional.",
+        "price": 50,
+        "size": "ONE SIZE",
+        "condition": "PRE-OWNED",
+        "category": "closet",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-01",
+        "title": "GRAPHIC HOODIE",
+        "description": "Um drop demonstrativo de merch. Pequenas tiragens podem conviver com peças do meu closet sem transformar o espaço em uma marca de moda.",
+        "price": 55,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-02",
+        "title": "CITY HOODIE",
+        "description": "Algumas peças relacionadas podem aparecer juntas de vez em quando como uma cápsula pequena, não como uma coleção permanente.",
+        "price": 58,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-03",
+        "title": "SIGNATURE CAP",
+        "description": "Um boné simples é o tipo de drop discreto que combina com o closet: poucas unidades, útil e sem uma grande campanha em volta.",
+        "price": 28,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      },
+      {
+        "id": "drop-04",
+        "title": "ARCHIVE OBJECT",
+        "description": "Um espaço flexível para pequenos objetos: tote, print, peça assinada, chaveiro ou o que fizer sentido para um drop futuro.",
+        "price": 32,
+        "size": "",
+        "condition": "NEW",
+        "category": "drop",
+        "sold": false,
+        "mediaId": ""
+      }
+    ],
+    "shopTitle": "CLOSET DA ZEUDI.",
+    "shopIntro": "Peças do meu guarda-roupa e lançamentos ocasionais.",
+    "contactTitle": "Wannabe Management.",
+    "contactLabel": "PR & Commercial",
+    "contactEmail": "contact@wannabemgmt.com",
+    "social": [
+      {
+        "label": "Instagram",
+        "url": "https://www.instagram.com/zeudidipalma"
+      },
+      {
+        "label": "TikTok",
+        "url": "https://www.tiktok.com/@zeudidipalmaofficial"
+      },
+      {
+        "label": "YouTube",
+        "url": "https://www.youtube.com/@ZeudiDiPalmaOfficial"
+      },
+      {
+        "label": "Twitch",
+        "url": "https://www.twitch.tv/zeudidipalma01"
+      }
+    ]
+  }
+}
