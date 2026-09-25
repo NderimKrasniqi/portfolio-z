@@ -504,11 +504,26 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           <button type="button" aria-pressed={mode === "grid"} onClick={() => switchMode("grid")}>GRID</button>
         </div>
         <Sphere items={items} draft={preview} onSelect={onSelect} onReady={onReady} rotationY={handoffRotation} animate={mode === "sphere" && threeLive} />
-        <div className={`gallery-intro-assets ${mode === "grid" ? "is-grid" : "is-sphere"}${mode === "sphere" && threeLive ? " is-three" : ""}`}>
+        <div
+          className={`gallery-intro-assets absolute inset-0 z-[12] overflow-hidden pointer-events-none [perspective:980px] [transform-style:preserve-3d] ${mode === "grid" ? "is-grid" : "is-sphere"}${mode === "sphere" && threeLive ? " is-three" : ""}`}
+        >
           {items.map((item, index) => {
-            return <button key={item.id} type="button" className="gallery-intro-card" onClick={() => onSelect(index)} aria-label={`View ${item.title}`}>
-              <img src={mediaUrl(item.thumbKey, preview)} alt="" loading={index < 8 ? "eager" : "lazy"} />
-            </button>;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className="gallery-intro-card absolute left-1/2 top-1/2 aspect-[3/4] overflow-hidden bg-[#eee] opacity-0 origin-center [width:clamp(44px,3.95vw,58px)] [will-change:transform,opacity] [backface-visibility:hidden] [box-shadow:0_0_0_1px_rgba(0,0,0,0.026)]"
+                onClick={() => onSelect(index)}
+                aria-label={`View ${item.title}`}
+              >
+                <img
+                  className="block h-full w-full object-cover pointer-events-none"
+                  src={mediaUrl(item.thumbKey, preview)}
+                  alt=""
+                  loading={index < 8 ? "eager" : "lazy"}
+                />
+              </button>
+            );
           })}
         </div>
         <ol className="gallery-semantic-list" aria-label="Gallery items">{items.map((item, index) => <li key={item.id}><button type="button" onClick={() => onSelect(index)}>{item.title}</button></li>)}</ol>

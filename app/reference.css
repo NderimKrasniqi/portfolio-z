@@ -339,12 +339,8 @@
 .portfolio .gallery-space.is-dragging{cursor:default}
 .portfolio .gallery-space.is-intro{cursor:default}
 .portfolio .gallery-webgl{position:absolute;inset:0;width:100%;height:100%;display:block!important;z-index:2;outline:none;opacity:0;pointer-events:none}
-.portfolio .gallery-intro-assets{perspective:980px;transform-style:preserve-3d}
 .portfolio .gallery-intro-assets.is-sphere{pointer-events:auto}
 .portfolio .gallery-intro-assets.is-sphere .gallery-intro-card{pointer-events:auto;cursor:pointer}
-.portfolio .gallery-intro-assets{position:absolute;inset:0;z-index:12;pointer-events:none;overflow:hidden}
-.portfolio .gallery-intro-card{position:absolute;left:50%;top:50%;width:clamp(44px,3.95vw,58px);aspect-ratio:3/4;overflow:hidden;background:#eee;opacity:0;will-change:transform,opacity;transform-origin:50% 50%;box-shadow:0 0 0 1px rgba(0,0,0,.026);backface-visibility:hidden}
-.portfolio .gallery-intro-card img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
 .portfolio .gallery-panel.is-dark .gallery-intro-card{box-shadow:0 0 0 1px rgba(255,255,255,.07)}
 .portfolio .gallery-webgl-fallback{position:absolute;inset:0;z-index:2;display:none;place-items:center;font-size:8px;letter-spacing:.14em;text-transform:uppercase;opacity:.5}
 .portfolio .gallery-intro-copy{position:absolute;left:50%;top:50%;z-index:20;transform:translate(-50%,-50%);text-align:center;pointer-events:none;white-space:nowrap}
