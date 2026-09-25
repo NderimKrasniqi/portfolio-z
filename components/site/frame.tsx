@@ -10,7 +10,10 @@ import { GalleryView } from "./gallery";
 import { AboutView, ContactView, ShopView } from "./pages";
 import { socialIcons } from "./social-icons";
 import { MotionAnchor, MotionButton, NavigationProvider, SiteLink } from "./navigation";
-import { loadGsap, prefersReducedMotion } from "./motion";
+import {
+  runFrameEnterTransition,
+  runFrameExitTransition,
+} from "./frame-motion";
 
 export type Section = "home" | "gallery" | "about" | "shop" | "contact";
 
@@ -62,42 +65,16 @@ export function Frame({ content, locale, locales, shopVisible, section, preview 
   const [languageOpen, setLanguageOpen] = useState(false);
   const base = preview ? `/admin/preview/${locale}` : `/${locale}`;
   const navigate = useCallback((href: string) => {
-    if (navigationLock.current || href === window.location.pathname) return;
-    navigationLock.current = true;
-    if (prefersReducedMotion()) {
-      router.push(href);
+    if (
+      navigationLock.current ||
+      href === window.location.pathname
+    ) {
       return;
     }
-    const root = document.querySelector<HTMLElement>(".portfolio");
-    const panel = root?.querySelector<HTMLElement>(".gallery-panel.open, .about-panel.open, .shop-panel.open, .contact-panel.open");
-    const stage = root?.querySelector<HTMLElement>(".stage");
-    loadGsap().then((gsap) => {
-      if (!gsap) {
-        navigationLock.current = false;
-        router.push(href);
-        return;
-      }
-      const target = panel || stage;
-      if (!target) {
-        navigationLock.current = false;
-        router.push(href);
-        return;
-      }
-      gsap.killTweensOf(target);
-      const isAbout = panel?.classList.contains("about-panel");
-      const isContact = panel?.classList.contains("contact-panel");
-      const isShop = panel?.classList.contains("shop-panel");
-      const timeline = gsap.timeline({
-        onComplete: () => {
-          navigationLock.current = false;
-          router.push(href);
-        },
-      });
-      if (isAbout) timeline.to(target, { clipPath: "inset(0 100% 0 0)", duration: .58, ease: "power4.inOut" });
-      else if (isContact) timeline.to(target, { clipPath: "inset(100% 0 0 0)", duration: .56, ease: "power4.inOut" });
-      else if (isShop) timeline.to(target, { clipPath: "inset(0 0 0 100%)", duration: .56, ease: "power4.inOut" });
-      else timeline.to(target, { opacity: 0, duration: .36, ease: "power2.inOut" });
-    }).catch(() => {
+
+    navigationLock.current = true;
+
+    runFrameExitTransition(() => {
       navigationLock.current = false;
       router.push(href);
     });
@@ -125,53 +102,7 @@ export function Frame({ content, locale, locales, shopVisible, section, preview 
 
   useLayoutEffect(() => {
     navigationLock.current = false;
-    const root = document.querySelector<HTMLElement>(".portfolio");
-    if (!root || prefersReducedMotion()) return;
-    root.classList.add("motion-gsap");
-    let cancelled = false;
-    const panel = root.querySelector<HTMLElement>(".gallery-panel.open, .about-panel.open, .shop-panel.open, .contact-panel.open");
-    const stage = root.querySelector<HTMLElement>(".stage");
-    const target = panel || stage;
-    if (!target) return;
-    if (panel?.classList.contains("gallery-panel")) {
-      // GalleryView owns the panel and its intro cards in one timeline. Do not
-      // let this shared page transition effect kill or overwrite that timeline.
-      return;
-    }
-    loadGsap().then((gsap) => {
-      if (cancelled || !gsap) return;
-      gsap.killTweensOf(target);
-      if (panel?.classList.contains("about-panel")) {
-        gsap.set(panel, { clipPath: "inset(0 100% 0 0)" });
-        const close = panel.querySelector<HTMLElement>(".about-close");
-        const portrait = panel.querySelector<HTMLElement>(".about-portrait");
-        const intro = [...panel.querySelectorAll<HTMLElement>(".about-eyebrow,.about-copy h2,.about-lead,.about-location,.about-scroll-hint")];
-        const pieces = [...intro, close, portrait].filter((piece): piece is HTMLElement => Boolean(piece));
-        gsap.set(pieces, { opacity: 0 });
-        gsap.set(intro, { y: 14 });
-        const enter = gsap.timeline({ defaults: { overwrite: "auto" } });
-        enter
-          .to(panel, { clipPath: "inset(0 0% 0 0)", duration: .72, ease: "power4.inOut" }, 0)
-          .to(close, { opacity: 1, duration: .22, ease: "power3.out" }, .58)
-          .to(portrait, { opacity: 1, duration: .46, ease: "power2.out" }, .58)
-          .to(intro, { opacity: 1, y: 0, duration: .46, stagger: .035, ease: "power3.out" }, .62)
-          .add(() => gsap.set(intro, { clearProps: "opacity,transform" }), ">");
-      } else if (panel?.classList.contains("contact-panel")) {
-        gsap.set(panel, { clipPath: "inset(100% 0 0 0)" });
-        gsap.to(panel, { clipPath: "inset(0% 0 0 0)", duration: .64, ease: "power4.inOut" });
-      } else if (panel?.classList.contains("shop-panel")) {
-        gsap.set(panel, { clipPath: "inset(0 0 0 100%)" });
-        gsap.to(panel, { clipPath: "inset(0)", duration: .72, ease: "power4.inOut" });
-      } else if (!root.querySelector(".reference-loader")) {
-        gsap.fromTo(stage, { opacity: 0 }, { opacity: 1, duration: .58, ease: "power2.out" });
-      } else {
-        gsap.set(stage, { opacity: 1, visibility: "visible" });
-      }
-    });
-    return () => {
-      cancelled = true;
-      loadGsap().then((gsap) => gsap?.killTweensOf(target));
-    };
+    return runFrameEnterTransition();
   }, [locale, preview, section]);
 
   return (
