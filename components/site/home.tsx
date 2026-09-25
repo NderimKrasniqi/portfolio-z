@@ -7,6 +7,10 @@ import { SocialLinks } from "./frame";
 import { signatureSvg } from "./signature";
 import { SiteLink } from "./navigation";
 import { loadGsap, prefersReducedMotion } from "./motion";
+import {
+  HOME_MUSIC_VIDEO_ID,
+  useHomeMusic,
+} from "./home-music";
 import { runHomeLoaderTransition } from "./home-loader-motion";
 import { runHomeIdentityMotion } from "./home-identity-motion";
 import { useHomeFilmstrip } from "./home-filmstrip";
@@ -23,68 +27,6 @@ function identityText(value: string, keyPrefix: string) {
   });
 }
 
-type YouTubePlayerEvent = { data: number };
-type YouTubePlayer = {
-  destroy?: () => void;
-  mute?: () => void;
-  pauseVideo?: () => void;
-  playVideo?: () => void;
-  setVolume?: (volume: number) => void;
-  unMute?: () => void;
-};
-type YouTubeApi = {
-  PlayerState: { ENDED: number; PLAYING: number; PAUSED: number; CUED: number };
-  Player: new (element: HTMLIFrameElement, options: {
-    playerVars?: Record<string, number | string>;
-    events: {
-      onReady?: () => void;
-      onStateChange?: (event: YouTubePlayerEvent) => void;
-      onError?: () => void;
-      onAutoplayBlocked?: () => void;
-    };
-  }) => YouTubePlayer;
-};
-type YouTubeWindow = Window & {
-  YT?: YouTubeApi;
-  onYouTubeIframeAPIReady?: () => void;
-};
-
-let youTubeApiPromise: Promise<void> | null = null;
-const MUSIC_VIDEO_ID = "qBrgKLPYoNM";
-
-function loadYouTubeApi() {
-  if (typeof window === "undefined") return Promise.reject(new Error("YouTube is browser-only"));
-  const youtubeWindow = window as YouTubeWindow;
-  if (youtubeWindow.YT?.Player) return Promise.resolve();
-  if (youTubeApiPromise) return youTubeApiPromise;
-  youTubeApiPromise = new Promise<void>((resolve, reject) => {
-    let settled = false;
-    let timeout = 0;
-    const finish = (error?: Error) => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timeout);
-      if (error) reject(error); else resolve();
-    };
-    const previous = youtubeWindow.onYouTubeIframeAPIReady;
-    youtubeWindow.onYouTubeIframeAPIReady = () => {
-      try { previous?.(); } catch { /* another consumer owns its callback */ }
-      finish();
-    };
-    const existing = document.querySelector<HTMLScriptElement>("script[data-zeudi-youtube-api]");
-    const script = existing || document.createElement("script");
-    if (!existing) {
-      script.src = "https://www.youtube.com/iframe_api";
-      script.async = true;
-      script.dataset.zeudiYoutubeApi = "1";
-      document.head.appendChild(script);
-    }
-    script.addEventListener("error", () => finish(new Error("YouTube API failed to load")), { once: true });
-    timeout = window.setTimeout(() => finish(new Error("YouTube API timed out")), 8000);
-  });
-  return youTubeApiPromise;
-}
-
 export function HomeView({ content, base, active, shopVisible, preview = false }: {
   content: Content;
   base: string;
@@ -98,8 +40,6 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
   const previous = selection.previous;
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(active);
-  const [musicOpen, setMusicOpen] = useState(false);
-  const [musicPlaying, setMusicPlaying] = useState(false);
   const [mediaGeometry, setMediaGeometry] = useState<{ width: number; height: number; top: number }>();
   const stage = useRef<HTMLElement>(null);
   const loader = useRef<HTMLDivElement>(null);
@@ -109,9 +49,6 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
   const backMedia = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const marker = useRef<HTMLSpanElement>(null);
-  const musicFrame = useRef<HTMLIFrameElement>(null);
-  const musicPlayer = useRef<YouTubePlayer | null>(null);
-  const musicPlayingRef = useRef(false);
   const countNow = useRef<HTMLSpanElement>(null);
   const progressDot = useRef<HTMLSpanElement>(null);
   const lastWheel = useRef(0);
@@ -138,119 +75,14 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
   }, [currentItem, previous, previousItem]);
   const [firstName, restName] = displayName(content.name);
 
-  useEffect(() => {
-    musicPlayingRef.current = musicPlaying;
-  }, [musicPlaying]);
+  const {
+    musicOpen,
+    musicPlaying,
+    musicFrame,
+    toggleMusic,
+    handleMusicFrameLoad,
+  } = useHomeMusic(active);
 
-  const sendMusicCommand = useCallback((func: "playVideo" | "pauseVideo" | "unMute") => {
-    const frame = musicFrame.current;
-    if (!frame?.contentWindow) return;
-    frame.contentWindow.postMessage(JSON.stringify({ event: "command", func, args: [] }), "https://www.youtube.com");
-  }, []);
-  const toggleMusic = useCallback(() => {
-    if (!musicOpen) {
-      setMusicOpen(true);
-      setMusicPlaying(true);
-      return;
-    }
-    const next = !musicPlaying;
-    setMusicPlaying(next);
-    if (!next) setMusicOpen(false);
-    if (next) {
-      musicPlayer.current?.setVolume?.(64);
-      musicPlayer.current?.unMute?.();
-      musicPlayer.current?.playVideo?.();
-      sendMusicCommand("unMute");
-    }
-    sendMusicCommand(next ? "playVideo" : "pauseVideo");
-  }, [musicOpen, musicPlaying, sendMusicCommand]);
-  const handleMusicFrameLoad = useCallback(() => {
-    sendMusicCommand(musicPlaying ? "playVideo" : "pauseVideo");
-  }, [musicPlaying, sendMusicCommand]);
-
-  useEffect(() => {
-    if (!musicOpen) {
-      musicPlayer.current?.pauseVideo?.();
-      musicPlayer.current?.destroy?.();
-      musicPlayer.current = null;
-      return;
-    }
-
-    let cancelled = false;
-    const frame = musicFrame.current;
-    if (!frame) return;
-
-    loadYouTubeApi().then(() => {
-      const youtubeWindow = window as YouTubeWindow;
-      if (cancelled || !frame || !youtubeWindow.YT?.Player) return;
-      const states = youtubeWindow.YT.PlayerState;
-      try {
-        const player = new youtubeWindow.YT.Player(frame, {
-          playerVars: {
-            autoplay: 1,
-            controls: 0,
-            fs: 0,
-            loop: 1,
-            origin: window.location.origin,
-            playlist: MUSIC_VIDEO_ID,
-            playsinline: 1,
-            rel: 0,
-          },
-          events: {
-            onReady: () => {
-              if (cancelled) return;
-              player.setVolume?.(64);
-              player.unMute?.();
-              if (musicPlayingRef.current) player.playVideo?.();
-            },
-            onStateChange: (event) => {
-              if (cancelled) return;
-              if (event.data === states.PLAYING) {
-                setMusicPlaying(true);
-                return;
-              }
-              if (event.data === states.ENDED) {
-                if (musicPlayingRef.current) player.playVideo?.();
-                return;
-              }
-              if (event.data === states.PAUSED || event.data === states.CUED) setMusicPlaying(false);
-            },
-            onAutoplayBlocked: () => {
-              if (cancelled) return;
-              setMusicPlaying(false);
-              // Keep the provider mounted off-canvas so the next speaker click
-              // can retry playback with a fresh user gesture.
-            },
-            onError: () => {
-              if (cancelled) return;
-              setMusicPlaying(false);
-              setMusicOpen(false);
-            },
-          },
-        });
-        musicPlayer.current = player;
-      } catch {
-        // The iframe can still use its autoplay URL if the API cannot attach.
-      }
-    }).catch(() => {
-      // Keep the hidden iframe available as a fallback when the API script is blocked.
-    });
-
-    return () => {
-      cancelled = true;
-      musicPlayer.current?.destroy?.();
-      musicPlayer.current = null;
-    };
-  }, [musicOpen]);
-
-  useEffect(() => {
-    if (!active) {
-      queueMicrotask(() => {
-        setMusicOpen(false);
-        setMusicPlaying(false);
-      });
-    }
-  }, [active]);
 
   const measureMediaGeometry = useCallback((item: Content["media"][number]) => {
     const strip = track.current;
@@ -287,110 +119,18 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
   const step = useCallback((amount: number) => select(activeIndex.current + amount), [select]);
 
   useLayoutEffect(() => {
-    const stageElement = stage.current;
-    const loaderElement = loader.current;
-    if (!active || preview || !loaderElement || !stageElement || sessionStorage.getItem("zeudi-loader-seen") || prefersReducedMotion()) {
-      if (active && stageElement) {
-        stageElement.style.visibility = "visible";
-        stageElement.style.opacity = "1";
-      }
-      queueMicrotask(() => setLoading(false));
-      return;
-    }
-
-    let cancelled = false;
-    const front = frontMedia.current;
-    const mediaElement = media.current;
-    const pathElements = [...loaderElement.querySelectorAll<SVGPathElement>("path")];
-    const visual = front?.querySelector<HTMLImageElement | HTMLVideoElement>("img,video");
-    const mediaReady = (async () => {
-      if (!visual) return;
-      if (visual instanceof HTMLImageElement) {
-        if (!visual.complete) await new Promise<void>((resolve) => {
-          visual.addEventListener("load", () => resolve(), { once: true });
-          visual.addEventListener("error", () => resolve(), { once: true });
-        });
-        try { await visual.decode?.(); } catch { /* an already painted image is still usable */ }
-      } else if (visual.readyState < 2) {
-        await new Promise<void>((resolve) => {
-          visual.addEventListener("loadeddata", () => resolve(), { once: true });
-          visual.addEventListener("error", () => resolve(), { once: true });
-        });
-      }
-    })();
-
-    const finishWithoutGsap = async () => {
-      await mediaReady;
-      if (cancelled) return;
-      stageElement.style.visibility = "visible";
-      stageElement.style.opacity = "1";
-      if (media.current) media.current.style.visibility = "visible";
-      sessionStorage.setItem("zeudi-loader-seen", "1");
-      setLoading(false);
-    };
-
-    loadGsap().then(async (gsap) => {
-      if (cancelled) return;
-      if (!gsap) {
-        await finishWithoutGsap();
-        return;
-      }
-
-      const introUi = [...stageElement.querySelectorAll<HTMLElement>(
-        ".identity,.desktop-main-nav,.mobile-menu-toggle,.meta,.socials,.browse,.filmstrip",
-      )];
-      gsap.killTweensOf([stageElement, loaderElement, mediaElement, ...introUi, ...pathElements].filter(Boolean));
-      gsap.set(stageElement, { visibility: "visible", opacity: 1 });
-      gsap.set(introUi, { opacity: 0 });
-      gsap.set(mediaElement, { visibility: "hidden", opacity: 0 });
-      pathElements.forEach((path) => {
-        const length = path.getTotalLength();
-        gsap.set(path, {
-          opacity: 0,
-          strokeDasharray: `${length} ${length + 24}`,
-          strokeDashoffset: length + 12,
-          strokeLinecap: "round",
-        });
-      });
-
-      const write = gsap.timeline({ delay: .26 });
-      write.set(loaderElement.querySelector(".loader__signature-wrap"), { autoAlpha: 1 }, 0);
-      pathElements.forEach((path) => {
-        const start = Number(path.dataset.delay || 0) * .72;
-        write.set(path, { opacity: 1 }, start)
-          .to(path, {
-            strokeDashoffset: 0,
-            duration: Number(path.dataset.duration || .5) * .72,
-            ease: "none",
-          }, start);
-      });
-      await new Promise<void>((resolve) => write.eventCallback("onComplete", resolve));
-      await mediaReady;
-      if (cancelled) return;
-
-      gsap.set(mediaElement, { visibility: "visible", opacity: 0 });
-      const reveal = gsap.timeline({ defaults: { overwrite: "auto" } });
-      reveal
-        .to(loaderElement.querySelector(".loader__signature"), { opacity: 0, duration: .26, ease: "power1.inOut" }, 0)
-        .to(loaderElement, { opacity: 0, duration: .58, ease: "power2.inOut" }, .04)
-        .to(mediaElement, { opacity: 1, duration: .62, ease: "power2.out" }, .10)
-        .to(introUi, { opacity: 1, duration: .46, stagger: .045, ease: "power2.out" }, .16);
-      await new Promise<void>((resolve) => reveal.eventCallback("onComplete", resolve));
-      if (cancelled) return;
-
-      gsap.set(introUi, { clearProps: "opacity" });
-      gsap.set(mediaElement, { clearProps: "opacity" });
-      sessionStorage.setItem("zeudi-loader-seen", "1");
-      setLoading(false);
-    }).catch(() => { void finishWithoutGsap(); });
-
-    return () => {
-      cancelled = true;
-      loadGsap().then((gsap) => gsap?.killTweensOf([stageElement, loaderElement, mediaElement, ...pathElements].filter(Boolean)));
-    };
+    return runHomeLoaderTransition({
+      active,
+      preview,
+      stage: stage.current,
+      loader: loader.current,
+      media: media.current,
+      front: frontMedia.current,
+      onDone: () => setLoading(false),
+    });
   }, [active, preview]);
 
-    useLayoutEffect(() => {
+  useLayoutEffect(() => {
     return runHomeIdentityMotion({
       active,
       preview,
@@ -745,7 +485,7 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
           <path className="music-wave" d="M14 9a3 3 0 0 1 0 6" />
           <path className="music-slash" d="M3.4 3.5l17.2 17" />
         </svg></button>
-        <div id="homeMusicPlayer" className={`home-music-player home-music-frame${musicOpen ? " is-open" : ""}`} aria-hidden={!musicOpen}>{musicOpen && <iframe ref={musicFrame} title="Ludovico Einaudi — Nuvole Bianche" src={`https://www.youtube.com/embed/${MUSIC_VIDEO_ID}?enablejsapi=1&autoplay=1&controls=0&playsinline=1&loop=1&playlist=${MUSIC_VIDEO_ID}&rel=0&fs=0&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" onLoad={handleMusicFrameLoad} />}</div>
+        <div id="homeMusicPlayer" className={`home-music-player home-music-frame${musicOpen ? " is-open" : ""}`} aria-hidden={!musicOpen}>{musicOpen && <iframe ref={musicFrame} title="Ludovico Einaudi — Nuvole Bianche" src={`https://www.youtube.com/embed/${HOME_MUSIC_VIDEO_ID}?enablejsapi=1&autoplay=1&controls=0&playsinline=1&loop=1&playlist=${HOME_MUSIC_VIDEO_ID}&rel=0&fs=0&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" onLoad={handleMusicFrameLoad} />}</div>
       </>}
     </>
   );
