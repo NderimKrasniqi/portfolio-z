@@ -4,50 +4,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Media } from "@/lib/model";
 import { mediaUrl } from "./media";
-
-const CAMERA_FOV = 42;
-const CAMERA_Z = 9.25;
-const CARD_WIDTH_FACTORS = [.96, 1.04, .99, 1.07, 1.01, .93, 1.05, .98, .95, 1.03, .97, 1];
-
-function sphereUnits(count: number) {
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  return Array.from({ length: Math.max(1, count) }, (_, index) => {
-    let y = 1 - 2 * ((index + .5) / count);
-    const ring = Math.sqrt(Math.max(0, 1 - y * y));
-    const theta = index * golden + .58;
-    let x = Math.cos(theta) * ring;
-    let z = Math.sin(theta) * ring;
-    const cy = Math.cos(.22), sy = Math.sin(.22);
-    const x1 = x * cy + z * sy;
-    const z1 = -x * sy + z * cy;
-    const cx = Math.cos(-.10), sx = Math.sin(-.10);
-    const y1 = y * cx - z1 * sx;
-    const z2 = y * sx + z1 * cx;
-    const length = Math.hypot(x1, y1, z2) || 1;
-    x = x1 / length;
-    y = y1 / length;
-    z = z2 / length;
-    return { x, y, z };
-  });
-}
-
-function targetCardPx(index: number, width: number) {
-  const base = Math.min(58, Math.max(44, width * .0395));
-  return base * CARD_WIDTH_FACTORS[index % CARD_WIDTH_FACTORS.length] * (width <= 800 ? .9 : 1);
-}
-
-function focalPx(height: number) {
-  return height / (2 * Math.tan((CAMERA_FOV * Math.PI / 180) / 2));
-}
-
-function roomScale(width: number, height: number) {
-  const mobile = width <= 800;
-  const radiusPx = mobile
-    ? Math.min(190, width * .37, height * .235)
-    : Math.min(255, width * .18, height * .285);
-  const radius = radiusPx * CAMERA_Z / focalPx(height);
-  return { x: radius, y: radius, z: radius * 1.075 };
-}
+import {
+  CAMERA_FOV,
+  CAMERA_Z,
+  focalPx,
+  roomScale,
+  sphereUnits,
+  targetCardPx,
+} from "./gallery-geometry";
 
 export default function Sphere({ items, draft = false, onSelect, onReady, rotationY = 0, animate = false }: {
   items: Media[];

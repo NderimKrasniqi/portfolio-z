@@ -7,37 +7,36 @@ import { mediaUrl } from "./media";
 import { BackButton, SocialLinks } from "./frame";
 import { SiteLink } from "./navigation";
 import { loadGsap, prefersReducedMotion } from "./motion";
+import {
+  CARD_WIDTH_FACTORS,
+  projectSpherePoint,
+  sphereUnits,
+} from "./gallery-geometry";
 
 const Sphere = dynamic(() => import("./sphere"), { ssr: false });
 const pad = (value: number) => String(value).padStart(2, "0");
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-const CARD_WIDTH_FACTORS = [.96, 1.04, .99, 1.07, 1.01, .93, 1.05, .98, .95, 1.03, .97, 1];
 const smoother = (value: number) => {
   const t = clamp(value, 0, 1);
   return t * t * t * (t * (t * 6 - 15) + 10);
 };
 
-function sphereUnits(count: number) {
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  return Array.from({ length: Math.max(1, count) }, (_, index) => {
-    const y = 1 - 2 * ((index + .5) / count);
-    const ring = Math.sqrt(Math.max(0, 1 - y * y));
-    const theta = index * golden + .58;
-    let x = Math.cos(theta) * ring;
-    const z = Math.sin(theta) * ring;
-    const cy = Math.cos(.22), sy = Math.sin(.22);
-    const x1 = x * cy + z * sy;
-    const z1 = -x * sy + z * cy;
-    const cx = Math.cos(-.10), sx = Math.sin(-.10);
-    const y1 = y * cx - z1 * sx;
-    const z2 = y * sx + z1 * cx;
-    const length = Math.hypot(x1, y1, z2) || 1;
-    x = x1 / length;
-    return { x, y: y1 / length, z: z2 / length };
-  });
-}
+type CardSnapshot = {
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+  zIndex: number;
+  width: number;
+};
 
-type CardSnapshot = { x: number; y: number; scale: number; rotation: number; zIndex: number; width: number };
+type GalleryPhase =
+  | "opening"
+  | "sphere-waiting"
+  | "sphere"
+  | "to-grid"
+  | "grid"
+  | "to-sphere";
 
 export function GalleryView({ content, preview = false, base, onBack }: {
   content: Content;
@@ -46,38 +45,79 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   onBack: () => void;
 }) {
   const items = useMemo(() => content.media, [content.media]);
-  const [mode, setMode] = useState<"sphere" | "grid">("sphere");
+  const [phase, setPhase] = useState<GalleryPhase>("opening");
+  const phaseRef = useRef<GalleryPhase>("opening");
+
   const [focused, setFocused] = useState<number | null>(null);
   const [focusClosing, setFocusClosing] = useState(false);
-  const [intro, setIntro] = useState(true);
-  const [opening, setOpening] = useState(true);
   const [threeReady, setThreeReady] = useState(false);
   const [threeSettled, setThreeSettled] = useState(false);
-  const [threeLive, setThreeLive] = useState(false);
   const [handoffRotation, setHandoffRotation] = useState(0);
+
   const introPlayed = useRef(false);
-  const modeTransitioning = useRef(false);
   const sphereSnapshot = useRef<CardSnapshot[]>([]);
+
+  const setGalleryPhase = useCallback((next: GalleryPhase) => {
+    phaseRef.current = next;
+    setPhase(next);
+  }, []);
+
+  const mode: "sphere" | "grid" =
+    phase === "grid" || phase === "to-grid"
+      ? "grid"
+      : "sphere";
+
+  const opening = phase === "opening";
+
+  const intro =
+    phase === "opening" ||
+    phase === "to-sphere";
+
+  const threeLive = phase === "sphere";
   const onSelect = useCallback((index: number) => {
-    if (modeTransitioning.current || (mode === "sphere" && intro)) return;
+    const current = phaseRef.current;
+
+    if (
+      current === "opening" ||
+      current === "to-grid" ||
+      current === "to-sphere"
+    ) {
+      return;
+    }
+
     setFocused(index);
-  }, [intro, mode]);
+  }, []);
   const onReady = useCallback((ready: boolean) => {
     setThreeReady(ready);
     setThreeSettled(true);
   }, []);
   useEffect(() => {
-    if (mode !== "sphere" || intro || opening || !threeReady) return;
-    const frame = requestAnimationFrame(() => setThreeLive(true));
+    if (phase !== "sphere-waiting" || !threeReady) return;
+
+    const frame = requestAnimationFrame(() => {
+      setGalleryPhase("sphere");
+    });
+
     return () => cancelAnimationFrame(frame);
-  }, [intro, mode, opening, threeReady]);
+  }, [phase, threeReady, setGalleryPhase]);
   const switchMode = useCallback((next: "sphere" | "grid") => {
-    if (next === mode || modeTransitioning.current) return;
-    setThreeLive(false);
-    setOpening(false);
-    setIntro(next === "sphere");
-    setMode(next);
-  }, [mode]);
+    const current = phaseRef.current;
+
+    if (
+      next === mode ||
+      current === "opening" ||
+      current === "to-grid" ||
+      current === "to-sphere"
+    ) {
+      return;
+    }
+
+    setGalleryPhase(
+      next === "grid"
+        ? "to-grid"
+        : "to-sphere",
+    );
+  }, [mode, setGalleryPhase]);
   const dismissFocus = useCallback(() => {
     if (focused === null || focusClosing) return;
     setFocusClosing(true);
@@ -221,7 +261,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       };
 
       if (mode === "grid") {
-        modeTransitioning.current = true;
         window.addEventListener("resize", handleResize);
         removeResize = () => window.removeEventListener("resize", handleResize);
         const snapshot = captureSnapshot();
@@ -235,7 +274,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         if (reduced) {
           assets.classList.remove("is-grid-transition");
           applyGridLayout();
-          modeTransitioning.current = false;
+          setGalleryPhase("grid");
           return;
         }
         const gridTimeline = gsap.timeline({
@@ -243,7 +282,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           onComplete: () => {
             assets.classList.remove("is-grid-transition");
             applyGridLayout();
-            modeTransitioning.current = false;
+            setGalleryPhase("grid");
           },
         });
         timeline = gridTimeline;
@@ -252,7 +291,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       }
 
       if (introPlayed.current) {
-        modeTransitioning.current = true;
         const snapshot = sphereSnapshot.current.length === cards.length ? sphereSnapshot.current : captureSnapshot();
         const { targetW } = gridMetrics();
         gsap.set(copy, { opacity: 0 });
@@ -267,8 +305,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         if (prefersReducedMotion()) {
           snapshot.forEach((target, index) => gsap.set(cards[index], { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation, zIndex: target.zIndex }));
           sphereSnapshot.current = [];
-          modeTransitioning.current = false;
-          setIntro(false);
+          setGalleryPhase("sphere-waiting");
           return;
         }
         const sphereTimeline = gsap.timeline({
@@ -281,8 +318,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
               gsap.set(card, { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation, zIndex: target.zIndex });
             });
             sphereSnapshot.current = [];
-            modeTransitioning.current = false;
-            setIntro(false);
+            setGalleryPhase("sphere-waiting");
           },
         });
         timeline = sphereTimeline;
@@ -291,36 +327,25 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       }
 
       introPlayed.current = true;
-      modeTransitioning.current = true;
 
       const width = window.innerWidth;
       const height = window.innerHeight;
       const mobile = width <= 800;
       const rx = mobile ? Math.min(150, width * .335, height * .19) : Math.min(width * .190, 260);
       const ry = mobile ? rx : Math.min(height * .300, 258);
-      const sphereRadius = mobile ? Math.min(190, width * .37, height * .235) : Math.min(255, width * .18, height * .285);
-      const focal = height / (2 * Math.tan((42 * Math.PI / 180) / 2));
-      const worldRadius = sphereRadius * 9.25 / focal;
       const units = sphereUnits(cards.length);
-      const targetAt = (index: number, yRotation: number) => {
-        const unit = units[index];
-        const sinY = Math.sin(yRotation), cosY = Math.cos(yRotation);
-        const x1 = unit.x * worldRadius * cosY + unit.z * worldRadius * 1.075 * sinY;
-        const z1 = -unit.x * worldRadius * sinY + unit.z * worldRadius * 1.075 * cosY;
-        const tilt = -.055;
-        const sinTilt = Math.sin(tilt), cosTilt = Math.cos(tilt);
-        const y2 = unit.y * worldRadius * cosTilt - z1 * sinTilt;
-        const z2 = unit.y * worldRadius * sinTilt + z1 * cosTilt;
-        const depth = Math.max(.9, 9.25 - z2);
-        const projection = focal / depth;
-        const depthScale = .96 + (((z2 / (worldRadius * 1.075) + 1) / 2) * .08);
-        return {
-          x: x1 * projection,
-          y: -y2 * projection,
-          scale: 9.25 / depth * depthScale,
-          zIndex: 100 + Math.round(((z2 / (worldRadius * 1.075) + 1) / 2) * 100),
-        };
-      };
+
+      const targetAt = (
+        index: number,
+        yRotation: number,
+      ) =>
+        projectSpherePoint(
+          units[index],
+          yRotation,
+          width,
+          height,
+        );
+
       const baseAngles = cards.map((_, index) => -Math.PI * .51 + (index / cards.length) * Math.PI * 2);
       const order = [...cards.keys()].sort((a, b) => baseAngles[a] - baseAngles[b]);
       const rank = new Map(order.map((index, position) => [index, position]));
@@ -424,9 +449,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         if (panel) gsap.set(panel, { opacity: 1 });
         gsap.set(copy, { opacity: 0 });
         gsap.set(count, { opacity: 0 });
-        modeTransitioning.current = false;
-        setOpening(false);
-        setIntro(false);
+        setGalleryPhase("sphere-waiting");
         return;
       }
 
@@ -442,9 +465,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         gsap.set(count, { opacity: 0 });
         assets.classList.add("is-sphere");
         sphereSnapshot.current = captureSnapshot();
-        modeTransitioning.current = false;
-        setOpening(false);
-        setIntro(false);
+        setGalleryPhase("sphere-waiting");
       } });
       timeline = introTimeline;
       introTimeline.to(panel, { opacity: 1, duration: .42, ease: "power2.out" }, 0);
@@ -457,7 +478,13 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   }, [items.length, mode, threeSettled]);
   const selected = focused === null ? null : items[focused];
   return (
-    <section id="galleryPanel" className={`gallery-panel open is-ready${opening ? " is-opening" : ""}${mode === "sphere" && threeLive ? " is-three-live" : ""}${mode === "grid" ? " is-grid-mode" : ""}`} role="dialog" aria-modal="true" aria-label="Gallery">
+    <section
+      id="galleryPanel"
+      className={`gallery-panel open is-ready fixed inset-0 z-[3250] isolate visible overflow-hidden bg-white text-[#080808] opacity-100 pointer-events-auto${opening ? " is-opening" : ""}${mode === "sphere" && threeLive ? " is-three-live" : ""}${mode === "grid" ? " is-grid-mode" : ""}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Gallery"
+    >
       <BackButton className="gallery-back" onBack={onBack} />
       <header className="gallery-head gallery-head--zeudi">
         <SocialLinks content={content} className="gallery-socials" />
@@ -467,7 +494,10 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           <SiteLink className="gallery-link" href={`${base}/contact`}>{content.nav.contact}</SiteLink>
         </nav>
       </header>
-      <main id="main" className="gallery-space">
+      <main
+        id="main"
+        className="gallery-space absolute inset-0 h-dvh min-h-dvh overflow-hidden bg-[var(--gallery-bg)] cursor-default select-none touch-none overscroll-none"
+      >
         <div id="galleryViewToggle" className="gallery-view-toggle" aria-label="Gallery view">
           <button type="button" aria-pressed={mode === "sphere"} onClick={() => switchMode("sphere")}>SPHERE</button>
           <span aria-hidden="true">/</span>
