@@ -1,5 +1,6 @@
 import {
   CARD_WIDTH_FACTORS,
+  projectSpherePoint,
   projectThreeSpherePoint,
   sphereUnits,
 } from "./gallery-geometry";
@@ -422,6 +423,650 @@ export function runGridToSphereTransition({
       0,
     );
   });
+
+  return timeline;
+}
+
+
+export function captureCardSnapshot(
+  gsap: Gsap,
+  cards: HTMLElement[],
+): CardSnapshot[] {
+  return cards.map((card) => ({
+    x:
+      Number(gsap.getProperty(card, "x")) ||
+      0,
+    y:
+      Number(gsap.getProperty(card, "y")) ||
+      0,
+    scale:
+      Number(gsap.getProperty(card, "scaleX")) ||
+      1,
+    rotation:
+      Number(gsap.getProperty(card, "rotation")) ||
+      0,
+    zIndex:
+      Number.parseInt(card.style.zIndex, 10) ||
+      1,
+    width: currentCardWidth(card),
+  }));
+}
+
+export function runGalleryIntroTransition({
+  gsap,
+  cards,
+  assets,
+  panel,
+  copy,
+  count,
+  reduced,
+  onComplete,
+}: {
+  gsap: Gsap;
+  cards: HTMLElement[];
+  assets: HTMLElement;
+  panel: HTMLElement | null;
+  copy: HTMLElement | null;
+  count: HTMLElement | null;
+  reduced: boolean;
+  onComplete: (result: {
+    handoffRotation: number;
+    snapshot: CardSnapshot[] | null;
+  }) => void;
+}) {
+  if (panel) {
+    gsap.set(panel, {
+      opacity: 0,
+      visibility: "visible",
+    });
+  }
+
+  if (copy) {
+    gsap.set(copy, { opacity: 0 });
+  }
+
+  const mediaReady = { value: false };
+
+  void Promise.all(
+    cards.map((card) => {
+      const image =
+        card.querySelector<HTMLImageElement>("img");
+
+      if (!image || image.complete) {
+        return (
+          image
+            ?.decode?.()
+            .catch(() => undefined) ??
+          Promise.resolve()
+        );
+      }
+
+      return new Promise<void>((resolve) => {
+        const done = () => resolve();
+
+        image.addEventListener(
+          "load",
+          done,
+          { once: true },
+        );
+
+        image.addEventListener(
+          "error",
+          done,
+          { once: true },
+        );
+      });
+    }),
+  ).then(() => {
+    mediaReady.value = true;
+  });
+
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const mobile = width <= 800;
+
+  const rx = mobile
+    ? Math.min(
+        150,
+        width * 0.335,
+        height * 0.19,
+      )
+    : Math.min(width * 0.19, 260);
+
+  const ry = mobile
+    ? rx
+    : Math.min(height * 0.3, 258);
+
+  const units = sphereUnits(cards.length);
+
+  const targetAt = (
+    index: number,
+    yRotation: number,
+  ) =>
+    projectSpherePoint(
+      units[index],
+      yRotation,
+      width,
+      height,
+    );
+
+  const baseAngles = cards.map(
+    (_, index) =>
+      -Math.PI * 0.51 +
+      (index / cards.length) *
+        Math.PI *
+        2,
+  );
+
+  const order = [...cards.keys()].sort(
+    (a, b) =>
+      baseAngles[a] - baseAngles[b],
+  );
+
+  const rank = new Map(
+    order.map((index, position) => [
+      index,
+      position,
+    ]),
+  );
+
+  const state = { progress: 0 };
+
+  const flowStart = 0.36;
+  const flowDuration = 7.35;
+  const revealEnd = 0.385;
+  const collapseStart = 0.405;
+  const stackLock = 0.735;
+  const burstStart = 0.815;
+
+  const heroIndex = Math.min(
+    6,
+    cards.length - 1,
+  );
+
+  const introRadial = [
+    0.94,
+    1.04,
+    0.9,
+    1.02,
+    0.97,
+    1.08,
+    0.92,
+    1,
+    1.05,
+    0.91,
+    1.01,
+    0.96,
+  ];
+
+  const angularVelocityAt = (
+    value: number,
+  ) => {
+    const revealSpeed = 0.085;
+    const collapseSpeed = 4.15;
+    const deckSpeed = 1.15;
+
+    const first = smoother(
+      (value - 0.315) / 0.355,
+    );
+
+    const second = smoother(
+      (value - 0.69) / 0.145,
+    );
+
+    const third = smoother(
+      (value - 0.825) / 0.175,
+    );
+
+    let speed =
+      revealSpeed +
+      (collapseSpeed - revealSpeed) *
+        first;
+
+    speed +=
+      (deckSpeed - collapseSpeed) *
+      second;
+
+    speed +=
+      (0.13 - deckSpeed) *
+      third;
+
+    return speed;
+  };
+
+  const angleSteps = 1200;
+
+  const angleLut = new Float64Array(
+    angleSteps + 1,
+  );
+
+  for (
+    let index = 1;
+    index <= angleSteps;
+    index += 1
+  ) {
+    const previous =
+      (index - 1) / angleSteps;
+
+    const current =
+      index / angleSteps;
+
+    angleLut[index] =
+      angleLut[index - 1] +
+      ((angularVelocityAt(previous) +
+        angularVelocityAt(current)) *
+        0.5) *
+        (flowDuration / angleSteps);
+  }
+
+  const angleAt = (value: number) => {
+    const position =
+      clamp(value, 0, 1) *
+      angleSteps;
+
+    const index = Math.min(
+      angleSteps - 1,
+      Math.floor(position),
+    );
+
+    const fraction =
+      position - index;
+
+    return (
+      angleLut[index] +
+      (angleLut[index + 1] -
+        angleLut[index]) *
+        fraction
+    );
+  };
+
+  const renderFlow = () => {
+    const progress = clamp(
+      state.progress,
+      0,
+      1,
+    );
+
+    const sharedAngle =
+      angleAt(progress);
+
+    const collapse = smoother(
+      (progress - collapseStart) /
+        (stackLock - collapseStart),
+    );
+
+    const orbitRadius = 1 - collapse;
+
+    const holdPhase = clamp(
+      (progress - stackLock) /
+        (burstStart - stackLock),
+      0,
+      1,
+    );
+
+    const holdEnvelope =
+      collapse *
+      (1 -
+        smoother(
+          (progress - burstStart) /
+            0.055,
+        ));
+
+    const compression =
+      Math.sin(holdPhase * Math.PI) *
+      0.045 *
+      holdEnvelope;
+
+    const sphereEase = smoother(
+      (progress - burstStart) /
+        (1 - burstStart),
+    );
+
+    const sphereSpread =
+      sphereEase +
+      Math.sin(sphereEase * Math.PI) *
+        0.075;
+
+    cards.forEach((card, index) => {
+      const cardRank =
+        rank.get(index) ?? index;
+
+      const revealSpan =
+        revealEnd * 0.91;
+
+      const revealStart =
+        cards.length <= 1
+          ? 0
+          : (cardRank /
+              (cards.length - 1)) *
+            revealSpan;
+
+      const appear = mediaReady.value
+        ? smoother(
+            (progress - revealStart) /
+              0.092,
+          )
+        : 0;
+
+      const angle =
+        baseAngles[index] +
+        sharedAngle;
+
+      const radial =
+        introRadial[
+          index % introRadial.length
+        ];
+
+      const ringX =
+        Math.cos(angle) *
+        rx *
+        radial *
+        orbitRadius;
+
+      const ringY =
+        Math.sin(angle) *
+        ry *
+        radial *
+        orbitRadius;
+
+      const stableX =
+        cardRank === 0
+          ? 0
+          : ((cardRank % 5) - 2) *
+            0.42;
+
+      const stableY =
+        cardRank === 0
+          ? 0
+          : Math.min(cardRank, 12) *
+            0.21;
+
+      const stableTwist =
+        cardRank === 0
+          ? 0
+          : (cardRank % 2 ? 1 : -1) *
+            (0.28 +
+              Math.min(cardRank, 10) *
+                0.028);
+
+      const deckAngle =
+        sharedAngle * 0.34;
+
+      const cosDeck =
+        Math.cos(deckAngle);
+
+      const sinDeck =
+        Math.sin(deckAngle);
+
+      const deckX =
+        (stableX * cosDeck -
+          stableY * sinDeck) *
+        collapse;
+
+      const deckY =
+        (stableX * sinDeck +
+          stableY * cosDeck) *
+        collapse;
+
+      const deckDrift =
+        cardRank === 0
+          ? 0
+          : (0.2 +
+              Math.min(cardRank, 10) *
+                0.012) *
+            holdEnvelope;
+
+      const driftX =
+        Math.cos(
+          sharedAngle +
+            cardRank * 0.57,
+        ) * deckDrift;
+
+      const driftY =
+        Math.sin(
+          sharedAngle * 0.94 +
+            cardRank * 0.43,
+        ) * deckDrift;
+
+      const squeeze =
+        1 - compression;
+
+      const stackX =
+        (deckX + driftX) *
+        squeeze *
+        (1 - sphereEase);
+
+      const stackY =
+        (deckY + driftY) *
+        squeeze *
+        (1 - sphereEase);
+
+      const stackTwist =
+        (stableTwist * collapse +
+          Math.sin(
+            sharedAngle +
+              cardRank * 0.31,
+          ) *
+            0.26 *
+            holdEnvelope) *
+        (1 - sphereEase);
+
+      const target = targetAt(
+        index,
+        sharedAngle,
+      );
+
+      const baseScale =
+        0.88 + 0.12 * appear;
+
+      const deckScale =
+        1 +
+        collapse *
+          (cardRank === 0
+            ? 0.043
+            : 0.017) -
+        compression * 0.34;
+
+      const burstPulse =
+        1 +
+        Math.sin(
+          sphereEase * Math.PI,
+        ) *
+          0.028;
+
+      const scale =
+        baseScale * deckScale +
+        (target.scale *
+          burstPulse -
+          baseScale * deckScale) *
+          sphereEase;
+
+      const orbitDepth =
+        20 +
+        Math.round(
+          ((Math.sin(angle) + 1) /
+            2) *
+            30,
+        );
+
+      const zIndex =
+        sphereEase < 0.075
+          ? collapse > 0.76
+            ? index === heroIndex
+              ? 1000
+              : 700 - cardRank
+            : orbitDepth
+          : target.zIndex;
+
+      gsap.set(card, {
+        xPercent: -50,
+        yPercent: -50,
+        x:
+          ringX +
+          stackX +
+          target.x * sphereSpread,
+        y:
+          ringY +
+          stackY +
+          target.y * sphereSpread,
+        scale,
+        rotation:
+          Math.cos(angle) *
+            1.7 *
+            orbitRadius *
+            (1 - sphereEase) +
+          stackTwist,
+        opacity: appear,
+        zIndex,
+        visibility: "visible",
+      });
+    });
+  };
+
+  if (reduced) {
+    state.progress = 1;
+    mediaReady.value = true;
+
+    renderFlow();
+
+    if (panel) {
+      gsap.set(panel, { opacity: 1 });
+    }
+
+    if (copy) {
+      gsap.set(copy, { opacity: 0 });
+    }
+
+    if (count) {
+      gsap.set(count, { opacity: 0 });
+    }
+
+    onComplete({
+      handoffRotation: angleAt(1),
+      snapshot: null,
+    });
+
+    return null;
+  }
+
+  if (copy) {
+    gsap.set(copy, {
+      opacity: 0,
+      scale: 0.96,
+      y: 2,
+    });
+  }
+
+  if (count) {
+    gsap.set(count, { opacity: 0 });
+  }
+
+  if (panel) {
+    gsap.set(panel, {
+      opacity: 0,
+      visibility: "visible",
+    });
+  }
+
+  cards.forEach((card) => {
+    gsap.set(card, {
+      xPercent: -50,
+      yPercent: -50,
+      x: 0,
+      y: 0,
+      scale: 0.14,
+      rotation: 0,
+      opacity: 0,
+      visibility: "visible",
+    });
+  });
+
+  const timeline = gsap.timeline({
+    defaults: {
+      overwrite: "auto",
+    },
+    onUpdate: renderFlow,
+    onComplete: () => {
+      if (panel) {
+        gsap.set(panel, {
+          opacity: 1,
+        });
+      }
+
+      if (copy) {
+        gsap.set(copy, {
+          opacity: 0,
+        });
+      }
+
+      if (count) {
+        gsap.set(count, {
+          opacity: 0,
+        });
+      }
+
+      assets.classList.add(
+        "is-sphere",
+      );
+
+      onComplete({
+        handoffRotation: angleAt(1),
+        snapshot: captureCardSnapshot(
+          gsap,
+          cards,
+        ),
+      });
+    },
+  });
+
+  if (panel) {
+    timeline.to(
+      panel,
+      {
+        opacity: 1,
+        duration: 0.42,
+        ease: "power2.out",
+      },
+      0,
+    );
+  }
+
+  if (copy) {
+    timeline.to(
+      copy,
+      {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        duration: 0.48,
+        ease: "power3.out",
+      },
+      0.14,
+    );
+  }
+
+  timeline.to(
+    state,
+    {
+      progress: 1,
+      duration: flowDuration,
+      ease: "none",
+    },
+    flowStart,
+  );
+
+  if (copy) {
+    timeline.to(
+      copy,
+      {
+        opacity: 0,
+        scale: 0.987,
+        duration: 0.52,
+        ease: "sine.inOut",
+      },
+      flowStart + 2.56,
+    );
+  }
 
   return timeline;
 }

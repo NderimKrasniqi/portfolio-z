@@ -8,16 +8,12 @@ import { BackButton, SocialLinks } from "./frame";
 import { SiteLink } from "./navigation";
 import { loadGsap, prefersReducedMotion } from "./motion";
 import {
-  projectSpherePoint,
-  sphereUnits,
-} from "./gallery-geometry";
-import {
   applyBaseCardSizing,
   applyGridLayout,
-  clamp,
+  captureCardSnapshot,
+  runGalleryIntroTransition,
   runGridToSphereTransition,
   runSphereToGridTransition,
-  smoother,
   type CardSnapshot,
 } from "./gallery-motion";
 
@@ -52,6 +48,11 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   const sphereSnapshot = useRef<CardSnapshot[]>([]);
   const liveSphereRotation = useRef(0);
   const sphereRotationSnapshot = useRef(0);
+
+  const panelRef = useRef<HTMLElement | null>(null);
+  const assetsRef = useRef<HTMLDivElement | null>(null);
+  const copyRef = useRef<HTMLDivElement | null>(null);
+  const countRef = useRef<HTMLDivElement | null>(null);
 
   const setGalleryPhase = useCallback((next: GalleryPhase) => {
     phaseRef.current = next;
@@ -94,12 +95,11 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   useEffect(() => {
     if (phase !== "sphere-waiting" || !threeReady) return;
 
-    const assets = document.querySelector<HTMLElement>(
-      "#galleryPanel .gallery-intro-assets",
-    );
-    const sphere = document.querySelector<HTMLElement>(
-      "#galleryPanel .reference-three-sphere",
-    );
+    const assets = assetsRef.current;
+    const sphere =
+      panelRef.current?.querySelector<HTMLElement>(
+        ".reference-three-sphere",
+      ) ?? null;
 
     if (!assets || !sphere) {
       setGalleryPhase("sphere");
@@ -169,12 +169,11 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   useLayoutEffect(() => {
     if (phase !== "sphere") return;
 
-    const assets = document.querySelector<HTMLElement>(
-      "#galleryPanel .gallery-intro-assets",
-    );
-    const sphere = document.querySelector<HTMLElement>(
-      "#galleryPanel .reference-three-sphere",
-    );
+    const assets = assetsRef.current;
+    const sphere =
+      panelRef.current?.querySelector<HTMLElement>(
+        ".reference-three-sphere",
+      ) ?? null;
 
     assets?.style.removeProperty("opacity");
     assets?.style.removeProperty("visibility");
@@ -245,12 +244,20 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   }, [focused, focusClosing]);
 
   useLayoutEffect(() => {
-    const cards = [...document.querySelectorAll<HTMLElement>(".gallery-intro-assets .gallery-intro-card")];
-    const assets = document.querySelector<HTMLElement>(".gallery-intro-assets");
-    const panel = document.getElementById("galleryPanel");
-    const copy = document.querySelector<HTMLElement>(".gallery-intro-copy");
-    const count = document.querySelector<HTMLElement>(".gallery-intro-count");
-    if (!cards.length || !assets) return;
+    const assets = assetsRef.current;
+    const panel = panelRef.current;
+    const copy = copyRef.current;
+    const count = countRef.current;
+
+    if (!assets) return;
+
+    const cards = [
+      ...assets.querySelectorAll<HTMLElement>(
+        ".gallery-intro-card",
+      ),
+    ];
+
+    if (!cards.length) return;
 
     // The first sphere sequence should not compete with Three.js texture
     // uploads. Sphere reports once its first frame is prepared (or WebGL has
@@ -263,36 +270,11 @@ export function GalleryView({ content, preview = false, base, onBack }: {
     let removeResize: (() => void) | null = null;
     loadGsap().then((gsap) => {
       if (cancelled || !gsap) return;
-      const firstOpening = !introPlayed.current && mode === "sphere";
-      if (firstOpening) {
-        if (panel) gsap.set(panel, { opacity: 0, visibility: "visible" });
-        if (copy) gsap.set(copy, { opacity: 0 });
-      }
-      const mediaReady = { value: false };
-      void Promise.all(cards.map((card) => {
-        const image = card.querySelector<HTMLImageElement>("img");
-        if (!image || image.complete) return image?.decode?.().catch(() => undefined) ?? Promise.resolve();
-        return new Promise<void>((resolve) => {
-          const done = () => resolve();
-          image.addEventListener("load", done, { once: true });
-          image.addEventListener("error", done, { once: true });
-        });
-      })).then(() => { if (!cancelled) mediaReady.value = true; });
-      if (cancelled) return;
       gsap.killTweensOf([...cards, copy, count].filter(Boolean));
       applyBaseCardSizing(
         cards,
         window.innerWidth,
       );
-
-      const captureSnapshot = (): CardSnapshot[] => cards.map((card) => ({
-        x: Number(gsap.getProperty(card, "x")) || 0,
-        y: Number(gsap.getProperty(card, "y")) || 0,
-        scale: Number(gsap.getProperty(card, "scaleX")) || 1,
-        rotation: Number(gsap.getProperty(card, "rotation")) || 0,
-        zIndex: Number.parseInt(card.style.zIndex, 10) || 1,
-        width: Math.max(1, parseFloat(card.style.width) || card.offsetWidth || 52),
-      }));
 
       const handleResize = () => {
         if (
@@ -355,7 +337,10 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           sphereSnapshot.current.length ===
           cards.length
             ? sphereSnapshot.current
-            : captureSnapshot();
+            : captureCardSnapshot(
+                gsap,
+                cards,
+              );
 
         timeline =
           runGridToSphereTransition({
@@ -384,150 +369,36 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
       introPlayed.current = true;
 
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      const mobile = width <= 800;
-      const rx = mobile ? Math.min(150, width * .335, height * .19) : Math.min(width * .190, 260);
-      const ry = mobile ? rx : Math.min(height * .300, 258);
-      const units = sphereUnits(cards.length);
+      timeline =
+        runGalleryIntroTransition({
+          gsap,
+          cards,
+          assets,
+          panel,
+          copy,
+          count,
+          reduced:
+            prefersReducedMotion(),
+          onComplete: ({
+            handoffRotation,
+            snapshot,
+          }) => {
+            if (cancelled) return;
 
-      const targetAt = (
-        index: number,
-        yRotation: number,
-      ) =>
-        projectSpherePoint(
-          units[index],
-          yRotation,
-          width,
-          height,
-        );
+            if (snapshot) {
+              sphereSnapshot.current =
+                snapshot;
+            }
 
-      const baseAngles = cards.map((_, index) => -Math.PI * .51 + (index / cards.length) * Math.PI * 2);
-      const order = [...cards.keys()].sort((a, b) => baseAngles[a] - baseAngles[b]);
-      const rank = new Map(order.map((index, position) => [index, position]));
-      const state = { progress: 0 };
-      const flowStart = .36;
-      const flowDuration = 7.35;
-      const revealEnd = .385;
-      const collapseStart = .405;
-      const stackLock = .735;
-      const burstStart = .815;
-      const heroIndex = Math.min(6, cards.length - 1);
-      const introRadial = [.94, 1.04, .90, 1.02, .97, 1.08, .92, 1, 1.05, .91, 1.01, .96];
+            setHandoffRotation(
+              handoffRotation,
+            );
 
-      const angularVelocityAt = (value: number) => {
-        const revealSpeed = .085;
-        const collapseSpeed = 4.15;
-        const deckSpeed = 1.15;
-        const first = smoother((value - .315) / .355);
-        const second = smoother((value - .690) / .145);
-        const third = smoother((value - .825) / .175);
-        let speed = revealSpeed + (collapseSpeed - revealSpeed) * first;
-        speed += (deckSpeed - collapseSpeed) * second;
-        speed += (.13 - deckSpeed) * third;
-        return speed;
-      };
-      const angleSteps = 1200;
-      const angleLut = new Float64Array(angleSteps + 1);
-      for (let index = 1; index <= angleSteps; index += 1) {
-        const previous = (index - 1) / angleSteps;
-        const current = index / angleSteps;
-        angleLut[index] = angleLut[index - 1] + ((angularVelocityAt(previous) + angularVelocityAt(current)) * .5) * (flowDuration / angleSteps);
-      }
-      const angleAt = (value: number) => {
-        const position = clamp(value, 0, 1) * angleSteps;
-        const index = Math.min(angleSteps - 1, Math.floor(position));
-        const fraction = position - index;
-        return angleLut[index] + (angleLut[index + 1] - angleLut[index]) * fraction;
-      };
-
-      const renderFlow = () => {
-        const progress = clamp(state.progress, 0, 1);
-        const sharedAngle = angleAt(progress);
-        const collapse = smoother((progress - collapseStart) / (stackLock - collapseStart));
-        const orbitRadius = 1 - collapse;
-        const holdPhase = clamp((progress - stackLock) / (burstStart - stackLock), 0, 1);
-        const holdEnvelope = collapse * (1 - smoother((progress - burstStart) / .055));
-        const compression = Math.sin(holdPhase * Math.PI) * .045 * holdEnvelope;
-        const sphereEase = smoother((progress - burstStart) / (1 - burstStart));
-        const sphereSpread = sphereEase + Math.sin(sphereEase * Math.PI) * .075;
-        cards.forEach((card, index) => {
-          const cardRank = rank.get(index) ?? index;
-          const revealSpan = revealEnd * .91;
-          const revealStart = cards.length <= 1 ? 0 : (cardRank / (cards.length - 1)) * revealSpan;
-          const appear = mediaReady.value ? smoother((progress - revealStart) / .092) : 0;
-          const angle = baseAngles[index] + sharedAngle;
-          const radial = introRadial[index % introRadial.length];
-          const ringX = Math.cos(angle) * rx * radial * orbitRadius;
-          const ringY = Math.sin(angle) * ry * radial * orbitRadius;
-          const stableX = cardRank === 0 ? 0 : ((cardRank % 5) - 2) * .42;
-          const stableY = cardRank === 0 ? 0 : Math.min(cardRank, 12) * .21;
-          const stableTwist = cardRank === 0 ? 0 : (cardRank % 2 ? 1 : -1) * (.28 + Math.min(cardRank, 10) * .028);
-          const deckAngle = sharedAngle * .34;
-          const cosDeck = Math.cos(deckAngle), sinDeck = Math.sin(deckAngle);
-          const deckX = (stableX * cosDeck - stableY * sinDeck) * collapse;
-          const deckY = (stableX * sinDeck + stableY * cosDeck) * collapse;
-          const deckDrift = cardRank === 0 ? 0 : (.20 + Math.min(cardRank, 10) * .012) * holdEnvelope;
-          const driftX = Math.cos(sharedAngle + cardRank * .57) * deckDrift;
-          const driftY = Math.sin(sharedAngle * .94 + cardRank * .43) * deckDrift;
-          const squeeze = 1 - compression;
-          const stackX = (deckX + driftX) * squeeze * (1 - sphereEase);
-          const stackY = (deckY + driftY) * squeeze * (1 - sphereEase);
-          const stackTwist = (stableTwist * collapse + Math.sin(sharedAngle + cardRank * .31) * .26 * holdEnvelope) * (1 - sphereEase);
-          const target = targetAt(index, sharedAngle);
-          const baseScale = .88 + .12 * appear;
-          const deckScale = 1 + collapse * (cardRank === 0 ? .043 : .017) - compression * .34;
-          const burstPulse = 1 + Math.sin(sphereEase * Math.PI) * .028;
-          const scale = (baseScale * deckScale) + (target.scale * burstPulse - baseScale * deckScale) * sphereEase;
-          const orbitDepth = 20 + Math.round(((Math.sin(angle) + 1) / 2) * 30);
-          const zIndex = sphereEase < .075
-            ? (collapse > .76 ? (index === heroIndex ? 1000 : 700 - cardRank) : orbitDepth)
-            : target.zIndex;
-          gsap.set(card, {
-            xPercent: -50,
-            yPercent: -50,
-            x: ringX + stackX + target.x * sphereSpread,
-            y: ringY + stackY + target.y * sphereSpread,
-            scale,
-            rotation: Math.cos(angle) * 1.7 * orbitRadius * (1 - sphereEase) + stackTwist,
-            opacity: appear,
-            zIndex,
-            visibility: "visible",
-          });
+            setGalleryPhase(
+              "sphere-waiting",
+            );
+          },
         });
-      };
-
-      if (prefersReducedMotion()) {
-        state.progress = 1;
-        mediaReady.value = true;
-        renderFlow();
-        setHandoffRotation(angleAt(1));
-        if (panel) gsap.set(panel, { opacity: 1 });
-        gsap.set(copy, { opacity: 0 });
-        gsap.set(count, { opacity: 0 });
-        setGalleryPhase("sphere-waiting");
-        return;
-      }
-
-      gsap.set(copy, { opacity: 0, scale: .96, y: 2 });
-      gsap.set(count, { opacity: 0 });
-      if (panel) gsap.set(panel, { opacity: 0, visibility: "visible" });
-      cards.forEach((card) => gsap.set(card, { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: .14, rotation: 0, opacity: 0, visibility: "visible" }));
-      const introTimeline = gsap.timeline({ defaults: { overwrite: "auto" }, onUpdate: renderFlow, onComplete: () => {
-        if (cancelled) return;
-        setHandoffRotation(angleAt(1));
-        if (panel) gsap.set(panel, { opacity: 1 });
-        gsap.set(copy, { opacity: 0 });
-        gsap.set(count, { opacity: 0 });
-        assets.classList.add("is-sphere");
-        sphereSnapshot.current = captureSnapshot();
-        setGalleryPhase("sphere-waiting");
-      } });
-      timeline = introTimeline;
-      introTimeline.to(panel, { opacity: 1, duration: .42, ease: "power2.out" }, 0);
-      introTimeline.to(copy, { opacity: 1, scale: 1, y: 0, duration: .48, ease: "power3.out" }, .14);
-      introTimeline.to(state, { progress: 1, duration: flowDuration, ease: "none" }, flowStart);
-      introTimeline.to(copy, { opacity: 0, scale: .987, duration: .52, ease: "sine.inOut" }, flowStart + 2.56);
     });
 
     return () => { cancelled = true; timeline?.kill(); removeResize?.(); };
@@ -535,6 +406,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   const selected = focused === null ? null : items[focused];
   return (
     <section
+      ref={panelRef}
       id="galleryPanel"
       className={`gallery-panel open is-ready fixed inset-0 z-[3250] isolate visible overflow-hidden bg-white text-[#080808] opacity-100 pointer-events-auto${opening ? " is-opening" : ""}${mode === "sphere" && threeLive ? " is-three-live" : ""}${mode === "grid" ? " is-grid-mode" : ""}`}
       role="dialog"
@@ -587,6 +459,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           animate={mode === "sphere" && threeLive}
         />
         <div
+          ref={assetsRef}
           className={`gallery-intro-assets absolute inset-0 z-[12] overflow-hidden pointer-events-none [perspective:980px] [transform-style:preserve-3d] ${phase === "grid" ? "is-grid" : "is-sphere"}${mode === "sphere" && threeLive ? " is-three" : ""}`}
         >
           {items.map((item, index) => {
@@ -609,8 +482,8 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           })}
         </div>
         <ol className="gallery-semantic-list" aria-label="Gallery items">{items.map((item, index) => <li key={item.id}><button type="button" onClick={() => onSelect(index)}>{item.title}</button></li>)}</ol>
-        <div className="gallery-intro-copy" aria-hidden="true"><h2 className="gallery-intro-name">ZEUDI <span className="slash">/</span> DI PALMA</h2></div>
-        <div className="gallery-intro-count" aria-hidden="true">{intro ? "00" : "01"} / {pad(items.length)}</div>
+        <div ref={copyRef} className="gallery-intro-copy" aria-hidden="true"><h2 className="gallery-intro-name">ZEUDI <span className="slash">/</span> DI PALMA</h2></div>
+        <div ref={countRef} className="gallery-intro-count" aria-hidden="true">{intro ? "00" : "01"} / {pad(items.length)}</div>
         <div
           className="gallery-space-label absolute left-[var(--side)] bottom-[19px] z-30 pointer-events-none text-[6px] tracking-[.14em] uppercase opacity-0 max-[800px]:bottom-[14px] max-[520px]:hidden"
           aria-hidden="true"
