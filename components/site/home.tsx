@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Content } from "@/lib/model";
 import { MediaView, mediaUrl } from "./media";
 import { SocialLinks } from "./frame";
 import { signatureSvg } from "./signature";
 import { SiteLink } from "./navigation";
-import { loadGsap, prefersReducedMotion } from "./motion";
 import {
   HOME_MUSIC_VIDEO_ID,
   useHomeMusic,
@@ -16,6 +15,7 @@ import { runHomeIdentityMotion } from "./home-identity-motion";
 import { useHomeFilmstrip } from "./home-filmstrip";
 import { runHomeHeroTransition } from "./home-hero-motion";
 import { runHomeMetaMotion } from "./home-meta-motion";
+import { useHomeInput } from "./home-input";
 
 function displayName(name: string) {
   const [first, ...rest] = name.trim().split(/\s+/);
@@ -53,12 +53,6 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
   const marker = useRef<HTMLSpanElement>(null);
   const countNow = useRef<HTMLSpanElement>(null);
   const progressDot = useRef<HTMLSpanElement>(null);
-  const lastWheel = useRef(0);
-  const wheelAmount = useRef(0);
-  const wheelConsumed = useRef(false);
-  const wheelTailSeen = useRef(false);
-  const lastWheelAbs = useRef(0);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const activeIndex = useRef(0);
   const transitionLock = useRef(false);
   const thumbFlightSource = useRef<HTMLButtonElement | null>(null);
@@ -229,71 +223,12 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
     });
   }, [current, measureMediaGeometry]);
 
-  useEffect(() => {
-    if (!active || menuOpen) return;
-    wheelAmount.current = 0;
-    wheelConsumed.current = false;
-    wheelTailSeen.current = false;
-    const onWheel = (event: WheelEvent) => {
-      if (event.ctrlKey || (event.target instanceof Element && event.target.closest(".filmstrip"))) return;
-      event.preventDefault();
-      const now = performance.now();
-      const raw = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-      const delta = event.deltaMode === 1 ? raw * 18 : event.deltaMode === 2 ? raw * window.innerHeight : raw;
-      const absolute = Math.abs(delta);
-      if (absolute < 1) return;
-      const gap = lastWheel.current ? now - lastWheel.current : Infinity;
-      if (wheelConsumed.current) {
-        const freshAfterGap = gap > 150;
-        const freshAfterTail = wheelTailSeen.current && absolute >= 12 && absolute > Math.max(12, lastWheelAbs.current * 1.8);
-        if (freshAfterGap || freshAfterTail) {
-          wheelConsumed.current = false;
-          wheelTailSeen.current = false;
-          wheelAmount.current = 0;
-        } else {
-          if (absolute <= 5) wheelTailSeen.current = true;
-          lastWheel.current = now;
-          lastWheelAbs.current = absolute;
-          return;
-        }
-      }
-      if (gap > 150) wheelAmount.current = 0;
-      lastWheel.current = now;
-      lastWheelAbs.current = absolute;
-      if (wheelAmount.current && Math.sign(wheelAmount.current) !== Math.sign(delta)) wheelAmount.current = 0;
-      wheelAmount.current += delta;
-      if (Math.abs(wheelAmount.current) >= 46) {
-        wheelConsumed.current = true;
-        wheelTailSeen.current = false;
-        step(Math.sign(wheelAmount.current));
-        wheelAmount.current = 0;
-      }
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); step(1); }
-      if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); step(-1); }
-    };
-    const onStart = (event: TouchEvent) => { if (event.touches[0]) touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; };
-    const onEnd = (event: TouchEvent) => {
-      if (!touchStart.current || !event.changedTouches[0]) return;
-      const deltaX = touchStart.current.x - event.changedTouches[0].clientX;
-      const deltaY = touchStart.current.y - event.changedTouches[0].clientY;
-      const delta = Math.abs(deltaY) >= Math.abs(deltaX) ? deltaY : deltaX;
-      if (Math.abs(delta) > 32) step(Math.sign(delta));
-      touchStart.current = null;
-    };
-    const el = stage.current;
-    el?.addEventListener("wheel", onWheel, { passive: false });
-    el?.addEventListener("touchstart", onStart, { passive: true });
-    el?.addEventListener("touchend", onEnd, { passive: true });
-    window.addEventListener("keydown", onKey);
-    return () => {
-      el?.removeEventListener("wheel", onWheel);
-      el?.removeEventListener("touchstart", onStart);
-      el?.removeEventListener("touchend", onEnd);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [active, menuOpen, step]);
+  useHomeInput({
+    active,
+    menuOpen,
+    stage,
+    step,
+  });
 
   return (
     <>
