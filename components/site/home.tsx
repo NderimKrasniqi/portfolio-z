@@ -7,6 +7,9 @@ import { SocialLinks } from "./frame";
 import { signatureSvg } from "./signature";
 import { SiteLink } from "./navigation";
 import { loadGsap, prefersReducedMotion } from "./motion";
+import { runHomeLoaderTransition } from "./home-loader-motion";
+import { runHomeIdentityMotion } from "./home-identity-motion";
+import { useHomeFilmstrip } from "./home-filmstrip";
 
 function displayName(name: string) {
   const [first, ...rest] = name.trim().split(/\s+/);
@@ -387,122 +390,14 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
     };
   }, [active, preview]);
 
-  // The reference keeps the name alive after the preload: small groups of
-  // letters turn in place at irregular intervals and the pointer gently pulls
-  // nearby glyphs. Keeping this separate from the preload means it can pause
-  // cleanly whenever a panel is opened or the page is hidden.
-  useLayoutEffect(() => {
-    if (!active || preview || loading || prefersReducedMotion()) return;
-    let cancelled = false;
-    let dispose = () => {};
-
-    loadGsap().then((gsap) => {
-      if (cancelled || !gsap || prefersReducedMotion()) return;
-      const name = identityName.current;
-      const stageElement = stage.current;
-      if (!name || !stageElement) return;
-      const chars = [...name.querySelectorAll<HTMLElement>(".identity__char")];
-      const glyphs = chars.map((char) => char.querySelector<HTMLElement>(".identity__glyph")).filter((glyph): glyph is HTMLElement => Boolean(glyph));
-      if (chars.length < 2 || glyphs.length !== chars.length) return;
-
-      const pulse = document.createElement("div");
-      pulse.className = "home-exposure-pulse";
-      pulse.setAttribute("aria-hidden", "true");
-      document.body.appendChild(pulse);
-
-      let timer: { kill: () => void } | null = null;
-      let running = false;
-      let previous = new Set<number>();
-      const panelOpen = () => Boolean(document.querySelector(".gallery-panel.open,.about-panel.open,.shop-panel.open,.contact-panel.open"));
-      const canAnimate = () => !cancelled && !document.hidden && !panelOpen() && !loader.current;
-      const clearTimer = () => { timer?.kill(); timer = null; };
-      const resetMagnet = () => glyphs.forEach((glyph) => gsap.to(glyph, { x: 0, y: 0, rotation: 0, duration: .42, ease: "power3.out", overwrite: true }));
-      const materialPulse = () => {
-        gsap.killTweensOf(pulse);
-        gsap.timeline()
-          .to(pulse, { opacity: .014, duration: .09, ease: "power1.out" })
-          .to(pulse, { opacity: 0, duration: .28, ease: "power2.out" });
-        gsap.to(stageElement, { "--zeudi-grain-lift": .018, duration: .12, yoyo: true, repeat: 1, ease: "power1.out", overwrite: true });
-      };
-      const chooseGroup = () => {
-        const count = Math.random() < .62 ? 1 : Math.random() < .84 ? 2 : 3;
-        const pool = chars.map((_, index) => index).filter((index) => !previous.has(index));
-        gsap.utils.shuffle(pool);
-        const picked = pool.slice(0, Math.min(count, pool.length));
-        previous = new Set(picked);
-        return picked.map((index) => chars[index]);
-      };
-      const schedule = () => {
-        clearTimer();
-        if (!canAnimate()) { running = false; return; }
-        running = true;
-        timer = gsap.delayedCall(gsap.utils.random(3.4, 5.4), flipGroup);
-      };
-      const flipGroup = () => {
-        if (!canAnimate()) { schedule(); return; }
-        const group = chooseGroup();
-        materialPulse();
-        let longest = 0;
-        group.forEach((char, index) => {
-          const direction = Math.random() < .5 ? -1 : 1;
-          const axis = Math.random() < .78 ? "rotationX" : "rotationY";
-          const stagger = index * gsap.utils.random(.055, .11);
-          const firstDuration = gsap.utils.random(.52, .61);
-          const secondDuration = gsap.utils.random(.58, .69);
-          longest = Math.max(longest, stagger + firstDuration + secondDuration);
-          gsap.killTweensOf(char);
-          gsap.set(char, { rotationX: 0, rotationY: 0, scaleX: 1, scaleY: 1, transformPerspective: 780 });
-          gsap.timeline({ delay: stagger })
-            .to(char, { [axis]: direction * 180, scaleY: .975, duration: firstDuration, ease: "power1.inOut" })
-            .to(char, { [axis]: direction * 360, scaleY: 1, duration: secondDuration, ease: "power2.inOut" })
-            .set(char, { rotationX: 0, rotationY: 0 });
-        });
-        gsap.delayedCall(longest + .06, schedule);
-      };
-
-      const quickX = glyphs.map((glyph) => gsap.quickTo(glyph, "x", { duration: .42, ease: "power3.out" }));
-      const quickY = glyphs.map((glyph) => gsap.quickTo(glyph, "y", { duration: .42, ease: "power3.out" }));
-      const quickRotation = glyphs.map((glyph) => gsap.quickTo(glyph, "rotation", { duration: .48, ease: "power3.out" }));
-      const onPointerMove = (event: PointerEvent) => {
-        if (!canAnimate() || event.pointerType === "touch") return;
-        const bounds = name.getBoundingClientRect();
-        const distance = Math.hypot(event.clientX - (bounds.left + bounds.width / 2), event.clientY - (bounds.top + bounds.height / 2));
-        const radius = Math.max(190, bounds.width * .82);
-        if (distance > radius) { resetMagnet(); return; }
-        glyphs.forEach((glyph, index) => {
-          const rect = glyph.getBoundingClientRect();
-          const dx = event.clientX - (rect.left + rect.width / 2);
-          const dy = event.clientY - (rect.top + rect.height / 2);
-          const length = Math.max(45, Math.hypot(dx, dy));
-          const force = Math.max(0, 1 - length / radius);
-          quickX[index](Math.max(-2.4, Math.min(2.4, dx / length * 2.4 * force)));
-          quickY[index](Math.max(-1.8, Math.min(1.8, dy / length * 1.8 * force)));
-          quickRotation[index](Math.max(-.8, Math.min(.8, dx / radius * .8 * force)));
-        });
-      };
-      const sync = () => {
-        if (canAnimate()) { if (!running) schedule(); return; }
-        clearTimer(); running = false; resetMagnet();
-        chars.forEach((char) => { gsap.killTweensOf(char); gsap.set(char, { rotationX: 0, rotationY: 0, scaleX: 1, scaleY: 1 }); });
-        gsap.set(pulse, { opacity: 0 });
-        stageElement.style.setProperty("--zeudi-grain-lift", "0");
-      };
-
-      window.addEventListener("pointermove", onPointerMove, { passive: true });
-      document.addEventListener("visibilitychange", sync);
-      window.addEventListener("pageshow", sync);
-      schedule();
-      dispose = () => {
-        clearTimer();
-        window.removeEventListener("pointermove", onPointerMove);
-        document.removeEventListener("visibilitychange", sync);
-        window.removeEventListener("pageshow", sync);
-        gsap.killTweensOf([...chars, ...glyphs, pulse]);
-        pulse.remove();
-      };
+    useLayoutEffect(() => {
+    return runHomeIdentityMotion({
+      active,
+      preview,
+      loading,
+      name: identityName.current,
+      stage: stage.current,
     });
-
-    return () => { cancelled = true; dispose(); };
   }, [active, loading, preview]);
 
   useLayoutEffect(() => {
@@ -573,156 +468,13 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
     return () => { cancelled = true; };
   }, [current, items.length]);
 
-  // The reference filmstrip behaves like a small horizontal gallery on narrow
-  // screens: a drag scrolls the row and releases on the nearest work. Keep the
-  // browser's native click from firing again after a drag has selected it.
-  useEffect(() => {
-    const strip = track.current;
-    if (!strip) return;
-    let pointerId: number | null = null;
-    let startX = 0;
-    let startScroll = 0;
-    let moved = false;
-    const onDown = (event: PointerEvent) => {
-      if (event.button !== 0 || strip.dataset.fits === "1") return;
-      pointerId = event.pointerId;
-      startX = event.clientX;
-      startScroll = strip.scrollLeft;
-      moved = false;
-      strip.setPointerCapture?.(event.pointerId);
-    };
-    const onMove = (event: PointerEvent) => {
-      if (pointerId !== event.pointerId) return;
-      const delta = event.clientX - startX;
-      if (Math.abs(delta) > 3) moved = true;
-      if (moved) {
-        event.preventDefault();
-        strip.scrollLeft = startScroll - delta;
-      }
-    };
-    const onEnd = (event: PointerEvent) => {
-      if (pointerId !== event.pointerId) return;
-      const wasMoved = moved;
-      pointerId = null;
-      moved = false;
-      try { strip.releasePointerCapture?.(event.pointerId); } catch { /* already released */ }
-      if (!wasMoved) return;
-      const thumbs = [...strip.querySelectorAll<HTMLButtonElement>(".thumb")];
-      const center = strip.getBoundingClientRect().left + strip.clientWidth / 2;
-      const nearest = thumbs.reduce((best, thumb, index) => {
-        const rect = thumb.getBoundingClientRect();
-        const distance = Math.abs((rect.left + rect.right) / 2 - center);
-        return distance < best.distance ? { index, distance } : best;
-      }, { index: current, distance: Number.POSITIVE_INFINITY });
-      suppressThumbClick.current = true;
-      select(nearest.index);
-    };
-    strip.addEventListener("pointerdown", onDown);
-    strip.addEventListener("pointermove", onMove, { passive: false });
-    strip.addEventListener("pointerup", onEnd);
-    strip.addEventListener("pointercancel", onEnd);
-    return () => {
-      strip.removeEventListener("pointerdown", onDown);
-      strip.removeEventListener("pointermove", onMove);
-      strip.removeEventListener("pointerup", onEnd);
-      strip.removeEventListener("pointercancel", onEnd);
-    };
-  }, [current, items.length, select]);
-
-  useLayoutEffect(() => {
-    const strip = track.current;
-    const markerElement = marker.current;
-    if (!strip || !markerElement) return;
-    let cancelled = false;
-    const update = () => {
-      const thumbs = [...strip.querySelectorAll<HTMLButtonElement>(".thumb")];
-      if (!thumbs.length) return;
-      strip.style.paddingLeft = "0px";
-      strip.style.paddingRight = "0px";
-      const styles = getComputedStyle(strip);
-      const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
-      const total = thumbs.reduce((sum, thumb) => sum + thumb.offsetWidth, 0) + gap * Math.max(0, thumbs.length - 1);
-      const fits = total <= strip.clientWidth + 1;
-      strip.dataset.fits = fits ? "1" : "0";
-      let targetScroll = strip.scrollLeft;
-      if (fits) {
-        const side = Math.max(0, (strip.clientWidth - total) / 2);
-        strip.style.paddingLeft = `${side}px`;
-        strip.style.paddingRight = `${side}px`;
-        strip.scrollLeft = 0;
-      } else {
-        const thumb = thumbs[current];
-        if (thumb) {
-          const left = thumb.offsetLeft;
-          const right = left + thumb.offsetWidth;
-          const edge = 6;
-          const viewLeft = strip.scrollLeft;
-          const viewRight = viewLeft + strip.clientWidth;
-          const max = Math.max(0, strip.scrollWidth - strip.clientWidth);
-          targetScroll = left < viewLeft + edge ? Math.max(0, left - edge) : right > viewRight - edge ? Math.min(max, right - strip.clientWidth + edge) : viewLeft;
-        }
-      }
-      const thumb = thumbs[current];
-      if (!thumb) return;
-      const trackRect = strip.getBoundingClientRect();
-      const thumbRect = thumb.getBoundingClientRect();
-      const x = thumbRect.left - trackRect.left + strip.scrollLeft;
-      const y = Math.max(0, thumbRect.top - trackRect.top + strip.scrollTop - 4);
-      const reduced = prefersReducedMotion();
-      loadGsap().then((gsap) => {
-        if (cancelled || !gsap) return;
-        if (targetScroll !== strip.scrollLeft) {
-          if (reduced) gsap.set(strip, { scrollLeft: targetScroll });
-          else gsap.to(strip, { scrollLeft: targetScroll, duration: .36, ease: "power2.out", overwrite: true });
-        }
-        const vars = { x, y, width: thumbRect.width, duration: reduced ? 0 : .42, ease: "power3.inOut", overwrite: true } as const;
-        if (reduced) gsap.set(markerElement, vars);
-        else gsap.to(markerElement, vars);
-
-        const settle = (hoverIndex = -1) => thumbs.forEach((thumb, index) => {
-          const activeThumb = index === current;
-          const hovered = index === hoverIndex;
-          gsap.to(thumb, {
-            x: hovered ? (index < current ? -4.5 : index > current ? 4.5 : 0) : 0,
-            y: hovered ? -3 : activeThumb ? -1 : 0,
-            scale: hovered ? (activeThumb ? 1.1 : 1.055) : activeThumb ? 1.085 : 1,
-            opacity: hovered || activeThumb ? 1 : .42,
-            filter: hovered || activeThumb ? "contrast(1) saturate(1)" : "contrast(.92) saturate(.88)",
-            duration: hovered ? .28 : activeThumb ? .34 : .28,
-            ease: "power3.out",
-            overwrite: "auto",
-          });
-        });
-        settle();
-        thumbs.forEach((thumb, index) => {
-          const enter = () => settle(index);
-          const leave = () => settle();
-          thumb.addEventListener("pointerenter", enter);
-          thumb.addEventListener("pointerleave", leave);
-          thumb.addEventListener("focus", enter);
-          thumb.addEventListener("blur", leave);
-          (thumb as HTMLButtonElement & { __zeudiMotionCleanup?: () => void }).__zeudiMotionCleanup = () => {
-            thumb.removeEventListener("pointerenter", enter);
-            thumb.removeEventListener("pointerleave", leave);
-            thumb.removeEventListener("focus", enter);
-            thumb.removeEventListener("blur", leave);
-          };
-        });
-      });
-    };
-    update();
-    const onResize = () => requestAnimationFrame(update);
-    window.addEventListener("resize", onResize);
-    strip.querySelectorAll("img").forEach((image) => image.addEventListener("load", onResize, { once: true }));
-    return () => {
-      cancelled = true;
-      window.removeEventListener("resize", onResize);
-      strip.querySelectorAll<HTMLButtonElement>(".thumb").forEach((thumb) => {
-        (thumb as HTMLButtonElement & { __zeudiMotionCleanup?: () => void }).__zeudiMotionCleanup?.();
-        delete (thumb as HTMLButtonElement & { __zeudiMotionCleanup?: () => void }).__zeudiMotionCleanup;
-      });
-    };
-  }, [current, items.length]);
+  useHomeFilmstrip({
+    track,
+    marker,
+    current,
+    itemCount: items.length,
+    select,
+  });
 
   useLayoutEffect(() => {
     if (!media.current || !frontMedia.current) return;
