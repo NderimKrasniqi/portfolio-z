@@ -3,6 +3,7 @@
 import {
   useEffect,
   useLayoutEffect,
+  type MutableRefObject,
   type RefObject,
 } from "react";
 import {
@@ -16,6 +17,7 @@ export function useHomeFilmstrip({
   current,
   itemCount,
   select,
+  suppressThumbClick,
 }: {
   track: RefObject<HTMLDivElement | null>;
   marker: RefObject<HTMLSpanElement | null>;
@@ -25,6 +27,7 @@ export function useHomeFilmstrip({
     index: number,
     source?: HTMLButtonElement | null,
   ) => void;
+  suppressThumbClick: MutableRefObject<boolean>;
 }) {
   useEffect(() => {
     const strip = track.current;
@@ -115,6 +118,7 @@ export function useHomeFilmstrip({
         },
       );
 
+      suppressThumbClick.current = true;
       select(nearest.index);
     };
 

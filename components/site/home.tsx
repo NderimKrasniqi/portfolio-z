@@ -14,6 +14,8 @@ import {
 import { runHomeLoaderTransition } from "./home-loader-motion";
 import { runHomeIdentityMotion } from "./home-identity-motion";
 import { useHomeFilmstrip } from "./home-filmstrip";
+import { runHomeHeroTransition } from "./home-hero-motion";
+import { runHomeMetaMotion } from "./home-meta-motion";
 
 function displayName(name: string) {
   const [first, ...rest] = name.trim().split(/\s+/);
@@ -159,53 +161,20 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
     return () => window.removeEventListener("resize", update);
   }, [active, items, measureMediaGeometry]);
 
-  // Keep the counter and its rail on the same GSAP clock as the image handoff.
-  // Updating the number synchronously while the photograph is still crossing
-  // the frame makes the right side appear to jump ahead of the transition.
   useLayoutEffect(() => {
-    const counter = countNow.current;
-    const dot = progressDot.current;
-    if (!counter || !dot) return;
-    let cancelled = false;
-    const previous = lastMetaIndex.current;
-    lastMetaIndex.current = current;
-    const last = Math.max(0, items.length - 1);
-    const center = Math.min(4, last);
-    const progress = last === 0
-      ? 0
-      : current <= center
-        ? (center > 0 ? .5 * (current / center) : 0)
-        : .5 + .5 * ((current - center) / Math.max(1, last - center));
+    const previous =
+      lastMetaIndex.current;
 
-    loadGsap().then((gsap) => {
-      if (cancelled || !gsap) return;
-      if (prefersReducedMotion() || previous === current) {
-        gsap.set(counter, { yPercent: 0 });
-        counter.textContent = String(current + 1).padStart(2, "0");
-        gsap.set(dot, { y: 0 });
-        return;
-      }
-      const direction = current > previous ? 1 : -1;
-      const outgoing = -115 * direction;
-      const incoming = 115 * direction;
-      gsap.killTweensOf([counter, dot]);
-      gsap.set(counter, { yPercent: 0 });
-      gsap.timeline({ defaults: { overwrite: "auto" } })
-        .to(counter, { yPercent: outgoing, duration: .20, ease: "power2.in" }, 0)
-        .add(() => { counter.textContent = String(current + 1).padStart(2, "0"); }, .20)
-        .set(counter, { yPercent: incoming }, .20)
-        .to(counter, { yPercent: 0, duration: .34, ease: "power3.out" }, .215);
-      const rail = dot.parentElement;
-      const railHeight = rail?.clientHeight || 1;
-      const dotHeight = dot.offsetHeight || 5;
-      gsap.to(dot, {
-        y: progress * Math.max(0, railHeight - dotHeight),
-        duration: .46,
-        ease: "power3.inOut",
-        overwrite: "auto",
-      });
+    lastMetaIndex.current =
+      current;
+
+    return runHomeMetaMotion({
+      counter: countNow.current,
+      dot: progressDot.current,
+      current,
+      previous,
+      itemCount: items.length,
     });
-    return () => { cancelled = true; };
   }, [current, items.length]);
 
   useHomeFilmstrip({
@@ -214,162 +183,50 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
     current,
     itemCount: items.length,
     select,
+    suppressThumbClick,
   });
 
   useLayoutEffect(() => {
-    if (!media.current || !frontMedia.current) return;
-    const front = frontMedia.current;
-    const back = backMedia.current;
-    const flightSource = thumbFlightSource.current;
-    // Consume the source once. The state cleanup that removes the previous
-    // layer must never replay the same thumbnail flight.
+    const flightSource =
+      thumbFlightSource.current;
+
     thumbFlightSource.current = null;
-    const waitForFirstPaint = async () => {
-      const visual = front.querySelector<HTMLImageElement | HTMLVideoElement>("img,video");
-      if (!visual) return;
-      if (visual instanceof HTMLImageElement) {
-        if (!visual.complete) await new Promise<void>((resolve) => {
-          visual.addEventListener("load", () => resolve(), { once: true });
-          visual.addEventListener("error", () => resolve(), { once: true });
-        });
-        try { await visual.decode?.(); } catch { /* the browser can still paint a decoded image */ }
-      } else if (visual.readyState < 2) {
-        await new Promise<void>((resolve) => {
-          visual.addEventListener("loadeddata", () => resolve(), { once: true });
-          visual.addEventListener("error", () => resolve(), { once: true });
-        });
-      }
-    };
-    const makeHeroFlight = (gsapApi: NonNullable<Awaited<ReturnType<typeof loadGsap>>>, item: Content["media"][number], source: HTMLButtonElement | null) => {
-      if (!source || typeof document === "undefined") return null;
-      const sourceRect = source.getBoundingClientRect();
-      if (sourceRect.width < 1 || sourceRect.height < 1) return null;
-      const flight = document.createElement("div");
-      flight.className = `hero-flight${item.kind === "video" ? " is-video" : ""}`;
-      const visual = item.kind === "video" ? document.createElement("video") : document.createElement("img");
-      visual.setAttribute("aria-hidden", "true");
-      visual.draggable = false;
-      if (item.kind === "video") {
-        const video = visual as HTMLVideoElement;
-        video.src = mediaUrl(item.key, preview);
-        video.poster = mediaUrl(item.thumbKey, preview);
-        video.muted = true;
-        video.defaultMuted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.preload = "auto";
-      } else {
-        const image = visual as HTMLImageElement;
-        image.decoding = "async";
-        image.src = mediaUrl(item.key, preview);
-        image.alt = "";
-      }
-      flight.appendChild(visual);
-      // Keep the flight inside the scoped public surface so the reference
-      // positioning rules apply without leaking into the admin UI.
-      (document.querySelector<HTMLElement>(".portfolio") || document.body).appendChild(flight);
-      const destination = measureMediaGeometry(item);
-      if (!destination) { flight.remove(); return null; }
-      const destinationRect = {
-        left: (window.innerWidth - destination.width) / 2,
-        top: destination.top - destination.height / 2,
-        width: destination.width,
-        height: destination.height,
-      };
-      gsapApi.set(flight, {
-        left: sourceRect.left,
-        top: sourceRect.top,
-        width: sourceRect.width,
-        height: sourceRect.height,
-        opacity: 0,
-      });
-      const ready = (async () => {
-        if (visual instanceof HTMLImageElement) {
-          if (!visual.complete || visual.naturalWidth < 1) {
-            await new Promise<void>((resolve) => {
-              visual.addEventListener("load", () => resolve(), { once: true });
-              visual.addEventListener("error", () => resolve(), { once: true });
-            });
-          }
-          try { await visual.decode?.(); } catch { /* the browser can still paint it */ }
-          return visual.naturalWidth > 0;
-        }
-        if (visual.readyState < 2) {
-          await new Promise<void>((resolve) => {
-            visual.addEventListener("loadeddata", () => resolve(), { once: true });
-            visual.addEventListener("error", () => resolve(), { once: true });
-            visual.load();
-          });
-        }
-        try { await visual.play(); } catch { /* a poster is still a valid handoff */ }
-        return visual.readyState >= 2 || Boolean(visual.poster);
-      })();
-      return { flight, destinationRect, ready };
-    };
-    let cancelled = false;
-    loadGsap().then(async (gsap) => {
-      if (cancelled || !gsap) return;
-      gsap.killTweensOf([front, back].filter(Boolean));
-      const finish = () => {
-        transitionLock.current = false;
-        setSelection((old) => old.current === current ? { current: old.current, previous: null } : old);
-      };
-      if (prefersReducedMotion()) {
-        gsap.set(front, { opacity: 1, scale: 1 });
-        if (back) gsap.set(back, { opacity: 0, scale: 1 });
-        const nextGeometry = measureMediaGeometry(currentItemRef.current);
-        if (nextGeometry) { mediaGeometryRef.current = nextGeometry; setMediaGeometry(nextGeometry); }
-        if (previousIndexRef.current !== null) finish();
-        return;
-      }
-      if (!back || previousItemRef.current === null) {
-        gsap.fromTo(front, { opacity: .25, scale: .96 }, { opacity: 1, scale: 1, duration: .65, ease: "power3.out", onComplete: () => { transitionLock.current = false; } });
-        return;
-      }
-      gsap.set(back, { opacity: 1, scale: 1 });
-      gsap.set(front, { opacity: 0, scale: 1.025 });
-      await waitForFirstPaint();
-      if (cancelled) return;
-      const nextGeometry = measureMediaGeometry(currentItemRef.current);
-      const flight = makeHeroFlight(gsap, currentItemRef.current, flightSource);
-      if (flight) {
-        const ready = await flight.ready;
-        if (cancelled) { flight.flight.remove(); return; }
-        if (ready && nextGeometry) {
-          await new Promise<void>((resolve) => {
-            gsap.timeline({ onComplete: resolve, defaults: { overwrite: "auto" } })
-              .to(flight.flight, { opacity: 1, duration: .12, ease: "power2.out" }, 0)
-              .to(flight.flight, { ...flight.destinationRect, duration: .64, ease: "power4.inOut" }, .04)
-              // Keep the previous frame underneath the travelling image until
-              // the new frame is already covering the hero. Fading it at the
-              // start creates a white gap when decoding takes a few frames.
-              .to(back, { opacity: 0, scale: .985, duration: .20, ease: "power1.inOut" }, .44);
-          });
-          mediaGeometryRef.current = nextGeometry;
-          setMediaGeometry(nextGeometry);
-          gsap.set(front, { opacity: 1, scale: 1 });
-          await new Promise<void>((resolve) => gsap.to(flight.flight, { opacity: 0, duration: .10, ease: "power1.out", onComplete: resolve }));
-          flight.flight.remove();
-          finish();
-          return;
-        }
-        flight.flight.remove();
-      }
-      gsap.timeline({
-        onComplete: finish,
-      })
-        .to(back, { opacity: 0, scale: .985, duration: .20, ease: "power1.inOut" }, 0)
-        .add(() => {
-          if (!nextGeometry) return;
-          mediaGeometryRef.current = nextGeometry;
-          setMediaGeometry(nextGeometry);
-        }, .20)
-        .to(front, { opacity: 1, scale: 1, duration: .32, ease: "power1.inOut" }, .20);
+
+    return runHomeHeroTransition({
+      front: frontMedia.current,
+      back: backMedia.current,
+      flightSource,
+      currentItem:
+        currentItemRef.current,
+      previousItem:
+        previousItemRef.current,
+      previousIndex:
+        previousIndexRef.current,
+      preview,
+      measure: measureMediaGeometry,
+      onGeometry: (geometry) => {
+        mediaGeometryRef.current =
+          geometry;
+        setMediaGeometry(geometry);
+      },
+      onUnlock: () => {
+        transitionLock.current =
+          false;
+      },
+      onFinish: () => {
+        transitionLock.current =
+          false;
+
+        setSelection((old) =>
+          old.current === current
+            ? {
+                current: old.current,
+                previous: null,
+              }
+            : old,
+        );
+      },
     });
-    return () => {
-      cancelled = true;
-      loadGsap().then((gsap) => gsap?.killTweensOf([front, back].filter(Boolean)));
-    };
   }, [current, measureMediaGeometry]);
 
   useEffect(() => {
