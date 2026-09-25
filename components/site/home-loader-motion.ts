@@ -220,6 +220,10 @@ export function runHomeLoaderTransition({
           );
       });
 
+      // Match the original HTML choreography: let the completed
+      // signature breathe briefly before the page reveal begins.
+      write.to({}, { duration: 0.25 });
+
       await new Promise<void>(
         (resolve) =>
           write.eventCallback(

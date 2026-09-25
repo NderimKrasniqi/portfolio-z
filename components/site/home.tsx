@@ -57,7 +57,6 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
   const transitionLock = useRef(false);
   const thumbFlightSource = useRef<HTMLButtonElement | null>(null);
   const suppressThumbClick = useRef(false);
-  const lastMetaIndex = useRef(0);
   const mediaGeometryRef = useRef<{ width: number; height: number; top: number } | undefined>(undefined);
   const currentItem = items[current] || items[0];
   const previousItem = previous === null ? null : items[previous];
@@ -82,23 +81,97 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
 
   const measureMediaGeometry = useCallback((item: Content["media"][number]) => {
     const strip = track.current;
-    if (!strip || typeof window === "undefined") return null;
+
+    if (!strip || typeof window === "undefined") {
+      return null;
+    }
+
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const mobile = vw <= 800;
+
     const topEdge = mobile ? 82 : 58;
-    const bottomEdge = Math.max(topEdge + 220, strip.getBoundingClientRect().top - (mobile ? 22 : 34));
-    const availableHeight = Math.max(250, bottomEdge - topEdge);
-    const ratio = Math.max(.35, Math.min(3.2, item.width / Math.max(1, item.height)));
-    const maxHeight = Math.min(availableHeight, mobile ? vh * .59 : 780);
-    const maxWidth = mobile ? Math.min(vw * .8, 520) : Math.min(vw * .54, 840);
-    let width = maxWidth;
-    let height = width / ratio;
-    if (height > maxHeight) { height = maxHeight; width = height * ratio; }
+    const bottomGap = mobile ? 22 : 34;
+
+    const bottomEdge = Math.max(
+      topEdge + 220,
+      strip.getBoundingClientRect().top - bottomGap,
+    );
+
+    const availableHeight = Math.max(
+      250,
+      bottomEdge - topEdge,
+    );
+
+    const ratio = Math.max(
+      0.35,
+      Math.min(
+        3.2,
+        item.width / Math.max(1, item.height),
+      ),
+    );
+
+    let width: number;
+    let height: number;
+
+    if (item.kind === "video") {
+      const frameRatio = mobile
+        ? Math.max(ratio, 0.84)
+        : Math.max(ratio, 0.92);
+
+      const previousVideoHeight =
+        Math.min(
+          availableHeight,
+          mobile
+            ? vh * 0.58
+            : Math.min(vh * 0.64, 690),
+        );
+
+      const maxWidth = mobile
+        ? Math.min(vw * 0.92, 700)
+        : Math.min(vw * 0.60, 900);
+
+      width = Math.min(
+        previousVideoHeight * frameRatio,
+        maxWidth,
+      );
+
+      height = Math.min(
+        availableHeight,
+        mobile ? vh * 0.59 : 780,
+      );
+    } else {
+      const maxHeight = Math.min(
+        availableHeight,
+        mobile ? vh * 0.59 : 780,
+      );
+
+      const maxWidth = mobile
+        ? Math.min(vw * 0.80, 520)
+        : Math.min(vw * 0.54, 840);
+
+      width = maxWidth;
+      height = width / ratio;
+
+      if (height > maxHeight) {
+        height = maxHeight;
+        width = height * ratio;
+      }
+    }
+
     return {
-      width: Math.max(1, Math.round(width)),
-      height: Math.max(1, Math.round(height)),
-      top: Math.round(topEdge + (bottomEdge - topEdge) / 2),
+      width: Math.max(
+        1,
+        Math.round(width),
+      ),
+      height: Math.max(
+        1,
+        Math.round(height),
+      ),
+      top: Math.round(
+        topEdge +
+          (bottomEdge - topEdge) / 2,
+      ),
     };
   }, []);
 
@@ -155,22 +228,6 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
     return () => window.removeEventListener("resize", update);
   }, [active, items, measureMediaGeometry]);
 
-  useLayoutEffect(() => {
-    const previous =
-      lastMetaIndex.current;
-
-    lastMetaIndex.current =
-      current;
-
-    return runHomeMetaMotion({
-      counter: countNow.current,
-      dot: progressDot.current,
-      current,
-      previous,
-      itemCount: items.length,
-    });
-  }, [current, items.length]);
-
   useHomeFilmstrip({
     track,
     marker,
@@ -203,6 +260,17 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
           geometry;
         setMediaGeometry(geometry);
       },
+      onMeta: () => {
+        void runHomeMetaMotion({
+          counter: countNow.current,
+          dot: progressDot.current,
+          current,
+          previous:
+            previousIndexRef.current ??
+            current,
+          itemCount: items.length,
+        });
+      },
       onUnlock: () => {
         transitionLock.current =
           false;
@@ -221,7 +289,7 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
         );
       },
     });
-  }, [current, measureMediaGeometry]);
+  }, [current, items.length, measureMediaGeometry]);
 
   useHomeInput({
     active,
@@ -236,7 +304,7 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
       <main id="stage" ref={stage} className="stage" aria-hidden={!active}>
         {currentItem && <div ref={media} className="media frame-portrait" style={mediaGeometry ? { width: mediaGeometry.width, height: mediaGeometry.height, top: mediaGeometry.top } : undefined}>
           {previousItem && <div ref={backMedia} className="media-layer is-back"><MediaView media={previousItem} priority={false} draft={preview} /></div>}
-          <div ref={frontMedia} className="media-layer is-front" style={previousItem ? { opacity: 0 } : undefined}><MediaView media={currentItem} priority={active} draft={preview} /></div>
+          <div ref={frontMedia} className="media-layer is-front"><MediaView media={currentItem} priority={active} draft={preview} /></div>
         </div>}
         <div className="identity"><h1 ref={identityName} className="identity__name" aria-label={content.name}>{identityText(firstName, "first")}<br />{identityText(restName, "rest")}</h1></div>
         <nav className="desktop-main-nav" aria-label="Primary navigation">

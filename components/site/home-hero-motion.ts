@@ -256,6 +256,7 @@ export function runHomeHeroTransition({
   preview,
   measure,
   onGeometry,
+  onMeta,
   onUnlock,
   onFinish,
 }: {
@@ -272,12 +273,16 @@ export function runHomeHeroTransition({
   onGeometry: (
     geometry: HomeMediaGeometry,
   ) => void;
+  onMeta: () => void;
   onUnlock: () => void;
   onFinish: () => void;
 }) {
   if (!front) return () => {};
 
   let cancelled = false;
+  let metaTimer: {
+    kill: () => void;
+  } | null = null;
 
   void loadGsap().then(async (gsap) => {
     if (cancelled || !gsap) return;
@@ -286,68 +291,59 @@ export function runHomeHeroTransition({
       [front, back].filter(Boolean),
     );
 
-    if (prefersReducedMotion()) {
+    // The original HTML lets the loader own the first hero reveal.
+    // Do not run a second scale/fade animation underneath it.
+    if (
+      previousIndex === null ||
+      !back ||
+      previousItem === null
+    ) {
       gsap.set(front, {
         opacity: 1,
         scale: 1,
       });
 
-      if (back) {
-        gsap.set(back, {
-          opacity: 0,
-          scale: 1,
-        });
-      }
-
-      const geometry =
-        measure(currentItem);
-
-      if (geometry) {
-        onGeometry(geometry);
-      }
-
-      if (previousIndex !== null) {
-        onFinish();
-      }
-
+      onUnlock();
       return;
     }
 
-    if (!back || previousItem === null) {
-      gsap.fromTo(
-        front,
-        {
-          opacity: 0.25,
-          scale: 0.96,
-        },
-        {
-          opacity: 1,
-          scale: 1,
-          duration: 0.65,
-          ease: "power3.out",
-          onComplete: onUnlock,
-        },
-      );
+    const nextGeometry =
+      measure(currentItem);
 
+    if (prefersReducedMotion()) {
+      if (nextGeometry) {
+        onGeometry(nextGeometry);
+      }
+
+      gsap.set(back, {
+        opacity: 0,
+        scale: 1,
+      });
+
+      gsap.set(front, {
+        opacity: 1,
+        scale: 1,
+      });
+
+      onMeta();
+      onFinish();
       return;
     }
 
     gsap.set(back, {
       opacity: 1,
       scale: 1,
+      zIndex: 3,
     });
 
     gsap.set(front, {
       opacity: 0,
-      scale: 1.025,
+      scale: 1,
+      zIndex: 4,
     });
 
-    await waitForFirstPaint(front);
-
-    if (cancelled) return;
-
-    const nextGeometry =
-      measure(currentItem);
+    const frontReady =
+      waitForFirstPaint(front);
 
     const flight = makeHeroFlight({
       gsap,
@@ -358,115 +354,147 @@ export function runHomeHeroTransition({
     });
 
     if (flight) {
-      const ready = await flight.ready;
+      // Match the HTML:
+      // - full-resolution flight prepares independently
+      // - old hero starts fading immediately
+      // - counter begins at 240ms
+      // - destination and flight must both be ready before handoff
+      const flightDone = (async () => {
+        const ready =
+          await flight.ready;
 
-      if (cancelled) {
-        flight.flight.remove();
-        return;
-      }
+        if (
+          cancelled ||
+          !ready
+        ) {
+          return false;
+        }
 
-      if (ready && nextGeometry) {
-        await new Promise<void>(
-          (resolve) => {
-            gsap
-              .timeline({
-                onComplete: resolve,
-                defaults: {
-                  overwrite: "auto",
-                },
-              })
-              .to(
-                flight.flight,
-                {
-                  opacity: 1,
-                  duration: 0.12,
-                  ease: "power2.out",
-                },
-                0,
-              )
-              .to(
-                flight.flight,
-                {
-                  ...flight.destinationRect,
-                  duration: 0.64,
-                  ease: "power4.inOut",
-                },
-                0.04,
-              )
-              .to(
-                back,
-                {
-                  opacity: 0,
-                  scale: 0.985,
-                  duration: 0.2,
-                  ease: "power1.inOut",
-                },
-                0.44,
-              );
-          },
+        gsap.set(
+          flight.flight,
+          { opacity: 1 },
         );
-
-        onGeometry(nextGeometry);
-
-        gsap.set(front, {
-          opacity: 1,
-          scale: 1,
-        });
 
         await new Promise<void>(
           (resolve) =>
             gsap.to(
               flight.flight,
               {
-                opacity: 0,
-                duration: 0.1,
-                ease: "power1.out",
+                ...flight.destinationRect,
+                duration: 0.64,
+                ease: "power4.inOut",
+                overwrite: false,
                 onComplete: resolve,
               },
             ),
         );
 
+        return true;
+      })();
+
+      gsap.to(back, {
+        opacity: 0,
+        duration: 0.20,
+        ease: "power1.inOut",
+        overwrite: "auto",
+      });
+
+      metaTimer = gsap.delayedCall(
+        0.24,
+        () => {
+          if (!cancelled) {
+            onMeta();
+          }
+        },
+      );
+
+      const [, flightPlayed] =
+        await Promise.all([
+          frontReady,
+          flightDone,
+        ]);
+
+      if (cancelled) {
         flight.flight.remove();
-        onFinish();
         return;
       }
 
+      if (nextGeometry) {
+        onGeometry(nextGeometry);
+      }
+
+      gsap.set(front, {
+        opacity: 1,
+        scale: 1,
+      });
+
+      if (flightPlayed) {
+        await new Promise<void>(
+          (resolve) =>
+            gsap.to(
+              flight.flight,
+              {
+                opacity: 0,
+                duration: 0.10,
+                ease: "power1.out",
+                overwrite: "auto",
+                onComplete: resolve,
+              },
+            ),
+        );
+      }
+
       flight.flight.remove();
+
+      onFinish();
+      return;
     }
 
-    gsap
-      .timeline({
-        onComplete: onFinish,
-      })
-      .to(
-        back,
-        {
+    // Wheel, keyboard and browse navigation use the quieter
+    // fade from the reference HTML.
+    await frontReady;
+
+    if (cancelled) return;
+
+    await new Promise<void>(
+      (resolve) =>
+        gsap.to(back, {
           opacity: 0,
-          scale: 0.985,
-          duration: 0.2,
+          duration: 0.20,
           ease: "power1.inOut",
-        },
-        0,
-      )
-      .add(() => {
-        if (nextGeometry) {
-          onGeometry(nextGeometry);
-        }
-      }, 0.2)
-      .to(
-        front,
-        {
+          overwrite: "auto",
+          onComplete: resolve,
+        }),
+    );
+
+    if (cancelled) return;
+
+    if (nextGeometry) {
+      onGeometry(nextGeometry);
+    }
+
+    onMeta();
+
+    await new Promise<void>(
+      (resolve) =>
+        gsap.to(front, {
           opacity: 1,
           scale: 1,
           duration: 0.32,
           ease: "power1.inOut",
-        },
-        0.2,
-      );
+          overwrite: "auto",
+          onComplete: resolve,
+        }),
+    );
+
+    if (!cancelled) {
+      onFinish();
+    }
   });
 
   return () => {
     cancelled = true;
+    metaTimer?.kill();
 
     void loadGsap().then((gsap) =>
       gsap?.killTweensOf(

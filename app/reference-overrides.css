@@ -95,12 +95,9 @@
    inline height is updated once per animation frame by AboutView. */
 .portfolio .about-progress-track span{inset:0 0 auto 0!important;width:auto!important;height:0;transform:none!important}
 
-/* Keep the loader a clean signature field and keep the paper grain behind
-   photography. The reference grain belongs to the page surface; it should
-   never sit above the hero media. */
+/* Keep the loader a clean signature field. */
 .portfolio .reference-loader,
 .portfolio .loader{background-color:#fff!important}
-.portfolio .stage::before{z-index:1!important}
 
 /* Leave a little breathing room between the portrait and the progress rule. */
 .portfolio .about-progress-track{right:clamp(-32px,-2.4vw,-22px)!important}
