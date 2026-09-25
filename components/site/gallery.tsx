@@ -10,6 +10,7 @@ import { loadGsap, prefersReducedMotion } from "./motion";
 import {
   CARD_WIDTH_FACTORS,
   projectSpherePoint,
+  projectThreeSpherePoint,
   sphereUnits,
 } from "./gallery-geometry";
 
@@ -56,6 +57,8 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
   const introPlayed = useRef(false);
   const sphereSnapshot = useRef<CardSnapshot[]>([]);
+  const liveSphereRotation = useRef(0);
+  const sphereRotationSnapshot = useRef(0);
 
   const setGalleryPhase = useCallback((next: GalleryPhase) => {
     phaseRef.current = next;
@@ -91,15 +94,100 @@ export function GalleryView({ content, preview = false, base, onBack }: {
     setThreeReady(ready);
     setThreeSettled(true);
   }, []);
+
+  const onSphereRotation = useCallback((rotation: number) => {
+    liveSphereRotation.current = rotation;
+  }, []);
   useEffect(() => {
     if (phase !== "sphere-waiting" || !threeReady) return;
 
-    const frame = requestAnimationFrame(() => {
+    const assets = document.querySelector<HTMLElement>(
+      "#galleryPanel .gallery-intro-assets",
+    );
+    const sphere = document.querySelector<HTMLElement>(
+      "#galleryPanel .reference-three-sphere",
+    );
+
+    if (!assets || !sphere) {
       setGalleryPhase("sphere");
+      return;
+    }
+
+    let cancelled = false;
+    let timeline: { kill: () => void } | null = null;
+
+    void loadGsap().then((gsap) => {
+      if (cancelled) return;
+
+      if (!gsap || prefersReducedMotion()) {
+        setGalleryPhase("sphere");
+        return;
+      }
+
+      gsap.killTweensOf([assets, sphere]);
+
+      gsap.set(assets, {
+        opacity: 1,
+        visibility: "visible",
+      });
+
+      gsap.set(sphere, {
+        opacity: 0,
+        visibility: "visible",
+      });
+
+      const crossfade = gsap.timeline({
+        onComplete: () => {
+          if (!cancelled) {
+            setGalleryPhase("sphere");
+          }
+        },
+      });
+
+      crossfade
+        .to(
+          assets,
+          {
+            opacity: 0,
+            duration: 0.18,
+            ease: "sine.inOut",
+          },
+          0,
+        )
+        .to(
+          sphere,
+          {
+            opacity: 1,
+            duration: 0.18,
+            ease: "sine.inOut",
+          },
+          0,
+        );
+
+      timeline = crossfade;
     });
 
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelled = true;
+      timeline?.kill();
+    };
   }, [phase, threeReady, setGalleryPhase]);
+
+  useLayoutEffect(() => {
+    if (phase !== "sphere") return;
+
+    const assets = document.querySelector<HTMLElement>(
+      "#galleryPanel .gallery-intro-assets",
+    );
+    const sphere = document.querySelector<HTMLElement>(
+      "#galleryPanel .reference-three-sphere",
+    );
+
+    assets?.style.removeProperty("opacity");
+    assets?.style.removeProperty("visibility");
+    sphere?.style.removeProperty("opacity");
+    sphere?.style.removeProperty("visibility");
+  }, [phase]);
   const switchMode = useCallback((next: "sphere" | "grid") => {
     const current = phaseRef.current;
 
@@ -214,6 +302,37 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         width: Math.max(1, parseFloat(card.style.width) || card.offsetWidth || 52),
       }));
 
+      const captureLiveSphereSnapshot = (
+        rotation: number,
+      ): CardSnapshot[] => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const units = sphereUnits(cards.length);
+
+        return cards.map((card, index) => {
+          const target = projectThreeSpherePoint(
+            units[index],
+            rotation,
+            width,
+            height,
+          );
+
+          return {
+            x: target.x,
+            y: target.y,
+            scale: target.scale,
+            rotation: 0,
+            zIndex: target.zIndex,
+            width: Math.max(
+              1,
+              parseFloat(card.style.width) ||
+                card.offsetWidth ||
+                52,
+            ),
+          };
+        });
+      };
+
       const gridMetrics = () => {
         const width = window.innerWidth;
         const height = window.innerHeight;
@@ -263,14 +382,41 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       if (mode === "grid") {
         window.addEventListener("resize", handleResize);
         removeResize = () => window.removeEventListener("resize", handleResize);
-        const snapshot = captureSnapshot();
+        const sphereRotation =
+          liveSphereRotation.current;
+
+        const snapshot =
+          captureLiveSphereSnapshot(
+            sphereRotation,
+          );
+
+        sphereRotationSnapshot.current =
+          sphereRotation;
+
         sphereSnapshot.current = snapshot;
+
         const targets = gridTargets();
         const reduced = prefersReducedMotion();
         assets.classList.add("is-grid-transition");
         gsap.set(copy, { opacity: 0 });
         gsap.set(count, { opacity: 0 });
-        gsap.set(cards, { opacity: 1, visibility: "visible", xPercent: -50, yPercent: -50 });
+        gsap.set(cards, {
+          opacity: 1,
+          visibility: "visible",
+          xPercent: -50,
+          yPercent: -50,
+        });
+
+        snapshot.forEach((target, index) => {
+          gsap.set(cards[index], {
+            x: target.x,
+            y: target.y,
+            scale: target.scale,
+            rotation: target.rotation,
+            zIndex: target.zIndex,
+          });
+        });
+
         if (reduced) {
           assets.classList.remove("is-grid-transition");
           applyGridLayout();
@@ -305,6 +451,9 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         if (prefersReducedMotion()) {
           snapshot.forEach((target, index) => gsap.set(cards[index], { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation, zIndex: target.zIndex }));
           sphereSnapshot.current = [];
+          setHandoffRotation(
+            sphereRotationSnapshot.current,
+          );
           setGalleryPhase("sphere-waiting");
           return;
         }
@@ -318,6 +467,9 @@ export function GalleryView({ content, preview = false, base, onBack }: {
               gsap.set(card, { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation, zIndex: target.zIndex });
             });
             sphereSnapshot.current = [];
+            setHandoffRotation(
+              sphereRotationSnapshot.current,
+            );
             setGalleryPhase("sphere-waiting");
           },
         });
@@ -498,14 +650,40 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         id="main"
         className="gallery-space absolute inset-0 h-dvh min-h-dvh overflow-hidden bg-[var(--gallery-bg)] cursor-default select-none touch-none overscroll-none"
       >
-        <div id="galleryViewToggle" className="gallery-view-toggle" aria-label="Gallery view">
-          <button type="button" aria-pressed={mode === "sphere"} onClick={() => switchMode("sphere")}>SPHERE</button>
-          <span aria-hidden="true">/</span>
-          <button type="button" aria-pressed={mode === "grid"} onClick={() => switchMode("grid")}>GRID</button>
-        </div>
-        <Sphere items={items} draft={preview} onSelect={onSelect} onReady={onReady} rotationY={handoffRotation} animate={mode === "sphere" && threeLive} />
         <div
-          className={`gallery-intro-assets absolute inset-0 z-[12] overflow-hidden pointer-events-none [perspective:980px] [transform-style:preserve-3d] ${mode === "grid" ? "is-grid" : "is-sphere"}${mode === "sphere" && threeLive ? " is-three" : ""}`}
+          id="galleryViewToggle"
+          className="gallery-view-toggle absolute bottom-[53px] left-1/2 z-[34] flex -translate-x-1/2 items-center gap-[6px] whitespace-nowrap text-center text-[8px] leading-none tracking-[.15em] uppercase text-[#080808] opacity-100 pointer-events-auto max-[800px]:bottom-[max(47px,calc(env(safe-area-inset-bottom)+41px))] max-[800px]:gap-[5px] max-[800px]:text-[6px] max-[520px]:tracking-[.14em]"
+          aria-label="Gallery view"
+        >
+          <button
+            className={`appearance-none border-0 bg-transparent py-2 -my-2 [color:inherit] [font:inherit] [letter-spacing:inherit] uppercase cursor-pointer transition-opacity duration-[250ms] ${mode === "sphere" ? "opacity-100" : "opacity-[.58]"}`}
+            type="button"
+            aria-pressed={mode === "sphere"}
+            onClick={() => switchMode("sphere")}
+          >
+            SPHERE
+          </button>
+          <span className="opacity-[.42]" aria-hidden="true">/</span>
+          <button
+            className={`appearance-none border-0 bg-transparent py-2 -my-2 [color:inherit] [font:inherit] [letter-spacing:inherit] uppercase cursor-pointer transition-opacity duration-[250ms] ${mode === "grid" ? "opacity-100" : "opacity-[.58]"}`}
+            type="button"
+            aria-pressed={mode === "grid"}
+            onClick={() => switchMode("grid")}
+          >
+            GRID
+          </button>
+        </div>
+        <Sphere
+          items={items}
+          draft={preview}
+          onSelect={onSelect}
+          onReady={onReady}
+          onRotationChange={onSphereRotation}
+          rotationY={handoffRotation}
+          animate={mode === "sphere" && threeLive}
+        />
+        <div
+          className={`gallery-intro-assets absolute inset-0 z-[12] overflow-hidden pointer-events-none [perspective:980px] [transform-style:preserve-3d] ${phase === "grid" ? "is-grid" : "is-sphere"}${mode === "sphere" && threeLive ? " is-three" : ""}`}
         >
           {items.map((item, index) => {
             return (
@@ -529,9 +707,24 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         <ol className="gallery-semantic-list" aria-label="Gallery items">{items.map((item, index) => <li key={item.id}><button type="button" onClick={() => onSelect(index)}>{item.title}</button></li>)}</ol>
         <div className="gallery-intro-copy" aria-hidden="true"><h2 className="gallery-intro-name">ZEUDI <span className="slash">/</span> DI PALMA</h2></div>
         <div className="gallery-intro-count" aria-hidden="true">{intro ? "00" : "01"} / {pad(items.length)}</div>
-        <div className="gallery-space-label" aria-hidden="true">ARCHIVE — {items.length} ASSETS</div>
-        <div className="gallery-instruction" aria-hidden="true">{mode === "sphere" ? "SCROLL" : "SELECT"}</div>
-        <div className="gallery-orbit-index" aria-hidden="true">01 / {pad(items.length)}</div>
+        <div
+          className="gallery-space-label absolute left-[var(--side)] bottom-[19px] z-30 pointer-events-none text-[6px] tracking-[.14em] uppercase opacity-0 max-[800px]:bottom-[14px] max-[520px]:hidden"
+          aria-hidden="true"
+        >
+          ARCHIVE — {items.length} ASSETS
+        </div>
+        <div
+          className="gallery-instruction absolute left-1/2 bottom-[32px] z-30 -translate-x-1/2 pointer-events-none whitespace-nowrap text-[6px] tracking-[.15em] uppercase opacity-[.56] max-[800px]:bottom-[max(32px,calc(env(safe-area-inset-bottom)+26px))]"
+          aria-hidden="true"
+        >
+          {mode === "sphere" ? "SCROLL" : "SELECT"}
+        </div>
+        <div
+          className="gallery-orbit-index absolute right-[var(--side)] bottom-[19px] z-30 pointer-events-none text-[6px] tracking-[.12em] tabular-nums opacity-0 max-[800px]:bottom-[14px]"
+          aria-hidden="true"
+        >
+          01 / {pad(items.length)}
+        </div>
         <div id="galleryFocus" className={`gallery-focus${selected ? " is-open" : ""}${focusClosing ? " is-closing" : ""}`} aria-hidden={!selected}>
           <button className="gallery-focus__veil" type="button" onClick={dismissFocus} aria-label="Close image" />
           {selected && (selected.kind === "video" ? <video className="gallery-focus__video reference-focus-media" src={mediaUrl(selected.key, preview)} poster={mediaUrl(selected.thumbKey, preview)} controls playsInline preload="metadata" autoPlay /> : <img className="gallery-focus__img reference-focus-media" src={mediaUrl(selected.key, preview)} alt={selected.alt} width={selected.width} height={selected.height} onClick={dismissFocus} />)}

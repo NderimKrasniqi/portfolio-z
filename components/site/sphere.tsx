@@ -13,11 +13,20 @@ import {
   targetCardPx,
 } from "./gallery-geometry";
 
-export default function Sphere({ items, draft = false, onSelect, onReady, rotationY = 0, animate = false }: {
+export default function Sphere({
+  items,
+  draft = false,
+  onSelect,
+  onReady,
+  onRotationChange,
+  rotationY = 0,
+  animate = false,
+}: {
   items: Media[];
   draft?: boolean;
   onSelect: (index: number) => void;
   onReady: (ready: boolean) => void;
+  onRotationChange?: (rotation: number) => void;
   rotationY?: number;
   animate?: boolean;
 }) {
@@ -26,17 +35,33 @@ export default function Sphere({ items, draft = false, onSelect, onReady, rotati
   const rotationYRef = useRef(0);
   const animateRef = useRef(false);
   const needsRenderRef = useRef(false);
+
+  const onSelectRef = useRef(onSelect);
+  const onReadyRef = useRef(onReady);
+  const onRotationChangeRef = useRef(onRotationChange);
+
   const [failed, setFailed] = useState(false);
+
+  useLayoutEffect(() => {
+    onSelectRef.current = onSelect;
+    onReadyRef.current = onReady;
+    onRotationChangeRef.current = onRotationChange;
+  }, [onReady, onRotationChange, onSelect]);
+
+  useLayoutEffect(() => {
+    animateRef.current = animate;
+  }, [animate]);
 
   useLayoutEffect(() => {
     const rotation = rotationY ?? 0;
     rotationYRef.current = rotation;
-    animateRef.current = animate;
+
     if (worldRef.current) {
       worldRef.current.rotation.y = rotation;
       needsRenderRef.current = true;
+      onRotationChangeRef.current?.(rotation);
     }
-  }, [animate, rotationY]);
+  }, [rotationY]);
 
   useEffect(() => {
     const el = container.current;
@@ -45,7 +70,7 @@ export default function Sphere({ items, draft = false, onSelect, onReady, rotati
     try {
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     } catch {
-      queueMicrotask(() => { setFailed(true); onReady(false); });
+      queueMicrotask(() => { setFailed(true); onReadyRef.current(false); });
       return;
     }
 
@@ -111,7 +136,8 @@ export default function Sphere({ items, draft = false, onSelect, onReady, rotati
         sprites.push(sprite);
       });
       renderer.render(scene, camera);
-      onReady(true);
+      onRotationChangeRef.current?.(world.rotation.y);
+      onReadyRef.current(true);
     };
 
     el.appendChild(renderer.domElement);
@@ -148,7 +174,7 @@ export default function Sphere({ items, draft = false, onSelect, onReady, rotati
       pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(sprites)[0];
-      if (hit) onSelect(hit.object.userData.index as number);
+      if (hit) onSelectRef.current(hit.object.userData.index as number);
     };
     let spinVelocity = 0;
     let lastX: number | null = null;
@@ -186,6 +212,7 @@ export default function Sphere({ items, draft = false, onSelect, onReady, rotati
           world.rotation.y += .13 * delta;
         }
         renderer.render(scene, camera);
+        onRotationChangeRef.current?.(world.rotation.y);
         needsRenderRef.current = false;
       }
       if (!animateRef.current) spinVelocity = 0;
@@ -197,7 +224,7 @@ export default function Sphere({ items, draft = false, onSelect, onReady, rotati
 
     return () => {
       disposed = true;
-      onReady(false);
+      onReadyRef.current(false);
       cancelAnimationFrame(frame);
       observer.disconnect(); intersection.disconnect();
       canvas.removeEventListener("click", onClick);
@@ -212,7 +239,7 @@ export default function Sphere({ items, draft = false, onSelect, onReady, rotati
       canvas.remove();
       if (worldRef.current === world) worldRef.current = null;
     };
-  }, [draft, items, onReady, onSelect]);
+  }, [draft, items]);
 
   if (failed) return <p className="gallery-webgl-fallback" role="status">WEBGL UNAVAILABLE · USE GRID</p>;
   return <div ref={container} className="reference-three-sphere" />;

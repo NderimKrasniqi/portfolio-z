@@ -348,9 +348,6 @@
 .portfolio .gallery-intro-name .slash{display:inline-block;margin:0 .16em;font-weight:300;opacity:.34}
 .portfolio .gallery-intro-role{margin-top:9px;font-size:5px;letter-spacing:.15em;text-transform:uppercase;opacity:0;will-change:opacity,transform;white-space:nowrap}
 .portfolio .gallery-intro-count{position:absolute;left:50%;top:calc(50% + clamp(62px,7vw,108px));z-index:21;transform:translateX(-50%);font-size:6px;letter-spacing:.16em;font-variant-numeric:tabular-nums;opacity:0;pointer-events:none}
-.portfolio .gallery-instruction{position:absolute;left:50%;transform:translateX(-50%);z-index:30;font-size:6px;letter-spacing:.15em;text-transform:uppercase;pointer-events:none;white-space:nowrap}
-.portfolio .gallery-orbit-index{position:absolute;right:var(--side);bottom:19px;z-index:30;font-size:6px;letter-spacing:.12em;font-variant-numeric:tabular-nums;opacity:0;pointer-events:none}
-.portfolio .gallery-space-label{position:absolute;left:var(--side);bottom:19px;z-index:30;font-size:6px;letter-spacing:.14em;text-transform:uppercase;opacity:0;pointer-events:none}
 .portfolio .gallery-focus{position:absolute;inset:0;z-index:90;display:grid;place-items:center;pointer-events:none;visibility:hidden}
 .portfolio .gallery-focus.is-open{pointer-events:auto;visibility:visible}
 .portfolio .gallery-focus__veil{position:absolute;inset:0;opacity:0;cursor:zoom-out}
@@ -681,19 +678,12 @@
 .portfolio .identity__name{font-size:38px!important;line-height:.86!important}}
 @media (max-width:520px){.portfolio .identity__name{font-size:34px!important}}
 /* [gallery] zeudi-gallery-grid-view-final */
-.portfolio .gallery-view-toggle{position:absolute;z-index:34;display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:8px;line-height:1;letter-spacing:.15em;text-transform:uppercase;opacity:0;pointer-events:none;color:#080808}
-.portfolio .gallery-view-toggle button{appearance:none;border:0;background:transparent;padding:8px 0;margin:-8px 0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;opacity:.28;transition:opacity .25s ease}
-.portfolio .gallery-view-toggle button[aria-pressed="true"]{opacity:1}
-.portfolio .gallery-view-toggle button:not([aria-pressed="true"]){opacity:.42}
-.portfolio .gallery-view-toggle span{opacity:.18}
-.portfolio .gallery-panel.open #galleryViewToggle{opacity:1;pointer-events:auto}
 .portfolio .gallery-panel:has(.gallery-focus.is-open) .gallery-view-toggle{opacity:0!important;pointer-events:none!important}
 .portfolio .gallery-intro-assets.is-grid .gallery-intro-card{opacity:1!important;visibility:visible!important;box-shadow:0 0 0 1px rgba(0,0,0,.035)!important}
 .portfolio .gallery-intro-assets.is-grid{pointer-events:auto!important}
 .portfolio .gallery-intro-assets.is-grid .gallery-intro-card{pointer-events:auto!important;cursor:pointer!important}
 .portfolio .gallery-intro-assets.is-grid-transition{pointer-events:none!important}
 .portfolio .gallery-intro-assets.is-grid-transition .gallery-intro-card{pointer-events:none!important}
-@media (max-width:800px){.portfolio .gallery-view-toggle{gap:5px}}
 @media (max-width:520px){}
 /* [base-tokens] zeudi-native-cinematic-focus-fix */
 .portfolio #galleryFocus .gallery-focus__ghost{display:block!important;position:fixed!important;z-index:6!important;object-fit:cover!important;pointer-events:none!important;opacity:0;will-change:left,top,width,height,opacity!important}
@@ -846,8 +836,6 @@
 .portfolio .about-sheet,
 .portfolio .contact-panel .contact-sheet{padding-left:var(--side)!important;padding-right:var(--side)!important}}
 /* [gallery] zeudi-gallery-bottom-breathing-room */
-.portfolio .gallery-view-toggle{bottom:53px!important}
-.portfolio .gallery-instruction{bottom:32px!important}
 @media (max-width:800px){.portfolio .gallery-view-toggle{bottom:max(47px,calc(env(safe-area-inset-bottom) + 41px))!important}
 .portfolio .gallery-instruction{bottom:max(32px,calc(env(safe-area-inset-bottom) + 26px))!important}}
 /* [contact] zeudi-filmstrip-contact-sheet-v2 */
@@ -1210,11 +1198,7 @@
 .portfolio .about-panel .about-location .it-sep{opacity:.56!important}
 .portfolio .contact-panel .contact-eyebrow{opacity:.64!important}
 .portfolio .contact-panel .rep-role{opacity:.60!important}
-.portfolio .gallery-panel .gallery-view-toggle button:not([aria-pressed="true"]){opacity:.58!important}
-.portfolio .gallery-panel .gallery-view-toggle button[aria-pressed="true"]{opacity:1!important}
-.portfolio .gallery-panel .gallery-view-toggle span{opacity:.42!important}
 .portfolio .gallery-panel .gallery-intro-name .slash{opacity:.50!important}
-.portfolio .gallery-panel .gallery-instruction{opacity:.56!important}
 .portfolio .gallery-panel .gallery-socials a{opacity:.58!important}
 .portfolio .gallery-panel .gallery-link--active{opacity:.64!important}
 .portfolio .gallery-panel .gallery-webgl-fallback{opacity:.64!important}

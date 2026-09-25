@@ -23,9 +23,11 @@ export type SphereUnit = {
 };
 
 export function sphereUnits(count: number): SphereUnit[] {
+  if (count <= 0) return [];
+
   const golden = Math.PI * (3 - Math.sqrt(5));
 
-  return Array.from({ length: Math.max(1, count) }, (_, index) => {
+  return Array.from({ length: count }, (_, index) => {
     let y = 1 - 2 * ((index + 0.5) / count);
 
     const ring = Math.sqrt(Math.max(0, 1 - y * y));
@@ -101,45 +103,43 @@ export function roomScale(
   };
 }
 
-export function projectSpherePoint(
+type SphereProjectionBase = {
+  x: number;
+  y: number;
+  scale: number;
+  zIndex: number;
+  depth01: number;
+};
+
+function projectSphereBase(
   unit: SphereUnit,
   rotationY: number,
   width: number,
   height: number,
-) {
-  const mobile = width <= 800;
-
-  const sphereRadius = mobile
-    ? Math.min(190, width * 0.37, height * 0.235)
-    : Math.min(255, width * 0.18, height * 0.285);
-
-  const focal = focalPx(height);
-
-  const worldRadius =
-    (sphereRadius * CAMERA_Z) / focal;
+): SphereProjectionBase {
+  const scale = roomScale(width, height);
 
   const sinY = Math.sin(rotationY);
   const cosY = Math.cos(rotationY);
 
   const x1 =
-    unit.x * worldRadius * cosY +
-    unit.z * worldRadius * 1.075 * sinY;
+    unit.x * scale.x * cosY +
+    unit.z * scale.z * sinY;
 
   const z1 =
-    -unit.x * worldRadius * sinY +
-    unit.z * worldRadius * 1.075 * cosY;
+    -unit.x * scale.x * sinY +
+    unit.z * scale.z * cosY;
 
   const tilt = -0.055;
-
   const sinTilt = Math.sin(tilt);
   const cosTilt = Math.cos(tilt);
 
   const y2 =
-    unit.y * worldRadius * cosTilt -
+    unit.y * scale.y * cosTilt -
     z1 * sinTilt;
 
   const z2 =
-    unit.y * worldRadius * sinTilt +
+    unit.y * scale.y * sinTilt +
     z1 * cosTilt;
 
   const depth = Math.max(
@@ -147,24 +147,62 @@ export function projectSpherePoint(
     CAMERA_Z - z2,
   );
 
-  const projection = focal / depth;
+  const projection =
+    focalPx(height) / depth;
 
-  const depthScale =
-    0.96 +
-    (((z2 / (worldRadius * 1.075) + 1) / 2) *
-      0.08);
+  const depth01 =
+    (z2 / scale.z + 1) / 2;
 
   return {
     x: x1 * projection,
     y: -y2 * projection,
-    scale:
-      (CAMERA_Z / depth) *
-      depthScale,
+    scale: CAMERA_Z / depth,
     zIndex:
       100 +
-      Math.round(
-        ((z2 / (worldRadius * 1.075) + 1) / 2) *
-          100,
-      ),
+      Math.round(depth01 * 100),
+    depth01,
+  };
+}
+
+export function projectThreeSpherePoint(
+  unit: SphereUnit,
+  rotationY: number,
+  width: number,
+  height: number,
+) {
+  const {
+    depth01: _depth01,
+    ...projection
+  } = projectSphereBase(
+    unit,
+    rotationY,
+    width,
+    height,
+  );
+
+  return projection;
+}
+
+export function projectSpherePoint(
+  unit: SphereUnit,
+  rotationY: number,
+  width: number,
+  height: number,
+) {
+  const projection = projectSphereBase(
+    unit,
+    rotationY,
+    width,
+    height,
+  );
+
+  const depthScale =
+    0.96 + projection.depth01 * 0.08;
+
+  return {
+    x: projection.x,
+    y: projection.y,
+    scale: projection.scale * depthScale,
+    zIndex: projection.zIndex,
   };
 }
