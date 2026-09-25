@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import dynamic from "next/dynamic";
 import type { Content } from "@/lib/model";
 import { mediaUrl } from "./media";
-import { BackButton, SocialLinks } from "./frame";
+import { BackButton, SocialLinks } from "./site-controls";
 import { SiteLink } from "./navigation";
 import { loadGsap, prefersReducedMotion } from "./motion";
 import {

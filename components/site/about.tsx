@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 import type { Content } from "@/lib/model";
-import { BackButton } from "./frame";
+import { BackButton } from "./site-controls";
 import {
   loadGsap,
   prefersReducedMotion,

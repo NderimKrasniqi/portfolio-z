@@ -3,7 +3,7 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Content } from "@/lib/model";
 import { MediaView, mediaUrl } from "./media";
-import { SocialLinks } from "./frame";
+import { SocialLinks } from "./site-controls";
 import { signatureSvg } from "./signature";
 import { SiteLink } from "./navigation";
 import {
