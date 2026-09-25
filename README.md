@@ -13,9 +13,9 @@ pnpm install --frozen-lockfile
 pnpm dev:backend
 ```
 
-In a second terminal, run `pnpm dev`. `pnpm dev:backend` uses the linked Convex development project and never deploys to production. The seeded locales start as private drafts. To inspect the public design before publishing, run the Next development server with `LOCAL_REFERENCE_PREVIEW=true`; this mode serves the sanitized local English, Italian, and Portuguese reference copy and private optimized image files. It does not authenticate the CMS or publish content.
+Keep `pnpm dev:backend` running while using the CMS. In a second terminal, run `pnpm configure:dev` once, then run `pnpm dev`. The backend uses the linked Convex development project and never deploys to production. The seeded locales start as private drafts. To inspect the public design before publishing, run the Next development server with `LOCAL_REFERENCE_PREVIEW=true LOCAL_ACCESS_PREVIEW=true`; this mode serves the sanitized local English, Italian, and Portuguese reference copy and private optimized image files. It does not authenticate the CMS or publish content.
 
-To create the first owner account, set `INITIAL_ADMIN_PASSWORD` in your shell to a unique password with at least 12 characters, then run `pnpm admin:create owner@example.com`. The command only runs after you type `dev`. It provisions the first account in the linked development deployment. The owner can then invite the second administrator from the editor once email is configured.
+To create the first owner account, leave `pnpm dev:backend` running, set `INITIAL_ADMIN_PASSWORD` in your shell to a unique password with at least 12 characters, then run `pnpm admin:create owner@example.com`. The command only runs after you type `dev`. It provisions the first account in the linked development deployment. The owner can then invite the second administrator from the editor once email is configured. Better Auth is installed as a local Convex component so the admin plugin's role and ban fields are included in the development schema.
 
 ## Content import
 

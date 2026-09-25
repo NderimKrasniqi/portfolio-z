@@ -147,7 +147,7 @@
         "width": 1536,
         "height": 2048,
         "caption": "",
-        "featured": true
+        "featured": false
       },
       {
         "id": "67b806e210557fce82a4f6a6",
@@ -161,7 +161,7 @@
         "width": 1537,
         "height": 2048,
         "caption": "",
-        "featured": true
+        "featured": false
       },
       {
         "id": "ca8e659a4f70c19af590ebb1",
@@ -203,7 +203,7 @@
         "width": 1080,
         "height": 1350,
         "caption": "",
-        "featured": false
+        "featured": true
       },
       {
         "id": "46cbd468b4947d0da474180f",
@@ -217,7 +217,7 @@
         "width": 1536,
         "height": 2048,
         "caption": "",
-        "featured": false
+        "featured": true
       }
     ],
     "products": [
@@ -526,7 +526,7 @@
         "width": 1536,
         "height": 2048,
         "caption": "",
-        "featured": true
+        "featured": false
       },
       {
         "id": "67b806e210557fce82a4f6a6",
@@ -540,7 +540,7 @@
         "width": 1537,
         "height": 2048,
         "caption": "",
-        "featured": true
+        "featured": false
       },
       {
         "id": "ca8e659a4f70c19af590ebb1",
@@ -582,7 +582,7 @@
         "width": 1080,
         "height": 1350,
         "caption": "",
-        "featured": false
+        "featured": true
       },
       {
         "id": "46cbd468b4947d0da474180f",
@@ -596,7 +596,7 @@
         "width": 1536,
         "height": 2048,
         "caption": "",
-        "featured": false
+        "featured": true
       }
     ],
     "products": [
@@ -905,7 +905,7 @@
         "width": 1536,
         "height": 2048,
         "caption": "",
-        "featured": true
+        "featured": false
       },
       {
         "id": "67b806e210557fce82a4f6a6",
@@ -919,7 +919,7 @@
         "width": 1537,
         "height": 2048,
         "caption": "",
-        "featured": true
+        "featured": false
       },
       {
         "id": "ca8e659a4f70c19af590ebb1",
@@ -961,7 +961,7 @@
         "width": 1080,
         "height": 1350,
         "caption": "",
-        "featured": false
+        "featured": true
       },
       {
         "id": "46cbd468b4947d0da474180f",
@@ -975,7 +975,7 @@
         "width": 1536,
         "height": 2048,
         "caption": "",
-        "featured": false
+        "featured": true
       }
     ],
     "products": [

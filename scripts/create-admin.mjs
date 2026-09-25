@@ -27,7 +27,12 @@ const result = spawnSync(
   { encoding: "utf8" },
 );
 if (result.status !== 0) {
-  console.error("Owner creation failed. Check deployment logs.");
+  const details = [result.stderr, result.stdout]
+    .filter((value) => value && value.trim())
+    .join("\n")
+    .trim();
+  console.error("Owner creation failed.");
+  if (details) console.error(details);
   process.exit(1);
 }
 console.log(

@@ -15,7 +15,7 @@ export function MediaView({
       <video
         controls
         playsInline
-        preload="none"
+        preload={priority ? "auto" : "metadata"}
         poster={mediaUrl(media.thumbKey, draft)}
         width={media.width}
         height={media.height}

@@ -1,13 +1,22 @@
-import { createClient, type GenericCtx } from "@convex-dev/better-auth";
+import {
+  createClient,
+  type GenericCtx,
+} from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
-import { betterAuth } from "better-auth/minimal";
+import { betterAuth, type BetterAuthOptions } from "better-auth/minimal";
 import { admin } from "better-auth/plugins";
 import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import authConfig from "./auth.config";
-export const authComponent = createClient<DataModel>(components.betterAuth);
-export const createAuth = (ctx: GenericCtx<DataModel>) =>
-  betterAuth({
+import authSchema from "./betterAuth/schema";
+
+export const authComponent = createClient<DataModel, typeof authSchema>(
+  components.betterAuth,
+  { local: { schema: authSchema } },
+);
+
+export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
+  ({
     baseURL: process.env.SITE_URL || "http://localhost:3000",
     secret: process.env.BETTER_AUTH_SECRET,
     database: authComponent.adapter(ctx),
@@ -49,4 +58,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
       },
     },
     plugins: [admin(), convex({ authConfig })],
-  });
+  }) satisfies BetterAuthOptions;
+
+export const createAuth = (ctx: GenericCtx<DataModel>) =>
+  betterAuth(createAuthOptions(ctx));

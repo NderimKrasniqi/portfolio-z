@@ -1,106 +1,236 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Media } from "@/lib/model";
 import { mediaUrl } from "./media";
 
-export default function Sphere({ items, draft = false, onSelect, onReady }: {
+const CAMERA_FOV = 42;
+const CAMERA_Z = 9.25;
+const CARD_WIDTH_FACTORS = [.96, 1.04, .99, 1.07, 1.01, .93, 1.05, .98, .95, 1.03, .97, 1];
+
+function sphereUnits(count: number) {
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  return Array.from({ length: Math.max(1, count) }, (_, index) => {
+    let y = 1 - 2 * ((index + .5) / count);
+    const ring = Math.sqrt(Math.max(0, 1 - y * y));
+    const theta = index * golden + .58;
+    let x = Math.cos(theta) * ring;
+    let z = Math.sin(theta) * ring;
+    const cy = Math.cos(.22), sy = Math.sin(.22);
+    const x1 = x * cy + z * sy;
+    const z1 = -x * sy + z * cy;
+    const cx = Math.cos(-.10), sx = Math.sin(-.10);
+    const y1 = y * cx - z1 * sx;
+    const z2 = y * sx + z1 * cx;
+    const length = Math.hypot(x1, y1, z2) || 1;
+    x = x1 / length;
+    y = y1 / length;
+    z = z2 / length;
+    return { x, y, z };
+  });
+}
+
+function targetCardPx(index: number, width: number) {
+  const base = Math.min(58, Math.max(44, width * .0395));
+  return base * CARD_WIDTH_FACTORS[index % CARD_WIDTH_FACTORS.length] * (width <= 800 ? .9 : 1);
+}
+
+function focalPx(height: number) {
+  return height / (2 * Math.tan((CAMERA_FOV * Math.PI / 180) / 2));
+}
+
+function roomScale(width: number, height: number) {
+  const mobile = width <= 800;
+  const radiusPx = mobile
+    ? Math.min(190, width * .37, height * .235)
+    : Math.min(255, width * .18, height * .285);
+  const radius = radiusPx * CAMERA_Z / focalPx(height);
+  return { x: radius, y: radius, z: radius * 1.075 };
+}
+
+export default function Sphere({ items, draft = false, onSelect, onReady, rotationY = 0, animate = false }: {
   items: Media[];
   draft?: boolean;
   onSelect: (index: number) => void;
   onReady: (ready: boolean) => void;
+  rotationY?: number;
+  animate?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null);
+  const worldRef = useRef<THREE.Group | null>(null);
+  const rotationYRef = useRef(0);
+  const animateRef = useRef(false);
+  const needsRenderRef = useRef(false);
   const [failed, setFailed] = useState(false);
+
+  useLayoutEffect(() => {
+    const rotation = rotationY ?? 0;
+    rotationYRef.current = rotation;
+    animateRef.current = animate;
+    if (worldRef.current) {
+      worldRef.current.rotation.y = rotation;
+      needsRenderRef.current = true;
+    }
+  }, [animate, rotationY]);
+
   useEffect(() => {
     const el = container.current;
     if (!el || !items.length) return;
     let renderer: THREE.WebGLRenderer;
-    try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); }
-    catch { queueMicrotask(() => { setFailed(true); onReady(false); }); return; }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+    try {
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+    } catch {
+      queueMicrotask(() => { setFailed(true); onReady(false); });
+      return;
+    }
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.setClearColor(0xffffff, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(42, 1, .1, 100);
-    camera.position.z = 7.5;
-    const group = new THREE.Group();
-    scene.add(group);
+    const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, .1, 100);
+    camera.position.set(0, 0, CAMERA_Z);
+    const world = new THREE.Group();
+    world.rotation.x = -.055;
+    world.rotation.y = rotationYRef.current;
+    worldRef.current = world;
+    scene.add(world);
     const loader = new THREE.TextureLoader();
+    const points = sphereUnits(items.length);
     const textures: THREE.Texture[] = [];
-    const meshes: THREE.Mesh[] = [];
-    const radius = 2.35;
+    const sprites: THREE.Sprite[] = [];
     let disposed = false;
-    items.forEach((item, index) => {
-      const latitude = Math.acos(1 - 2 * (index + .5) / items.length);
-      const longitude = Math.PI * (1 + Math.sqrt(5)) * index;
-      const texture = loader.load(mediaUrl(item.thumbKey, draft), () => { if (!disposed) renderer.render(scene, camera); });
-      texture.colorSpace = THREE.SRGBColorSpace;
-      textures.push(texture);
-      const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, transparent: true, opacity: .94 });
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(.59, .79), material);
-      mesh.position.setFromSphericalCoords(radius, latitude, longitude);
-      mesh.lookAt(mesh.position.clone().multiplyScalar(2));
-      mesh.userData.index = index;
-      meshes.push(mesh);
-      group.add(mesh);
+
+    const widthFor = (index: number) => {
+      const viewportWidth = el.clientWidth || window.innerWidth;
+      return targetCardPx(index, viewportWidth) * CAMERA_Z / focalPx(el.clientHeight || window.innerHeight);
+    };
+    const addTexture = (item: Media) => new Promise<THREE.Texture>((resolve) => {
+      loader.load(
+        mediaUrl(item.thumbKey, draft),
+        (texture) => {
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.generateMipmaps = false;
+          resolve(texture);
+        },
+        undefined,
+        () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 4; canvas.height = 4;
+          const context = canvas.getContext("2d");
+          if (context) { context.fillStyle = "#ececea"; context.fillRect(0, 0, 4, 4); }
+          resolve(new THREE.CanvasTexture(canvas));
+        },
+      );
     });
+
+    const load = async () => {
+      const loaded = await Promise.all(items.map(addTexture));
+      if (disposed) {
+        loaded.forEach((texture) => texture.dispose());
+        return;
+      }
+      loaded.forEach((texture, index) => {
+        textures.push(texture);
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1, depthTest: true, depthWrite: true });
+        const sprite = new THREE.Sprite(material);
+        const point = points[index];
+        const scale = roomScale(el.clientWidth || window.innerWidth, el.clientHeight || window.innerHeight);
+        sprite.position.set(point.x * scale.x, point.y * scale.y, point.z * scale.z);
+        const cardWidth = widthFor(index);
+        sprite.scale.set(cardWidth, cardWidth * 4 / 3, 1);
+        sprite.userData.index = index;
+        world.add(sprite);
+        sprites.push(sprite);
+      });
+      renderer.render(scene, camera);
+      onReady(true);
+    };
+
     el.appendChild(renderer.domElement);
     renderer.domElement.setAttribute("aria-hidden", "true");
+    renderer.domElement.tabIndex = -1;
+
     const resize = () => {
-      const width = el.clientWidth, height = el.clientHeight;
-      renderer.setSize(width, height);
+      const width = Math.max(1, el.clientWidth || window.innerWidth);
+      const height = Math.max(1, el.clientHeight || window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+      renderer.setSize(width, height, false);
       camera.aspect = width / height;
+      camera.fov = CAMERA_FOV;
+      camera.position.z = CAMERA_Z;
       camera.updateProjectionMatrix();
+      const scale = roomScale(width, height);
+      sprites.forEach((sprite, index) => {
+        const point = points[index];
+        sprite.position.set(point.x * scale.x, point.y * scale.y, point.z * scale.z);
+        const cardWidth = targetCardPx(index, width) * CAMERA_Z / focalPx(height);
+        sprite.scale.set(cardWidth, cardWidth * 4 / 3, 1);
+      });
       renderer.render(scene, camera);
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
     resize();
-    onReady(true);
+
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
-    const onClick = (event: PointerEvent) => {
-      const rect = renderer.domElement.getBoundingClientRect();
+    const canvas = renderer.domElement;
+    const onClick = (event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
       pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObjects(meshes)[0];
+      const hit = raycaster.intersectObjects(sprites)[0];
       if (hit) onSelect(hit.object.userData.index as number);
     };
+    let spinVelocity = 0;
+    let lastX: number | null = null;
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
-      group.rotation.y += Math.sign(event.deltaY) * .16;
-      renderer.render(scene, camera);
+      spinVelocity = Math.max(-.072, Math.min(.072, spinVelocity + Math.max(-.026, Math.min(.026, event.deltaY * .0002))));
     };
-    const onPointerDown = (event: PointerEvent) => { renderer.domElement.setPointerCapture(event.pointerId); lastX = event.clientX; };
+    const onPointerDown = (event: PointerEvent) => { canvas.setPointerCapture(event.pointerId); lastX = event.clientX; };
     const onPointerMove = (event: PointerEvent) => {
       if (lastX === null) return;
-      group.rotation.y += (event.clientX - lastX) * .004;
+      spinVelocity = Math.max(-.072, Math.min(.072, spinVelocity + (event.clientX - lastX) * .0002));
       lastX = event.clientX;
-      renderer.render(scene, camera);
     };
     const onPointerUp = () => { lastX = null; };
-    let lastX: number | null = null;
-    const canvas = renderer.domElement;
     canvas.addEventListener("click", onClick);
     canvas.addEventListener("wheel", onWheel, { passive: false });
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointercancel", onPointerUp);
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-    let visible = true, last = 0, frame = 0;
+
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let visible = true;
+    let last = performance.now();
+    let frame = 0;
     const intersection = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
     intersection.observe(el);
     const draw = (time: number) => {
-      if (visible && !document.hidden) {
-        if (!reduced.matches) group.rotation.y += Math.min(time - last, 50) * .0001;
+      const delta = Math.min(time - last, 50) / 1000;
+      if (visible && !document.hidden && (animateRef.current || needsRenderRef.current)) {
+        if (animateRef.current && Math.abs(spinVelocity) > .00002) {
+          world.rotation.y += spinVelocity * delta * 60;
+          spinVelocity *= Math.pow(.875, delta * 60);
+        } else if (animateRef.current && !reduced.matches) {
+          world.rotation.y += .13 * delta;
+        }
         renderer.render(scene, camera);
+        needsRenderRef.current = false;
       }
+      if (!animateRef.current) spinVelocity = 0;
       last = time;
       frame = requestAnimationFrame(draw);
     };
     frame = requestAnimationFrame(draw);
+    void load();
+
     return () => {
       disposed = true;
       onReady(false);
@@ -112,11 +242,14 @@ export default function Sphere({ items, draft = false, onSelect, onReady }: {
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointercancel", onPointerUp);
-      meshes.forEach((mesh) => { mesh.geometry.dispose(); (mesh.material as THREE.Material).dispose(); });
+      sprites.forEach((sprite) => { sprite.geometry.dispose(); (sprite.material as THREE.Material).dispose(); });
       textures.forEach((texture) => texture.dispose());
-      renderer.dispose(); canvas.remove();
+      renderer.dispose();
+      canvas.remove();
+      if (worldRef.current === world) worldRef.current = null;
     };
-  }, [items, draft, onSelect, onReady]);
+  }, [draft, items, onReady, onSelect]);
+
   if (failed) return <p className="gallery-webgl-fallback" role="status">WEBGL UNAVAILABLE · USE GRID</p>;
   return <div ref={container} className="reference-three-sphere" />;
 }

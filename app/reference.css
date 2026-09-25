@@ -56,6 +56,7 @@
 .portfolio .meta{right:var(--side);top:50%;transform:translateY(-50%);opacity:1}
 .portfolio .meta__content{will-change:opacity,transform}
 .portfolio .meta__count{font-size:clamp(22px,2.3vw,36px);line-height:.94;letter-spacing:-.045em;font-variant-numeric:tabular-nums;font-weight:400}
+.portfolio .meta__count>span:first-child{display:inline-block;will-change:transform}
 .portfolio .meta__slash{opacity:.2;margin:0 .09em}
 .portfolio .meta__rule{height:1px;background:var(--ink);opacity:.17;margin:12px 0 10px;transform:scaleX(1);transform-origin:right}
 .portfolio .meta__title,
@@ -941,7 +942,7 @@
 .portfolio .shop-checkout:focus-visible{outline:1px solid currentColor;outline-offset:5px}
 .portfolio .shop-panel{position:fixed;inset:0;z-index:3180;background:#fff;color:#080808;visibility:hidden;pointer-events:none;overflow:hidden;clip-path:inset(0 0 0 100%)!important;-webkit-clip-path:inset(0 0 0 100%)!important;transition:clip-path .72s cubic-bezier(.22,1,.36,1),-webkit-clip-path .72s cubic-bezier(.22,1,.36,1),visibility 0s linear .72s!important;isolation:isolate;height:100dvh!important;min-height:100dvh!important}
 .portfolio .shop-panel:focus{outline:none}
-.portfolio .shop-panel.open{visibility:visible;pointer-events:auto;clip-path:inset(0)!important;-webkit-clip-path:inset(0)!important;transition:clip-path .72s cubic-bezier(.22,1,.36,1),-webkit-clip-path .72s cubic-bezier(.22,1,.36,1),visibility 0s!important}
+.portfolio .shop-panel.open{visibility:visible;pointer-events:auto;clip-path:inset(0);-webkit-clip-path:inset(0);transition:clip-path .72s cubic-bezier(.22,1,.36,1),-webkit-clip-path .72s cubic-bezier(.22,1,.36,1),visibility 0s!important}
 .portfolio .shop-masthead{position:fixed;left:0;right:0;top:0;z-index:3260;height:64px;padding:0 var(--side);box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.965);border-bottom:1px solid rgba(8,8,8,.11)}
 .portfolio .shop-site-home{position:relative;border:0;background:transparent;color:#080808;padding:0;cursor:pointer;text-align:left}
 .portfolio .shop-site-home__name{font-size:10px;line-height:1;letter-spacing:-.025em;font-weight:500;text-transform:uppercase}
@@ -1265,4 +1266,3 @@
 .portfolio .gallery-keyboard-status.is-visible{opacity:.78;visibility:visible}
 .portfolio .gallery-panel.is-dark .gallery-keyboard-status{background:rgba(8,8,8,.80);color:#fff}
 @media (max-width:800px){.portfolio .gallery-keyboard-status{bottom:18px;max-width:86vw}}
-

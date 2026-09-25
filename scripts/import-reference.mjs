@@ -67,7 +67,9 @@ for (const [i, item] of data.MEDIA.entries()) {
     width: meta.width || 1000,
     height: meta.height || 1500,
     caption: item.sub || "",
-    featured: i < 10,
+    // The original runtime intentionally omits the seventh and eighth
+    // assets from the home carousel and includes the final two portraits.
+    featured: i !== 6 && i !== 7,
   });
 }
 await fs.writeFile(

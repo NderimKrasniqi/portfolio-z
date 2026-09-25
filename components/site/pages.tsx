@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Content } from "@/lib/model";
 import { MediaView } from "./media";
 import { BackButton } from "./frame";
+import { loadGsap, prefersReducedMotion } from "./motion";
 
 function nameParts(name: string) {
   const [first, ...rest] = name.trim().split(/\s+/);
@@ -12,32 +13,82 @@ function nameParts(name: string) {
 
 export function AboutView({ content, preview = false, onBack }: { content: Content; preview?: boolean; onBack: () => void }) {
   const sheet = useRef<HTMLDivElement>(null);
+  const progressFill = useRef<HTMLSpanElement>(null);
   const [step, setStep] = useState(1);
-  const [progress, setProgress] = useState(0);
   const [first, rest] = nameParts(content.name);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const scroller = sheet.current;
     if (!scroller) return;
+    // The reference scales and drifts the photograph itself while the figure
+    // keeps its layout box stable. Moving the wrapper makes the portrait edge
+    // and its metadata jump as the scroll position changes.
+    const portrait = scroller.querySelector<HTMLElement>(".about-portrait img, .about-portrait video");
+    let disposed = false;
+    let frame = 0;
+    let gsapApi: Awaited<ReturnType<typeof loadGsap>> = null;
+    let lastProgress = -1;
+    let lastStep = 0;
     const update = () => {
       const maximum = Math.max(1, scroller.scrollHeight - scroller.clientHeight);
-      setProgress(scroller.scrollTop / maximum);
+      const ratio = Math.max(0, Math.min(1, scroller.scrollTop / maximum));
+      if (progressFill.current && Math.abs(ratio - lastProgress) > .0005) {
+        lastProgress = ratio;
+        progressFill.current.style.height = `${ratio * 100}%`;
+        progressFill.current.style.transform = "none";
+      }
       const chapters = [...scroller.querySelectorAll<HTMLElement>(".about-chapter")];
       let active = 1;
       for (let index = 0; index < chapters.length; index++) {
-        if (chapters[index].getBoundingClientRect().top <= innerHeight * .57) active = index + 1;
+        if (chapters[index].getBoundingClientRect().top <= window.innerHeight * .57) active = index + 1;
       }
-      setStep(active);
+      if (active !== lastStep) {
+        lastStep = active;
+        setStep(active);
+      }
+      if (portrait && gsapApi && !prefersReducedMotion()) {
+        // Apply the portrait transform in the same frame as the scroll read so
+        // it never lags one event behind the progress track.
+        gsapApi.set(portrait, { yPercent: -1.5 + ratio * 3, scale: 1.035 + ratio * .04 });
+      }
     };
-    scroller.addEventListener("scroll", update, { passive: true });
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+    const onScroll = () => schedule();
+    scroller.addEventListener("scroll", onScroll, { passive: true });
     update();
     const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
-      if (entry.isIntersecting) entry.target.classList.add("is-visible");
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      const parts = [...entry.target.querySelectorAll<HTMLElement>(".about-chapter-index,.about-chapter-kicker,h3,.about-chapter-copy>p:last-child")];
+      if (gsapApi && !prefersReducedMotion()) gsapApi.to(parts, { opacity: 1, y: 0, duration: .56, stagger: .035, ease: "power3.out", overwrite: "auto" });
     }), { root: scroller, threshold: .14 });
     scroller.querySelectorAll(".about-chapter").forEach((chapter) => observer.observe(chapter));
-    return () => { scroller.removeEventListener("scroll", update); observer.disconnect(); };
+    loadGsap().then((gsap) => {
+      if (disposed) return;
+      gsapApi = gsap;
+      if (!gsap || prefersReducedMotion()) return;
+      const parts = [...scroller.querySelectorAll<HTMLElement>(".about-chapter-index,.about-chapter-kicker,h3,.about-chapter-copy>p:last-child")];
+      gsap.set(parts, { opacity: 0, y: 24 });
+      gsap.set(portrait, { scale: 1.035, yPercent: -1.5 });
+      update();
+    });
+    const onResize = () => schedule();
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => {
+      disposed = true;
+      scroller.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
   }, [content.chapters]);
   return (
-    <section className="about-panel open is-ready" role="dialog" aria-modal="true" aria-label={`About ${content.name}`}>
+    <section id="aboutPanel" className="about-panel open is-ready" role="dialog" aria-modal="true" aria-label={`About ${content.name}`}>
       <BackButton className="about-close" onBack={onBack} />
       <main id="main" className="about-sheet" ref={sheet}>
         <div className="about-inner about-story-shell">
@@ -56,9 +107,9 @@ export function AboutView({ content, preview = false, onBack }: { content: Conte
             </div>
           </div>
           <aside className="about-visual" aria-hidden="true">
-            <figure className="about-portrait">{content.media[0] && <MediaView media={content.media[0]} priority draft={preview} />}</figure>
+            <figure className="about-portrait"><img src="/reference-about-portrait.jpg" alt="" width="934" height="1285" fetchPriority="high" /></figure>
             <div className="about-portrait-meta"><span>{content.location}</span><div className="about-story-progress"><span className="about-story-progress__now">{String(step).padStart(2, "0")}</span><span className="about-story-progress__slash">/</span><span>{String(content.chapters.length).padStart(2, "0")}</span></div></div>
-            <div className="about-progress-track"><span style={{ transform: `scaleY(${progress})` }} /></div>
+            <div className="about-progress-track"><span ref={progressFill} /></div>
           </aside>
         </div>
       </main>
@@ -69,8 +120,23 @@ export function AboutView({ content, preview = false, onBack }: { content: Conte
 export function ContactView({ content, onBack }: { content: Content; onBack: () => void }) {
   const managementUrl = "https://www.wannabemgmt.com/";
   const managementInstagram = "https://www.instagram.com/wannabemgmt/";
+  const panel = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const root = panel.current;
+    if (!root) return;
+    let cancelled = false;
+    loadGsap().then((gsap) => {
+      if (cancelled || !gsap) return;
+      const pieces = [...root.querySelectorAll<HTMLElement>(".contact-eyebrow,.contact-inner h2,.rep-row")];
+      const close = root.querySelector<HTMLElement>(".contact-close");
+      if (prefersReducedMotion()) { gsap.set([...pieces, close].filter(Boolean), { clearProps: "all" }); return; }
+      gsap.set([...pieces, close].filter(Boolean), { opacity: 0, y: 5 });
+      gsap.to([...pieces, close].filter(Boolean), { opacity: 1, y: 0, duration: .4, stagger: .035, ease: "power3.out", delay: .58 });
+    });
+    return () => { cancelled = true; };
+  }, []);
   return (
-    <section className="contact-panel open is-ready" role="dialog" aria-modal="true" aria-label="Contact and representation">
+    <section id="contactPanel" ref={panel} className="contact-panel open is-ready" role="dialog" aria-modal="true" aria-label="Contact and representation">
       <BackButton className="contact-close" onBack={onBack} />
       <main id="main" className="contact-sheet"><div className="contact-inner">
         <p className="contact-eyebrow">{content.contactLabel}</p>
@@ -121,7 +187,7 @@ export function ShopView({ content, preview = false, onBack }: { content: Conten
     return () => window.removeEventListener("keydown", key);
   }, [content.products, selectedIndex]);
   return (
-    <section className={`shop-panel open${product ? " is-detail" : ""}${bagOpen ? " is-bag-open" : ""}`} role="dialog" aria-modal="true" aria-label={content.shopTitle}>
+    <section id="shopPanel" className={`shop-panel open${product ? " is-detail" : ""}${bagOpen ? " is-bag-open" : ""}`} role="dialog" aria-modal="true" aria-label={content.shopTitle}>
       <header className="shop-masthead"><button className="shop-site-home" type="button" onClick={onBack} aria-label="Return to portfolio"><span className="shop-site-home__section">{content.shopTitle.replace(/\.$/, "")}</span></button><button className="shop-bag-toggle shop-bag-toggle--icon" type="button" onClick={() => setBagOpen(true)} aria-label="Open bag" aria-expanded={bagOpen}><span className="shop-bag-toggle__label">BAG</span><span className="shop-bag-toggle__count">{bag.length}</span></button></header>
       <div className="shop-sheet"><div className="shop-inner">
         <header className="shop-header"><p className="shop-eyebrow">SHOP</p><h1 className="shop-heading">{content.shopTitle.replace(/\.$/, "").split(/\s+/).slice(0, -1).join(" ")}<br />{content.shopTitle.replace(/\.$/, "").split(/\s+/).slice(-1)}.</h1><p className="shop-intro">{content.shopIntro}</p><p className="shop-demo-note">DEMO CONTENT · PLACEHOLDER PRODUCTS &amp; IMAGES</p><div className="shop-filters" aria-label="Shop filters"><button className={`shop-filter${filter === "all" ? " is-active" : ""}`} onClick={() => setFilter("all")}>ALL</button><button className={`shop-filter${filter === "closet" ? " is-active" : ""}`} onClick={() => setFilter("closet")}>MY CLOSET</button><button className={`shop-filter${filter === "drop" ? " is-active" : ""}`} onClick={() => setFilter("drop")}>DROPS</button></div></header>

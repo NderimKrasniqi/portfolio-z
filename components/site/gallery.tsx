@@ -1,14 +1,43 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import type { Content } from "@/lib/model";
 import { mediaUrl } from "./media";
 import { BackButton, SocialLinks } from "./frame";
+import { SiteLink } from "./navigation";
+import { loadGsap, prefersReducedMotion } from "./motion";
 
 const Sphere = dynamic(() => import("./sphere"), { ssr: false });
 const pad = (value: number) => String(value).padStart(2, "0");
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+const CARD_WIDTH_FACTORS = [.96, 1.04, .99, 1.07, 1.01, .93, 1.05, .98, .95, 1.03, .97, 1];
+const smoother = (value: number) => {
+  const t = clamp(value, 0, 1);
+  return t * t * t * (t * (t * 6 - 15) + 10);
+};
+
+function sphereUnits(count: number) {
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  return Array.from({ length: Math.max(1, count) }, (_, index) => {
+    const y = 1 - 2 * ((index + .5) / count);
+    const ring = Math.sqrt(Math.max(0, 1 - y * y));
+    const theta = index * golden + .58;
+    let x = Math.cos(theta) * ring;
+    const z = Math.sin(theta) * ring;
+    const cy = Math.cos(.22), sy = Math.sin(.22);
+    const x1 = x * cy + z * sy;
+    const z1 = -x * sy + z * cy;
+    const cx = Math.cos(-.10), sx = Math.sin(-.10);
+    const y1 = y * cx - z1 * sx;
+    const z2 = y * sx + z1 * cx;
+    const length = Math.hypot(x1, y1, z2) || 1;
+    x = x1 / length;
+    return { x, y: y1 / length, z: z2 / length };
+  });
+}
+
+type CardSnapshot = { x: number; y: number; scale: number; rotation: number; zIndex: number; width: number };
 
 export function GalleryView({ content, preview = false, base, onBack }: {
   content: Content;
@@ -19,53 +48,435 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   const items = useMemo(() => content.media, [content.media]);
   const [mode, setMode] = useState<"sphere" | "grid">("sphere");
   const [focused, setFocused] = useState<number | null>(null);
+  const [focusClosing, setFocusClosing] = useState(false);
   const [intro, setIntro] = useState(true);
+  const [opening, setOpening] = useState(true);
   const [threeReady, setThreeReady] = useState(false);
-  const [viewport, setViewport] = useState({ width: 1440, height: 900 });
-  const onSelect = useCallback((index: number) => setFocused(index), []);
-  const onReady = useCallback((ready: boolean) => setThreeReady(ready), []);
-  useEffect(() => {
-    const update = () => setViewport({ width: innerWidth, height: innerHeight });
-    update(); window.addEventListener("resize", update);
-    const timer = window.setTimeout(() => setIntro(false), matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 1050);
-    return () => { clearTimeout(timer); window.removeEventListener("resize", update); };
+  const [threeSettled, setThreeSettled] = useState(false);
+  const [threeLive, setThreeLive] = useState(false);
+  const [handoffRotation, setHandoffRotation] = useState(0);
+  const introPlayed = useRef(false);
+  const modeTransitioning = useRef(false);
+  const sphereSnapshot = useRef<CardSnapshot[]>([]);
+  const onSelect = useCallback((index: number) => {
+    if (modeTransitioning.current || (mode === "sphere" && intro)) return;
+    setFocused(index);
+  }, [intro, mode]);
+  const onReady = useCallback((ready: boolean) => {
+    setThreeReady(ready);
+    setThreeSettled(true);
   }, []);
   useEffect(() => {
+    if (mode !== "sphere" || intro || opening || !threeReady) return;
+    const frame = requestAnimationFrame(() => setThreeLive(true));
+    return () => cancelAnimationFrame(frame);
+  }, [intro, mode, opening, threeReady]);
+  const switchMode = useCallback((next: "sphere" | "grid") => {
+    if (next === mode || modeTransitioning.current) return;
+    setThreeLive(false);
+    setOpening(false);
+    setIntro(next === "sphere");
+    setMode(next);
+  }, [mode]);
+  const dismissFocus = useCallback(() => {
+    if (focused === null || focusClosing) return;
+    setFocusClosing(true);
+    const focus = document.getElementById("galleryFocus");
+    const media = focus?.querySelector<HTMLElement>(".reference-focus-media");
+    loadGsap().then((gsap) => {
+      if (!gsap || prefersReducedMotion() || !focus || !media) {
+        setFocused(null);
+        setFocusClosing(false);
+        return;
+      }
+      gsap.timeline({ onComplete: () => { setFocused(null); setFocusClosing(false); } })
+        .to(media, { opacity: 0, scale: .97, duration: .22, ease: "power2.in" }, 0)
+        .to(focus, { opacity: 0, duration: .28, ease: "power2.inOut" }, 0);
+    });
+  }, [focusClosing, focused]);
+
+  useEffect(() => {
     const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && focused !== null) setFocused(null);
+      if (event.key === "Escape" && focused !== null) dismissFocus();
       else if (focused !== null && event.key === "ArrowRight") setFocused((focused + 1) % items.length);
       else if (focused !== null && event.key === "ArrowLeft") setFocused((focused - 1 + items.length) % items.length);
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [focused, items.length]);
-  const selected = focused === null ? null : items[focused];
-  const mobile = viewport.width <= 800;
-  const rx = mobile ? Math.min(150, viewport.width * .335, viewport.height * .19) : Math.min(viewport.width * .19, 260);
-  const ry = mobile ? rx : Math.min(viewport.height * .30, 258);
+  }, [dismissFocus, focused, items.length]);
 
+  useLayoutEffect(() => {
+    if (focused === null || focusClosing) return;
+    const focus = document.getElementById("galleryFocus");
+    const media = focus?.querySelector<HTMLElement>(".reference-focus-media");
+    if (!focus || !media) return;
+    let cancelled = false;
+    loadGsap().then((gsap) => {
+      if (cancelled || !gsap) return;
+      if (prefersReducedMotion()) { gsap.set([focus, media], { clearProps: "all" }); return; }
+      gsap.set(focus, { opacity: 0 });
+      gsap.set(media, { opacity: 0, scale: .965 });
+      gsap.timeline()
+        .to(focus, { opacity: 1, duration: .3, ease: "power2.out" }, 0)
+        .to(media, { opacity: 1, scale: 1, duration: .55, ease: "power4.out" }, .06);
+    });
+    return () => { cancelled = true; };
+  }, [focused, focusClosing]);
+
+  useLayoutEffect(() => {
+    const cards = [...document.querySelectorAll<HTMLElement>(".gallery-intro-assets .gallery-intro-card")];
+    const assets = document.querySelector<HTMLElement>(".gallery-intro-assets");
+    const panel = document.getElementById("galleryPanel");
+    const copy = document.querySelector<HTMLElement>(".gallery-intro-copy");
+    const count = document.querySelector<HTMLElement>(".gallery-intro-count");
+    if (!cards.length || !assets) return;
+
+    // The first sphere sequence should not compete with Three.js texture
+    // uploads. Sphere reports once its first frame is prepared (or WebGL has
+    // settled into the accessible grid fallback), so the DOM sequence gets a
+    // clean, uninterrupted clock from its first visible frame.
+    if (!introPlayed.current && mode === "sphere" && !threeSettled) return;
+
+    let cancelled = false;
+    let timeline: { kill: () => void } | null = null;
+    let removeResize: (() => void) | null = null;
+    loadGsap().then((gsap) => {
+      if (cancelled || !gsap) return;
+      const firstOpening = !introPlayed.current && mode === "sphere";
+      if (firstOpening) {
+        if (panel) gsap.set(panel, { opacity: 0, visibility: "visible" });
+        if (copy) gsap.set(copy, { opacity: 0 });
+      }
+      const mediaReady = { value: false };
+      void Promise.all(cards.map((card) => {
+        const image = card.querySelector<HTMLImageElement>("img");
+        if (!image || image.complete) return image?.decode?.().catch(() => undefined) ?? Promise.resolve();
+        return new Promise<void>((resolve) => {
+          const done = () => resolve();
+          image.addEventListener("load", done, { once: true });
+          image.addEventListener("error", done, { once: true });
+        });
+      })).then(() => { if (!cancelled) mediaReady.value = true; });
+      if (cancelled) return;
+      gsap.killTweensOf([...cards, copy, count].filter(Boolean));
+      const baseCardWidth = Math.min(58, Math.max(44, window.innerWidth * .0395)) * (window.innerWidth <= 800 ? .90 : 1);
+      cards.forEach((card, index) => {
+        card.style.width = `${(baseCardWidth * CARD_WIDTH_FACTORS[index % CARD_WIDTH_FACTORS.length]).toFixed(2)}px`;
+        card.style.aspectRatio = "3 / 4";
+      });
+
+      const captureSnapshot = (): CardSnapshot[] => cards.map((card) => ({
+        x: Number(gsap.getProperty(card, "x")) || 0,
+        y: Number(gsap.getProperty(card, "y")) || 0,
+        scale: Number(gsap.getProperty(card, "scaleX")) || 1,
+        rotation: Number(gsap.getProperty(card, "rotation")) || 0,
+        zIndex: Number.parseInt(card.style.zIndex, 10) || 1,
+        width: Math.max(1, parseFloat(card.style.width) || card.offsetWidth || 52),
+      }));
+
+      const gridMetrics = () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const mobile = width <= 800;
+        const cols = mobile ? (width < 470 ? 3 : 4) : (width < 1120 ? 4 : 5);
+        return {
+          cols,
+          rows: Math.ceil(cards.length / cols),
+          gapX: mobile ? Math.min(98, width * .225) : Math.min(155, width * .125),
+          gapY: mobile ? Math.min(128, height * .155) : Math.min(176, height * .195),
+          targetW: mobile ? Math.min(72, width * .145) : Math.min(98, width * .072),
+        };
+      };
+
+      const gridTargets = () => {
+        const { cols, rows, gapX, gapY, targetW } = gridMetrics();
+        return cards.map((_, index) => {
+          const row = Math.floor(index / cols);
+          const first = row * cols;
+          const countInRow = Math.min(cols, cards.length - first);
+          const column = index - first;
+          const baseWidth = Math.max(1, parseFloat(cards[index].style.width) || cards[index].offsetWidth || 52);
+          return {
+            x: (column - (countInRow - 1) / 2) * gapX,
+            y: (row - (rows - 1) / 2) * gapY + (window.innerWidth <= 800 ? 4 : 10),
+            scale: targetW / baseWidth,
+            zIndex: 50 + index,
+            targetW,
+          };
+        });
+      };
+
+      const applyGridLayout = () => {
+        const targets = gridTargets();
+        targets.forEach((target, index) => {
+          const card = cards[index];
+          card.style.width = `${target.targetW}px`;
+          card.style.aspectRatio = "3 / 4";
+          gsap.set(card, { x: target.x, y: target.y, scale: 1, rotation: 0, zIndex: target.zIndex });
+        });
+      };
+
+      const handleResize = () => {
+        if (mode === "grid" && !assets.classList.contains("is-grid-transition")) applyGridLayout();
+      };
+
+      if (mode === "grid") {
+        modeTransitioning.current = true;
+        window.addEventListener("resize", handleResize);
+        removeResize = () => window.removeEventListener("resize", handleResize);
+        const snapshot = captureSnapshot();
+        sphereSnapshot.current = snapshot;
+        const targets = gridTargets();
+        const reduced = prefersReducedMotion();
+        assets.classList.add("is-grid-transition");
+        gsap.set(copy, { opacity: 0 });
+        gsap.set(count, { opacity: 0 });
+        gsap.set(cards, { opacity: 1, visibility: "visible", xPercent: -50, yPercent: -50 });
+        if (reduced) {
+          assets.classList.remove("is-grid-transition");
+          applyGridLayout();
+          modeTransitioning.current = false;
+          return;
+        }
+        const gridTimeline = gsap.timeline({
+          defaults: { duration: 1.16, ease: "power3.inOut", overwrite: true },
+          onComplete: () => {
+            assets.classList.remove("is-grid-transition");
+            applyGridLayout();
+            modeTransitioning.current = false;
+          },
+        });
+        timeline = gridTimeline;
+        targets.forEach((target, index) => gridTimeline.to(cards[index], { x: target.x, y: target.y, scale: target.scale, rotation: 0 }, 0));
+        return;
+      }
+
+      if (introPlayed.current) {
+        modeTransitioning.current = true;
+        const snapshot = sphereSnapshot.current.length === cards.length ? sphereSnapshot.current : captureSnapshot();
+        const { targetW } = gridMetrics();
+        gsap.set(copy, { opacity: 0 });
+        gsap.set(count, { opacity: 0 });
+        assets.classList.remove("is-grid-transition");
+        snapshot.forEach((target, index) => {
+          const card = cards[index];
+          card.style.width = `${target.width}px`;
+          card.style.aspectRatio = "3 / 4";
+          gsap.set(card, { xPercent: -50, yPercent: -50, scale: targetW / target.width, opacity: 1, visibility: "visible" });
+        });
+        if (prefersReducedMotion()) {
+          snapshot.forEach((target, index) => gsap.set(cards[index], { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation, zIndex: target.zIndex }));
+          sphereSnapshot.current = [];
+          modeTransitioning.current = false;
+          setIntro(false);
+          return;
+        }
+        const sphereTimeline = gsap.timeline({
+          defaults: { duration: 1.18, ease: "power3.inOut", overwrite: true },
+          onComplete: () => {
+            snapshot.forEach((target, index) => {
+              const card = cards[index];
+              card.style.width = `${target.width}px`;
+              card.style.aspectRatio = "3 / 4";
+              gsap.set(card, { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation, zIndex: target.zIndex });
+            });
+            sphereSnapshot.current = [];
+            modeTransitioning.current = false;
+            setIntro(false);
+          },
+        });
+        timeline = sphereTimeline;
+        snapshot.forEach((target, index) => sphereTimeline.to(cards[index], { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation }, 0));
+        return;
+      }
+
+      introPlayed.current = true;
+      modeTransitioning.current = true;
+
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const mobile = width <= 800;
+      const rx = mobile ? Math.min(150, width * .335, height * .19) : Math.min(width * .190, 260);
+      const ry = mobile ? rx : Math.min(height * .300, 258);
+      const sphereRadius = mobile ? Math.min(190, width * .37, height * .235) : Math.min(255, width * .18, height * .285);
+      const focal = height / (2 * Math.tan((42 * Math.PI / 180) / 2));
+      const worldRadius = sphereRadius * 9.25 / focal;
+      const units = sphereUnits(cards.length);
+      const targetAt = (index: number, yRotation: number) => {
+        const unit = units[index];
+        const sinY = Math.sin(yRotation), cosY = Math.cos(yRotation);
+        const x1 = unit.x * worldRadius * cosY + unit.z * worldRadius * 1.075 * sinY;
+        const z1 = -unit.x * worldRadius * sinY + unit.z * worldRadius * 1.075 * cosY;
+        const tilt = -.055;
+        const sinTilt = Math.sin(tilt), cosTilt = Math.cos(tilt);
+        const y2 = unit.y * worldRadius * cosTilt - z1 * sinTilt;
+        const z2 = unit.y * worldRadius * sinTilt + z1 * cosTilt;
+        const depth = Math.max(.9, 9.25 - z2);
+        const projection = focal / depth;
+        const depthScale = .96 + (((z2 / (worldRadius * 1.075) + 1) / 2) * .08);
+        return {
+          x: x1 * projection,
+          y: -y2 * projection,
+          scale: 9.25 / depth * depthScale,
+          zIndex: 100 + Math.round(((z2 / (worldRadius * 1.075) + 1) / 2) * 100),
+        };
+      };
+      const baseAngles = cards.map((_, index) => -Math.PI * .51 + (index / cards.length) * Math.PI * 2);
+      const order = [...cards.keys()].sort((a, b) => baseAngles[a] - baseAngles[b]);
+      const rank = new Map(order.map((index, position) => [index, position]));
+      const state = { progress: 0 };
+      const flowStart = .36;
+      const flowDuration = 7.35;
+      const revealEnd = .385;
+      const collapseStart = .405;
+      const stackLock = .735;
+      const burstStart = .815;
+      const heroIndex = Math.min(6, cards.length - 1);
+      const introRadial = [.94, 1.04, .90, 1.02, .97, 1.08, .92, 1, 1.05, .91, 1.01, .96];
+
+      const angularVelocityAt = (value: number) => {
+        const revealSpeed = .085;
+        const collapseSpeed = 4.15;
+        const deckSpeed = 1.15;
+        const first = smoother((value - .315) / .355);
+        const second = smoother((value - .690) / .145);
+        const third = smoother((value - .825) / .175);
+        let speed = revealSpeed + (collapseSpeed - revealSpeed) * first;
+        speed += (deckSpeed - collapseSpeed) * second;
+        speed += (.13 - deckSpeed) * third;
+        return speed;
+      };
+      const angleSteps = 1200;
+      const angleLut = new Float64Array(angleSteps + 1);
+      for (let index = 1; index <= angleSteps; index += 1) {
+        const previous = (index - 1) / angleSteps;
+        const current = index / angleSteps;
+        angleLut[index] = angleLut[index - 1] + ((angularVelocityAt(previous) + angularVelocityAt(current)) * .5) * (flowDuration / angleSteps);
+      }
+      const angleAt = (value: number) => {
+        const position = clamp(value, 0, 1) * angleSteps;
+        const index = Math.min(angleSteps - 1, Math.floor(position));
+        const fraction = position - index;
+        return angleLut[index] + (angleLut[index + 1] - angleLut[index]) * fraction;
+      };
+
+      const renderFlow = () => {
+        const progress = clamp(state.progress, 0, 1);
+        const sharedAngle = angleAt(progress);
+        const collapse = smoother((progress - collapseStart) / (stackLock - collapseStart));
+        const orbitRadius = 1 - collapse;
+        const holdPhase = clamp((progress - stackLock) / (burstStart - stackLock), 0, 1);
+        const holdEnvelope = collapse * (1 - smoother((progress - burstStart) / .055));
+        const compression = Math.sin(holdPhase * Math.PI) * .045 * holdEnvelope;
+        const sphereEase = smoother((progress - burstStart) / (1 - burstStart));
+        const sphereSpread = sphereEase + Math.sin(sphereEase * Math.PI) * .075;
+        cards.forEach((card, index) => {
+          const cardRank = rank.get(index) ?? index;
+          const revealSpan = revealEnd * .91;
+          const revealStart = cards.length <= 1 ? 0 : (cardRank / (cards.length - 1)) * revealSpan;
+          const appear = mediaReady.value ? smoother((progress - revealStart) / .092) : 0;
+          const angle = baseAngles[index] + sharedAngle;
+          const radial = introRadial[index % introRadial.length];
+          const ringX = Math.cos(angle) * rx * radial * orbitRadius;
+          const ringY = Math.sin(angle) * ry * radial * orbitRadius;
+          const stableX = cardRank === 0 ? 0 : ((cardRank % 5) - 2) * .42;
+          const stableY = cardRank === 0 ? 0 : Math.min(cardRank, 12) * .21;
+          const stableTwist = cardRank === 0 ? 0 : (cardRank % 2 ? 1 : -1) * (.28 + Math.min(cardRank, 10) * .028);
+          const deckAngle = sharedAngle * .34;
+          const cosDeck = Math.cos(deckAngle), sinDeck = Math.sin(deckAngle);
+          const deckX = (stableX * cosDeck - stableY * sinDeck) * collapse;
+          const deckY = (stableX * sinDeck + stableY * cosDeck) * collapse;
+          const deckDrift = cardRank === 0 ? 0 : (.20 + Math.min(cardRank, 10) * .012) * holdEnvelope;
+          const driftX = Math.cos(sharedAngle + cardRank * .57) * deckDrift;
+          const driftY = Math.sin(sharedAngle * .94 + cardRank * .43) * deckDrift;
+          const squeeze = 1 - compression;
+          const stackX = (deckX + driftX) * squeeze * (1 - sphereEase);
+          const stackY = (deckY + driftY) * squeeze * (1 - sphereEase);
+          const stackTwist = (stableTwist * collapse + Math.sin(sharedAngle + cardRank * .31) * .26 * holdEnvelope) * (1 - sphereEase);
+          const target = targetAt(index, sharedAngle);
+          const baseScale = .88 + .12 * appear;
+          const deckScale = 1 + collapse * (cardRank === 0 ? .043 : .017) - compression * .34;
+          const burstPulse = 1 + Math.sin(sphereEase * Math.PI) * .028;
+          const scale = (baseScale * deckScale) + (target.scale * burstPulse - baseScale * deckScale) * sphereEase;
+          const orbitDepth = 20 + Math.round(((Math.sin(angle) + 1) / 2) * 30);
+          const zIndex = sphereEase < .075
+            ? (collapse > .76 ? (index === heroIndex ? 1000 : 700 - cardRank) : orbitDepth)
+            : target.zIndex;
+          gsap.set(card, {
+            xPercent: -50,
+            yPercent: -50,
+            x: ringX + stackX + target.x * sphereSpread,
+            y: ringY + stackY + target.y * sphereSpread,
+            scale,
+            rotation: Math.cos(angle) * 1.7 * orbitRadius * (1 - sphereEase) + stackTwist,
+            opacity: appear,
+            zIndex,
+            visibility: "visible",
+          });
+        });
+      };
+
+      if (prefersReducedMotion()) {
+        state.progress = 1;
+        mediaReady.value = true;
+        renderFlow();
+        setHandoffRotation(angleAt(1));
+        if (panel) gsap.set(panel, { opacity: 1 });
+        gsap.set(copy, { opacity: 0 });
+        gsap.set(count, { opacity: 0 });
+        modeTransitioning.current = false;
+        setOpening(false);
+        setIntro(false);
+        return;
+      }
+
+      gsap.set(copy, { opacity: 0, scale: .96, y: 2 });
+      gsap.set(count, { opacity: 0 });
+      if (panel) gsap.set(panel, { opacity: 0, visibility: "visible" });
+      cards.forEach((card) => gsap.set(card, { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: .14, rotation: 0, opacity: 0, visibility: "visible" }));
+      const introTimeline = gsap.timeline({ defaults: { overwrite: "auto" }, onUpdate: renderFlow, onComplete: () => {
+        if (cancelled) return;
+        setHandoffRotation(angleAt(1));
+        if (panel) gsap.set(panel, { opacity: 1 });
+        gsap.set(copy, { opacity: 0 });
+        gsap.set(count, { opacity: 0 });
+        assets.classList.add("is-sphere");
+        sphereSnapshot.current = captureSnapshot();
+        modeTransitioning.current = false;
+        setOpening(false);
+        setIntro(false);
+      } });
+      timeline = introTimeline;
+      introTimeline.to(panel, { opacity: 1, duration: .42, ease: "power2.out" }, 0);
+      introTimeline.to(copy, { opacity: 1, scale: 1, y: 0, duration: .48, ease: "power3.out" }, .14);
+      introTimeline.to(state, { progress: 1, duration: flowDuration, ease: "none" }, flowStart);
+      introTimeline.to(copy, { opacity: 0, scale: .987, duration: .52, ease: "sine.inOut" }, flowStart + 2.56);
+    });
+
+    return () => { cancelled = true; timeline?.kill(); removeResize?.(); };
+  }, [items.length, mode, threeSettled]);
+  const selected = focused === null ? null : items[focused];
   return (
-    <section className="gallery-panel open is-ready" role="dialog" aria-modal="true" aria-label="Gallery">
+    <section id="galleryPanel" className={`gallery-panel open is-ready${opening ? " is-opening" : ""}${mode === "sphere" && threeLive ? " is-three-live" : ""}${mode === "grid" ? " is-grid-mode" : ""}`} role="dialog" aria-modal="true" aria-label="Gallery">
       <BackButton className="gallery-back" onBack={onBack} />
       <header className="gallery-head gallery-head--zeudi">
         <SocialLinks content={content} className="gallery-socials" />
         <nav className="gallery-links" aria-label="Gallery navigation">
           <button className="gallery-link gallery-link--active" type="button" onClick={onBack}>GALLERY</button>
-          <Link className="gallery-link" href={`${base}/about`}>{content.nav.about}</Link>
-          <Link className="gallery-link" href={`${base}/contact`}>{content.nav.contact}</Link>
+          <SiteLink className="gallery-link" href={`${base}/about`}>{content.nav.about}</SiteLink>
+          <SiteLink className="gallery-link" href={`${base}/contact`}>{content.nav.contact}</SiteLink>
         </nav>
       </header>
       <main id="main" className="gallery-space">
-        <div className="gallery-view-toggle" aria-label="Gallery view">
-          <button type="button" aria-pressed={mode === "sphere"} onClick={() => setMode("sphere")}>SPHERE</button>
+        <div id="galleryViewToggle" className="gallery-view-toggle" aria-label="Gallery view">
+          <button type="button" aria-pressed={mode === "sphere"} onClick={() => switchMode("sphere")}>SPHERE</button>
           <span aria-hidden="true">/</span>
-          <button type="button" aria-pressed={mode === "grid"} onClick={() => setMode("grid")}>GRID</button>
+          <button type="button" aria-pressed={mode === "grid"} onClick={() => switchMode("grid")}>GRID</button>
         </div>
-        {mode === "sphere" && <Sphere items={items} draft={preview} onSelect={onSelect} onReady={onReady} />}
-        <div className={`gallery-intro-assets ${mode === "grid" ? "is-grid" : "is-sphere"}${mode === "sphere" && threeReady && !intro ? " is-three" : ""}`}>
+        <Sphere items={items} draft={preview} onSelect={onSelect} onReady={onReady} rotationY={handoffRotation} animate={mode === "sphere" && threeLive} />
+        <div className={`gallery-intro-assets ${mode === "grid" ? "is-grid" : "is-sphere"}${mode === "sphere" && threeLive ? " is-three" : ""}`}>
           {items.map((item, index) => {
-            const angle = index / items.length * Math.PI * 2 - Math.PI / 2;
-            return <button key={item.id} type="button" className="gallery-intro-card" onClick={() => onSelect(index)} aria-label={`View ${item.title}`} style={mode === "sphere" ? { transform: `translate(calc(-50% + ${Math.cos(angle) * rx}px), calc(-50% + ${Math.sin(angle) * ry}px))`, zIndex: Math.round((Math.sin(angle) + 1) * 10) } : undefined}>
+            return <button key={item.id} type="button" className="gallery-intro-card" onClick={() => onSelect(index)} aria-label={`View ${item.title}`}>
               <img src={mediaUrl(item.thumbKey, preview)} alt="" loading={index < 8 ? "eager" : "lazy"} />
             </button>;
           })}
@@ -76,10 +487,10 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         <div className="gallery-space-label" aria-hidden="true">ARCHIVE — {items.length} ASSETS</div>
         <div className="gallery-instruction" aria-hidden="true">{mode === "sphere" ? "SCROLL" : "SELECT"}</div>
         <div className="gallery-orbit-index" aria-hidden="true">01 / {pad(items.length)}</div>
-        <div id="galleryFocus" className={`gallery-focus${selected ? " is-open" : ""}`} aria-hidden={!selected}>
-          <button className="gallery-focus__veil" type="button" onClick={() => setFocused(null)} aria-label="Close image" />
-          {selected && (selected.kind === "video" ? <video className="gallery-focus__video reference-focus-media" src={mediaUrl(selected.key, preview)} poster={mediaUrl(selected.thumbKey, preview)} controls playsInline preload="metadata" autoPlay /> : <img className="gallery-focus__img reference-focus-media" src={mediaUrl(selected.key, preview)} alt={selected.alt} width={selected.width} height={selected.height} onClick={() => setFocused(null)} />)}
-          {selected && <div className="reference-focus-controls"><span>{pad(focused! + 1)} / {pad(items.length)} · {selected.title}</span><button type="button" onClick={() => setFocused(null)} aria-label="Close image">CLOSE ×</button></div>}
+        <div id="galleryFocus" className={`gallery-focus${selected ? " is-open" : ""}${focusClosing ? " is-closing" : ""}`} aria-hidden={!selected}>
+          <button className="gallery-focus__veil" type="button" onClick={dismissFocus} aria-label="Close image" />
+          {selected && (selected.kind === "video" ? <video className="gallery-focus__video reference-focus-media" src={mediaUrl(selected.key, preview)} poster={mediaUrl(selected.thumbKey, preview)} controls playsInline preload="metadata" autoPlay /> : <img className="gallery-focus__img reference-focus-media" src={mediaUrl(selected.key, preview)} alt={selected.alt} width={selected.width} height={selected.height} onClick={dismissFocus} />)}
+          {selected && <div className="reference-focus-controls"><span>{pad(focused! + 1)} / {pad(items.length)} · {selected.title}</span><button type="button" onClick={dismissFocus} aria-label="Close image">CLOSE ×</button></div>}
         </div>
       </main>
     </section>
