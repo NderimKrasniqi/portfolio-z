@@ -8,28 +8,21 @@ import { BackButton, SocialLinks } from "./frame";
 import { SiteLink } from "./navigation";
 import { loadGsap, prefersReducedMotion } from "./motion";
 import {
-  CARD_WIDTH_FACTORS,
   projectSpherePoint,
-  projectThreeSpherePoint,
   sphereUnits,
 } from "./gallery-geometry";
+import {
+  applyBaseCardSizing,
+  applyGridLayout,
+  clamp,
+  runGridToSphereTransition,
+  runSphereToGridTransition,
+  smoother,
+  type CardSnapshot,
+} from "./gallery-motion";
 
 const Sphere = dynamic(() => import("./sphere"), { ssr: false });
 const pad = (value: number) => String(value).padStart(2, "0");
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-const smoother = (value: number) => {
-  const t = clamp(value, 0, 1);
-  return t * t * t * (t * (t * 6 - 15) + 10);
-};
-
-type CardSnapshot = {
-  x: number;
-  y: number;
-  scale: number;
-  rotation: number;
-  zIndex: number;
-  width: number;
-};
 
 type GalleryPhase =
   | "opening"
@@ -287,11 +280,10 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       })).then(() => { if (!cancelled) mediaReady.value = true; });
       if (cancelled) return;
       gsap.killTweensOf([...cards, copy, count].filter(Boolean));
-      const baseCardWidth = Math.min(58, Math.max(44, window.innerWidth * .0395)) * (window.innerWidth <= 800 ? .90 : 1);
-      cards.forEach((card, index) => {
-        card.style.width = `${(baseCardWidth * CARD_WIDTH_FACTORS[index % CARD_WIDTH_FACTORS.length]).toFixed(2)}px`;
-        card.style.aspectRatio = "3 / 4";
-      });
+      applyBaseCardSizing(
+        cards,
+        window.innerWidth,
+      );
 
       const captureSnapshot = (): CardSnapshot[] => cards.map((card) => ({
         x: Number(gsap.getProperty(card, "x")) || 0,
@@ -302,179 +294,91 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         width: Math.max(1, parseFloat(card.style.width) || card.offsetWidth || 52),
       }));
 
-      const captureLiveSphereSnapshot = (
-        rotation: number,
-      ): CardSnapshot[] => {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        const units = sphereUnits(cards.length);
-
-        return cards.map((card, index) => {
-          const target = projectThreeSpherePoint(
-            units[index],
-            rotation,
-            width,
-            height,
-          );
-
-          return {
-            x: target.x,
-            y: target.y,
-            scale: target.scale,
-            rotation: 0,
-            zIndex: target.zIndex,
-            width: Math.max(
-              1,
-              parseFloat(card.style.width) ||
-                card.offsetWidth ||
-                52,
-            ),
-          };
-        });
-      };
-
-      const gridMetrics = () => {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        const mobile = width <= 800;
-        const cols = mobile ? (width < 470 ? 3 : 4) : (width < 1120 ? 4 : 5);
-        return {
-          cols,
-          rows: Math.ceil(cards.length / cols),
-          gapX: mobile ? Math.min(98, width * .225) : Math.min(155, width * .125),
-          gapY: mobile ? Math.min(128, height * .155) : Math.min(176, height * .195),
-          targetW: mobile ? Math.min(72, width * .145) : Math.min(98, width * .072),
-        };
-      };
-
-      const gridTargets = () => {
-        const { cols, rows, gapX, gapY, targetW } = gridMetrics();
-        return cards.map((_, index) => {
-          const row = Math.floor(index / cols);
-          const first = row * cols;
-          const countInRow = Math.min(cols, cards.length - first);
-          const column = index - first;
-          const baseWidth = Math.max(1, parseFloat(cards[index].style.width) || cards[index].offsetWidth || 52);
-          return {
-            x: (column - (countInRow - 1) / 2) * gapX,
-            y: (row - (rows - 1) / 2) * gapY + (window.innerWidth <= 800 ? 4 : 10),
-            scale: targetW / baseWidth,
-            zIndex: 50 + index,
-            targetW,
-          };
-        });
-      };
-
-      const applyGridLayout = () => {
-        const targets = gridTargets();
-        targets.forEach((target, index) => {
-          const card = cards[index];
-          card.style.width = `${target.targetW}px`;
-          card.style.aspectRatio = "3 / 4";
-          gsap.set(card, { x: target.x, y: target.y, scale: 1, rotation: 0, zIndex: target.zIndex });
-        });
-      };
-
       const handleResize = () => {
-        if (mode === "grid" && !assets.classList.contains("is-grid-transition")) applyGridLayout();
+        if (
+          mode === "grid" &&
+          !assets.classList.contains(
+            "is-grid-transition",
+          )
+        ) {
+          applyGridLayout(
+            gsap,
+            cards,
+            window.innerWidth,
+            window.innerHeight,
+          );
+        }
       };
 
       if (mode === "grid") {
-        window.addEventListener("resize", handleResize);
-        removeResize = () => window.removeEventListener("resize", handleResize);
+        window.addEventListener(
+          "resize",
+          handleResize,
+        );
+
+        removeResize = () =>
+          window.removeEventListener(
+            "resize",
+            handleResize,
+          );
+
         const sphereRotation =
           liveSphereRotation.current;
-
-        const snapshot =
-          captureLiveSphereSnapshot(
-            sphereRotation,
-          );
 
         sphereRotationSnapshot.current =
           sphereRotation;
 
-        sphereSnapshot.current = snapshot;
-
-        const targets = gridTargets();
-        const reduced = prefersReducedMotion();
-        assets.classList.add("is-grid-transition");
-        gsap.set(copy, { opacity: 0 });
-        gsap.set(count, { opacity: 0 });
-        gsap.set(cards, {
-          opacity: 1,
-          visibility: "visible",
-          xPercent: -50,
-          yPercent: -50,
-        });
-
-        snapshot.forEach((target, index) => {
-          gsap.set(cards[index], {
-            x: target.x,
-            y: target.y,
-            scale: target.scale,
-            rotation: target.rotation,
-            zIndex: target.zIndex,
+        const result =
+          runSphereToGridTransition({
+            gsap,
+            cards,
+            assets,
+            copy,
+            count,
+            sphereRotation,
+            reduced: prefersReducedMotion(),
+            onComplete: () => {
+              setGalleryPhase("grid");
+            },
           });
-        });
 
-        if (reduced) {
-          assets.classList.remove("is-grid-transition");
-          applyGridLayout();
-          setGalleryPhase("grid");
-          return;
-        }
-        const gridTimeline = gsap.timeline({
-          defaults: { duration: 1.16, ease: "power3.inOut", overwrite: true },
-          onComplete: () => {
-            assets.classList.remove("is-grid-transition");
-            applyGridLayout();
-            setGalleryPhase("grid");
-          },
-        });
-        timeline = gridTimeline;
-        targets.forEach((target, index) => gridTimeline.to(cards[index], { x: target.x, y: target.y, scale: target.scale, rotation: 0 }, 0));
+        sphereSnapshot.current =
+          result.snapshot;
+
+        timeline = result.timeline;
+
         return;
       }
 
       if (introPlayed.current) {
-        const snapshot = sphereSnapshot.current.length === cards.length ? sphereSnapshot.current : captureSnapshot();
-        const { targetW } = gridMetrics();
-        gsap.set(copy, { opacity: 0 });
-        gsap.set(count, { opacity: 0 });
-        assets.classList.remove("is-grid-transition");
-        snapshot.forEach((target, index) => {
-          const card = cards[index];
-          card.style.width = `${target.width}px`;
-          card.style.aspectRatio = "3 / 4";
-          gsap.set(card, { xPercent: -50, yPercent: -50, scale: targetW / target.width, opacity: 1, visibility: "visible" });
-        });
-        if (prefersReducedMotion()) {
-          snapshot.forEach((target, index) => gsap.set(cards[index], { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation, zIndex: target.zIndex }));
-          sphereSnapshot.current = [];
-          setHandoffRotation(
-            sphereRotationSnapshot.current,
-          );
-          setGalleryPhase("sphere-waiting");
-          return;
-        }
-        const sphereTimeline = gsap.timeline({
-          defaults: { duration: 1.18, ease: "power3.inOut", overwrite: true },
-          onComplete: () => {
-            snapshot.forEach((target, index) => {
-              const card = cards[index];
-              card.style.width = `${target.width}px`;
-              card.style.aspectRatio = "3 / 4";
-              gsap.set(card, { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation, zIndex: target.zIndex });
-            });
-            sphereSnapshot.current = [];
-            setHandoffRotation(
-              sphereRotationSnapshot.current,
-            );
-            setGalleryPhase("sphere-waiting");
-          },
-        });
-        timeline = sphereTimeline;
-        snapshot.forEach((target, index) => sphereTimeline.to(cards[index], { x: target.x, y: target.y, scale: target.scale, rotation: target.rotation }, 0));
+        const snapshot =
+          sphereSnapshot.current.length ===
+          cards.length
+            ? sphereSnapshot.current
+            : captureSnapshot();
+
+        timeline =
+          runGridToSphereTransition({
+            gsap,
+            cards,
+            assets,
+            copy,
+            count,
+            snapshot,
+            reduced: prefersReducedMotion(),
+            onComplete: () => {
+              sphereSnapshot.current = [];
+
+              setHandoffRotation(
+                sphereRotationSnapshot.current,
+              );
+
+              setGalleryPhase(
+                "sphere-waiting",
+              );
+            },
+          });
+
         return;
       }
 
