@@ -19,6 +19,11 @@ import {
   runSphereToGridTransition,
   type CardSnapshot,
 } from "./gallery-motion";
+import {
+  runGalleryFocusClose,
+  runGalleryFocusOpen,
+  type FocusRect,
+} from "./gallery-focus-motion";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -41,6 +46,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
   const [focused, setFocused] = useState<number | null>(null);
   const [focusClosing, setFocusClosing] = useState(false);
+  const focusedRef = useRef<number | null>(null);
 
   const introPlayed = useRef(false);
   const sphereSnapshot = useRef<CardSnapshot[]>([]);
@@ -50,6 +56,18 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   const sphereLastInput = useRef(0);
   const suppressSphereTap = useRef(false);
 
+  // When focus opens, let the live sphere decelerate for a few frames
+  // instead of freezing every card on a single frame.
+  const sphereFocusGlideUntil = useRef(0);
+  const sphereFocusGlideSpeed = useRef(0);
+
+  // Keep a few full-resolution focus images decoded while the Gallery
+  // intro is running. This prevents the first interaction from paying
+  // the browser's initial image decode cost.
+  const focusWarmImagesRef = useRef<Map<number, HTMLImageElement>>(
+    new Map(),
+  );
+
   const panelRef = useRef<HTMLElement | null>(null);
   const assetsRef = useRef<HTMLDivElement | null>(null);
   const copyRef = useRef<HTMLDivElement | null>(null);
@@ -57,6 +75,22 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   const spaceLabelRef = useRef<HTMLDivElement | null>(null);
   const instructionRef = useRef<HTMLDivElement | null>(null);
   const orbitIndexRef = useRef<HTMLDivElement | null>(null);
+
+  const focusRef = useRef<HTMLDivElement | null>(null);
+  const focusVeilRef = useRef<HTMLButtonElement | null>(null);
+  const focusGhostRef = useRef<HTMLImageElement | null>(null);
+  const focusImageRef = useRef<HTMLImageElement | null>(null);
+  const focusVideoRef = useRef<HTMLVideoElement | null>(null);
+  const focusSourceIndex = useRef<number | null>(null);
+  const focusSourceRect = useRef<FocusRect | null>(null);
+
+  useEffect(() => {
+    focusedRef.current = focused;
+  }, [focused]);
+
+  useEffect(() => {
+    focusedRef.current = focused;
+  }, [focused]);
 
   const setGalleryPhase = useCallback((next: GalleryPhase) => {
     phaseRef.current = next;
@@ -85,8 +119,115 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       return;
     }
 
+    const card =
+      assetsRef.current?.querySelectorAll<HTMLElement>(
+        ".gallery-intro-card",
+      )[index] ?? null;
+
+    const rect =
+      card?.getBoundingClientRect();
+
+    focusSourceIndex.current =
+      index;
+
+    focusSourceRect.current =
+      rect
+        ? {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          }
+        : null;
+
+    const now =
+      performance.now();
+
+    // Preserve whatever motion the sphere currently has. Idle rotation
+    // is 0.13 rad/s; wheel/touch inertia is stored as radians/frame.
+    sphereFocusGlideSpeed.current =
+      Math.abs(sphereVelocity.current) >
+      0.00002
+        ? sphereVelocity.current * 60
+        : 0.13;
+
+    sphereFocusGlideUntil.current =
+      now + 180;
+
+    sphereVelocity.current = 0;
+    sphereLastInput.current = now;
+
+    focusedRef.current = index;
+    focusedRef.current = index;
     setFocused(index);
   }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    // The reference intro gives us several seconds before the sphere
+    // becomes interactive. Use that time to warm the most likely
+    // first focus interactions instead of decoding on click.
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const candidates = items
+          .map((item, index) => ({
+            item,
+            index,
+          }))
+          .filter(({ item }) => item.kind !== "video")
+          .slice(0, 3);
+
+        for (const {
+          item,
+          index,
+        } of candidates) {
+          if (cancelled) return;
+
+          if (
+            focusWarmImagesRef.current.has(
+              index,
+            )
+          ) {
+            continue;
+          }
+
+          const image =
+            new Image();
+
+          image.decoding = "async";
+
+          image.src =
+            mediaUrl(
+              item.key,
+              preview,
+            );
+
+          // Retain the element so the browser is more likely to keep
+          // the decoded bitmap hot for the upcoming focus morph.
+          focusWarmImagesRef.current.set(
+            index,
+            image,
+          );
+
+          try {
+            await image.decode();
+          } catch {
+            // A successfully fetched image is still useful even if
+            // explicit decode is unsupported or rejects.
+          }
+        }
+      })();
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    items,
+    preview,
+  ]);
+
   const switchMode = useCallback((next: "sphere" | "grid") => {
     const current = phaseRef.current;
 
@@ -177,7 +318,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       if (
         phaseRef.current !==
           "sphere" ||
-        focused !== null
+        focusedRef.current !== null
       ) {
         return;
       }
@@ -205,7 +346,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       if (
         phaseRef.current !==
           "sphere" ||
-        focused !== null
+        focusedRef.current !== null
       ) {
         return;
       }
@@ -225,7 +366,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         touchLastY === null ||
         phaseRef.current !==
           "sphere" ||
-        focused !== null
+        focusedRef.current !== null
       ) {
         return;
       }
@@ -338,73 +479,118 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
         if (
           phaseRef.current ===
-            "sphere" &&
-          focused === null
+          "sphere"
         ) {
-          if (
-            Math.abs(
-              sphereVelocity.current,
-            ) > 0.00002
-          ) {
-            liveSphereRotation.current +=
-              sphereVelocity.current *
-              (deltaTime * 60);
+          const focusIndex =
+            focusedRef.current;
 
-            sphereVelocity.current *=
-              Math.pow(
-                0.875,
-                deltaTime * 60,
-              );
+          const focusActive =
+            focusIndex !== null;
 
+          const focusGliding =
+            focusActive &&
+            now <
+              sphereFocusGlideUntil.current;
+
+          if (!focusActive) {
             if (
               Math.abs(
                 sphereVelocity.current,
-              ) < 0.00002
+              ) > 0.00002
             ) {
-              sphereVelocity.current = 0;
-            }
-          } else if (
-            !reduced &&
-            now -
-              sphereLastInput.current >=
-              1300
-          ) {
-            liveSphereRotation.current +=
-              0.13 * deltaTime;
-          }
+              liveSphereRotation.current +=
+                sphereVelocity.current *
+                (deltaTime * 60);
 
-          const width =
-            window.innerWidth;
-
-          const height =
-            window.innerHeight;
-
-          cards.forEach(
-            (card, index) => {
-              const point =
-                projectSpherePoint(
-                  units[index],
-                  liveSphereRotation.current,
-                  width,
-                  height,
+              sphereVelocity.current *=
+                Math.pow(
+                  0.875,
+                  deltaTime * 60,
                 );
 
-              gsap.set(card, {
-                xPercent: -50,
-                yPercent: -50,
-                x: point.x,
-                y: point.y,
-                scale: point.scale,
-                rotation: 0,
-                opacity:
-                  point.opacity,
-                zIndex:
-                  point.zIndex,
-                visibility:
-                  "visible",
-              });
-            },
-          );
+              if (
+                Math.abs(
+                  sphereVelocity.current,
+                ) < 0.00002
+              ) {
+                sphereVelocity.current = 0;
+              }
+            } else if (
+              !reduced &&
+              now -
+                sphereLastInput.current >=
+                1300
+            ) {
+              liveSphereRotation.current +=
+                0.13 * deltaTime;
+            }
+          } else if (
+            focusGliding &&
+            !reduced
+          ) {
+            const remaining =
+              clamp(
+                (
+                  sphereFocusGlideUntil.current -
+                  now
+                ) / 180,
+                0,
+                1,
+              );
+
+            // Ease velocity to zero rather than stopping the entire
+            // sphere on the click frame.
+            const velocityFactor =
+              remaining * remaining;
+
+            liveSphereRotation.current +=
+              sphereFocusGlideSpeed.current *
+              velocityFactor *
+              deltaTime;
+          }
+
+          if (
+            !focusActive ||
+            focusGliding
+          ) {
+            const width =
+              window.innerWidth;
+
+            const height =
+              window.innerHeight;
+
+            cards.forEach(
+              (card, index) => {
+                const point =
+                  projectSpherePoint(
+                    units[index],
+                    liveSphereRotation.current,
+                    width,
+                    height,
+                  );
+
+                gsap.set(card, {
+                  xPercent: -50,
+                  yPercent: -50,
+                  x: point.x,
+                  y: point.y,
+                  scale: point.scale,
+                  rotation: 0,
+                  opacity:
+                    point.opacity,
+                  zIndex:
+                    point.zIndex,
+
+                  // The selected card is represented by the focus
+                  // ghost during this short deceleration.
+                  visibility:
+                    focusIndex === index
+                      ? "hidden"
+                      : "visible",
+                });
+              },
+            );
+          }
         }
 
         frame =
@@ -451,54 +637,244 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       );
     };
   }, [
-    focused,
     phase,
   ]);
 
   const dismissFocus = useCallback(() => {
-    if (focused === null || focusClosing) return;
+    if (
+      focused === null ||
+      focusClosing
+    ) {
+      return;
+    }
+
+    const sourceIndex =
+      focusSourceIndex.current ??
+      focused;
+
+    const sourceCard =
+      assetsRef.current?.querySelectorAll<HTMLElement>(
+        ".gallery-intro-card",
+      )[sourceIndex] ?? null;
+
+    const ghost =
+      focusGhostRef.current;
+
+    const veil =
+      focusVeilRef.current;
+
+    const selectedItem =
+      items[focused];
+
+    const media =
+      selectedItem?.kind === "video"
+        ? focusVideoRef.current
+        : focusImageRef.current;
+
+    if (
+      !ghost ||
+      !veil ||
+      !media ||
+      !selectedItem
+    ) {
+      if (sourceCard) {
+        sourceCard.style.visibility =
+          "visible";
+      }
+
+      focusedRef.current = null;
+      focusedRef.current = null;
+      setFocused(null);
+      setFocusClosing(false);
+
+      focusSourceIndex.current =
+        null;
+
+      focusSourceRect.current =
+        null;
+
+      return;
+    }
+
     setFocusClosing(true);
-    const focus = document.getElementById("galleryFocus");
-    const media = focus?.querySelector<HTMLElement>(".reference-focus-media");
-    loadGsap().then((gsap) => {
-      if (!gsap || prefersReducedMotion() || !focus || !media) {
+
+    const ghostSrc =
+      selectedItem.kind === "video"
+        ? mediaUrl(
+            selectedItem.thumbKey,
+            preview,
+          )
+        : (
+            media instanceof
+            HTMLImageElement &&
+            media.currentSrc
+          ) ||
+          mediaUrl(
+            selectedItem.key,
+            preview,
+          );
+
+    void runGalleryFocusClose({
+      sourceCard,
+      ghost,
+      ghostSrc,
+      media,
+      veil,
+    })
+      .catch(() => {
+        if (sourceCard) {
+          sourceCard.style.visibility =
+            "visible";
+        }
+      })
+      .finally(() => {
+        focusedRef.current = null;
+        focusedRef.current = null;
         setFocused(null);
         setFocusClosing(false);
-        return;
-      }
-      gsap.timeline({ onComplete: () => { setFocused(null); setFocusClosing(false); } })
-        .to(media, { opacity: 0, scale: .97, duration: .22, ease: "power2.in" }, 0)
-        .to(focus, { opacity: 0, duration: .28, ease: "power2.inOut" }, 0);
-    });
-  }, [focusClosing, focused]);
+
+        focusSourceIndex.current =
+          null;
+
+        focusSourceRect.current =
+          null;
+      });
+  }, [
+    focusClosing,
+    focused,
+    items,
+    preview,
+  ]);
 
   useEffect(() => {
-    const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && focused !== null) dismissFocus();
-      else if (focused !== null && event.key === "ArrowRight") setFocused((focused + 1) % items.length);
-      else if (focused !== null && event.key === "ArrowLeft") setFocused((focused - 1 + items.length) % items.length);
+    const key = (
+      event: KeyboardEvent,
+    ) => {
+      if (
+        event.key !== "Escape" ||
+        focused === null
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      dismissFocus();
     };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [dismissFocus, focused, items.length]);
+
+    window.addEventListener(
+      "keydown",
+      key,
+    );
+
+    return () =>
+      window.removeEventListener(
+        "keydown",
+        key,
+      );
+  }, [
+    dismissFocus,
+    focused,
+  ]);
 
   useLayoutEffect(() => {
-    if (focused === null || focusClosing) return;
-    const focus = document.getElementById("galleryFocus");
-    const media = focus?.querySelector<HTMLElement>(".reference-focus-media");
-    if (!focus || !media) return;
+    if (
+      focused === null ||
+      focusClosing
+    ) {
+      return;
+    }
+
+    const selectedItem =
+      items[focused];
+
+    const sourceIndex =
+      focusSourceIndex.current ??
+      focused;
+
+    const sourceCard =
+      assetsRef.current?.querySelectorAll<HTMLElement>(
+        ".gallery-intro-card",
+      )[sourceIndex] ?? null;
+
+    const sourceRect =
+      focusSourceRect.current ??
+      (() => {
+        const rect =
+          sourceCard?.getBoundingClientRect();
+
+        return rect
+          ? {
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+            }
+          : null;
+      })();
+
+    const ghost =
+      focusGhostRef.current;
+
+    const veil =
+      focusVeilRef.current;
+
+    const media =
+      selectedItem?.kind === "video"
+        ? focusVideoRef.current
+        : focusImageRef.current;
+
+    if (
+      !selectedItem ||
+      !sourceRect ||
+      !ghost ||
+      !veil ||
+      !media
+    ) {
+      return;
+    }
+
+    const ghostSrc =
+      selectedItem.kind === "video"
+        ? mediaUrl(
+            selectedItem.thumbKey,
+            preview,
+          )
+        : mediaUrl(
+            selectedItem.key,
+            preview,
+          );
+
     let cancelled = false;
-    loadGsap().then(async (gsap) => {
-      if (cancelled || !gsap) return;
-      if (prefersReducedMotion()) { gsap.set([focus, media], { clearProps: "all" }); return; }
-      gsap.set(focus, { opacity: 0 });
-      gsap.set(media, { opacity: 0, scale: .965 });
-      gsap.timeline()
-        .to(focus, { opacity: 1, duration: .3, ease: "power2.out" }, 0)
-        .to(media, { opacity: 1, scale: 1, duration: .55, ease: "power4.out" }, .06);
+
+    void runGalleryFocusOpen({
+      sourceCard,
+      sourceRect,
+      ghost,
+      ghostSrc,
+      media,
+      veil,
+    }).catch(() => {
+      if (
+        cancelled ||
+        !media ||
+        !veil
+      ) {
+        return;
+      }
+
+      media.style.opacity = "1";
+      veil.style.opacity = "1";
     });
-    return () => { cancelled = true; };
-  }, [focused, focusClosing]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    focused,
+    focusClosing,
+    items,
+    preview,
+  ]);
 
   useLayoutEffect(() => {
     const assets = assetsRef.current;
@@ -713,6 +1089,19 @@ export function GalleryView({ content, preview = false, base, onBack }: {
     return () => { cancelled = true; timeline?.kill(); removeResize?.(); };
   }, [items.length, mode]);
   const selected = focused === null ? null : items[focused];
+
+  // The original prototype keeps the focus media nodes mounted for the
+  // lifetime of the Gallery. Seed the image layer with the first portrait
+  // so the browser can decode/composite it before the first interaction.
+  const focusSeed =
+    items.find((item) => item.kind !== "video") ??
+    null;
+
+  const focusImageItem =
+    selected && selected.kind !== "video"
+      ? selected
+      : focusSeed;
+
   return (
     <section
       ref={panelRef}
@@ -737,7 +1126,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       >
         <div
           id="galleryViewToggle"
-          className="gallery-view-toggle absolute bottom-[53px] left-1/2 z-[34] flex -translate-x-1/2 items-center gap-[6px] whitespace-nowrap text-center text-[8px] leading-none tracking-[.15em] uppercase text-[#080808] opacity-100 pointer-events-auto max-[800px]:bottom-[max(47px,calc(env(safe-area-inset-bottom)+41px))] max-[800px]:gap-[5px] max-[800px]:text-[6px] max-[520px]:tracking-[.14em]"
+          className={`gallery-view-toggle absolute bottom-[53px] left-1/2 z-[34] flex -translate-x-1/2 items-center gap-[6px] whitespace-nowrap text-center text-[8px] leading-none tracking-[.15em] uppercase text-[#080808] max-[800px]:bottom-[max(47px,calc(env(safe-area-inset-bottom)+41px))] max-[800px]:gap-[5px] max-[800px]:text-[6px] max-[520px]:tracking-[.14em] ${selected ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"}`}
           aria-label="Gallery view"
         >
           <button
@@ -767,7 +1156,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
               <button
                 key={item.id}
                 type="button"
-                className="gallery-intro-card absolute left-1/2 top-1/2 aspect-[3/4] overflow-hidden bg-[#eee] opacity-0 origin-center [width:clamp(44px,3.95vw,58px)] [will-change:transform,opacity] [backface-visibility:hidden] [box-shadow:0_0_0_1px_rgba(0,0,0,0.026)]"
+                className="gallery-intro-card absolute left-1/2 top-1/2 aspect-[3/4] overflow-hidden bg-[#eee] opacity-0 origin-center [width:clamp(44px,3.95vw,58px)] [will-change:left,top,width,height,opacity] [backface-visibility:hidden] [box-shadow:0_0_0_1px_rgba(0,0,0,0.026)]"
                 onClick={() => {
                   if (
                     suppressSphereTap.current
@@ -828,10 +1217,68 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         >
           01 / {pad(items.length)}
         </div>
-        <div id="galleryFocus" className={`gallery-focus${selected ? " is-open" : ""}${focusClosing ? " is-closing" : ""}`} aria-hidden={!selected}>
-          <button className="gallery-focus__veil" type="button" onClick={dismissFocus} aria-label="Close image" />
-          {selected && (selected.kind === "video" ? <video className="gallery-focus__video reference-focus-media" src={mediaUrl(selected.key, preview)} poster={mediaUrl(selected.thumbKey, preview)} controls playsInline preload="metadata" autoPlay /> : <img className="gallery-focus__img reference-focus-media" src={mediaUrl(selected.key, preview)} alt={selected.alt} width={selected.width} height={selected.height} onClick={dismissFocus} />)}
-          {selected && <div className="reference-focus-controls"><span>{pad(focused! + 1)} / {pad(items.length)} · {selected.title}</span><button type="button" onClick={dismissFocus} aria-label="Close image">CLOSE ×</button></div>}
+        <div
+          ref={focusRef}
+          id="galleryFocus"
+          className={`gallery-focus fixed inset-0 z-[3600] flex h-dvh w-screen items-center justify-center overflow-hidden p-0 visible ${selected ? "is-open pointer-events-auto" : "pointer-events-none"}`}
+          aria-hidden={!selected}
+        >
+          <button
+            ref={focusVeilRef}
+            className="gallery-focus__veil absolute inset-0 z-[1] border-0 bg-white p-0 opacity-0 cursor-zoom-out"
+            type="button"
+            onClick={dismissFocus}
+            aria-label="Close image"
+          />
+
+          <img
+            ref={focusGhostRef}
+            className="gallery-focus__ghost fixed z-[6] block bg-[#eee] object-cover opacity-0 pointer-events-none [will-change:left,top,width,height,opacity]"
+            alt=""
+            aria-hidden="true"
+          />
+
+          <video
+            ref={focusVideoRef}
+            className={`gallery-focus__video absolute z-[7] h-auto w-auto max-h-[80dvh] max-w-[min(86vw,780px)] object-contain bg-black opacity-0 [will-change:opacity] [transform:translateZ(0)] [backface-visibility:hidden] max-[800px]:max-h-[calc(100dvh-116px)] max-[800px]:max-w-[calc(100vw-32px)] ${selected?.kind === "video" ? "block" : "pointer-events-none"}`}
+            src={
+              selected?.kind === "video"
+                ? mediaUrl(selected.key, preview)
+                : undefined
+            }
+            poster={
+              selected?.kind === "video"
+                ? mediaUrl(selected.thumbKey, preview)
+                : undefined
+            }
+            controls
+            playsInline
+            preload="metadata"
+            autoPlay={selected?.kind === "video"}
+          />
+
+          {focusImageItem && (
+            <img
+              ref={focusImageRef}
+              className={`gallery-focus__img relative z-[7] block h-auto w-auto max-h-[80dvh] max-w-[min(86vw,780px)] object-contain opacity-0 [will-change:opacity] [transform:translateZ(0)] [backface-visibility:hidden] max-[800px]:max-h-[calc(100dvh-116px)] max-[800px]:max-w-[calc(100vw-32px)] ${selected?.kind === "video" ? "pointer-events-none" : "cursor-zoom-out"}`}
+              src={mediaUrl(focusImageItem.key, preview)}
+              alt={
+                selected &&
+                selected.kind !== "video"
+                  ? selected.alt
+                  : ""
+              }
+              width={focusImageItem.width}
+              height={focusImageItem.height}
+              onClick={
+                selected &&
+                selected.kind !== "video"
+                  ? dismissFocus
+                  : undefined
+              }
+              aria-hidden={!selected || selected.kind === "video"}
+            />
+          )}
         </div>
       </main>
     </section>
