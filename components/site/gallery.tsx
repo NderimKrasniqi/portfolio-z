@@ -64,7 +64,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   const instructionRef = useRef<HTMLDivElement | null>(null);
   const orbitIndexRef = useRef<HTMLDivElement | null>(null);
 
-  const focusRef = useRef<HTMLDivElement | null>(null);
   const focusVeilRef = useRef<HTMLButtonElement | null>(null);
   const focusGhostRef = useRef<HTMLImageElement | null>(null);
   const focusImageRef = useRef<HTMLImageElement | null>(null);
@@ -946,9 +945,8 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   }, [items.length, mode]);
   const selected = focused === null ? null : items[focused];
 
-  // The original prototype keeps the focus media nodes mounted for the
-  // lifetime of the Gallery. Seed the image layer with the first portrait
-  // so the browser can decode/composite it before the first interaction.
+  // Match the reference: keep the focus media nodes mounted for the
+  // lifetime of the Gallery and swap the active source in place.
   const focusSeed =
     items.find((item) => item.kind !== "video") ??
     null;
@@ -1074,7 +1072,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           01 / {pad(items.length)}
         </div>
         <div
-          ref={focusRef}
           id="galleryFocus"
           className={`gallery-focus fixed inset-0 z-[3600] flex h-dvh w-screen items-center justify-center overflow-hidden p-0 visible ${selected ? "is-open pointer-events-auto" : "pointer-events-none"}`}
           aria-hidden={!selected}
@@ -1096,7 +1093,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
           <video
             ref={focusVideoRef}
-            className={`gallery-focus__video absolute z-[7] h-auto w-auto max-h-[80dvh] max-w-[min(86vw,780px)] object-contain bg-black opacity-0 [will-change:opacity] [transform:translateZ(0)] [backface-visibility:hidden] max-[800px]:max-h-[calc(100dvh-116px)] max-[800px]:max-w-[calc(100vw-32px)] ${selected?.kind === "video" ? "block" : "pointer-events-none"}`}
+            className={`gallery-focus__video relative z-[7] h-auto w-auto max-h-[80dvh] max-w-[min(86vw,780px)] object-contain bg-black opacity-0 cursor-default [will-change:opacity] [transform:translateZ(0)] [backface-visibility:hidden] max-[800px]:max-h-[calc(100dvh-116px)] max-[800px]:max-w-[calc(100vw-32px)] ${selected?.kind === "video" ? "block" : "hidden"}`}
             src={
               selected?.kind === "video"
                 ? mediaUrl(selected.key, preview)
@@ -1116,7 +1113,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           {focusImageItem && (
             <img
               ref={focusImageRef}
-              className={`gallery-focus__img relative z-[7] block h-auto w-auto max-h-[80dvh] max-w-[min(86vw,780px)] object-contain opacity-0 [will-change:opacity] [transform:translateZ(0)] [backface-visibility:hidden] max-[800px]:max-h-[calc(100dvh-116px)] max-[800px]:max-w-[calc(100vw-32px)] ${selected?.kind === "video" ? "pointer-events-none" : "cursor-zoom-out"}`}
+              className={`gallery-focus__img relative z-[7] h-auto w-auto max-h-[80dvh] max-w-[min(86vw,780px)] object-contain opacity-0 [will-change:opacity] [transform:translateZ(0)] [backface-visibility:hidden] max-[800px]:max-h-[calc(100dvh-116px)] max-[800px]:max-w-[calc(100vw-32px)] ${selected?.kind === "video" ? "hidden" : "block cursor-zoom-out"}`}
               src={mediaUrl(focusImageItem.key, preview)}
               alt={
                 selected &&

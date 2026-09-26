@@ -127,11 +127,8 @@ export async function runGalleryFocusOpen({
   media: FocusMedia;
   veil: HTMLElement;
 }) {
-  // Establish the closed visual state synchronously, before any
-  // image loading/decoding can yield to the browser.
-  //
-  // This prevents legacy/open-state CSS or a cold image decode from
-  // painting the full-screen veil before GSAP starts the transition.
+  // Establish the closed visual state before image preparation can
+  // yield, so no intermediate focus frame can paint before GSAP begins.
   veil.style.opacity = "0";
   media.style.opacity = "0";
   ghost.style.opacity = "0";
@@ -315,32 +312,10 @@ export async function runGalleryFocusClose({
     currentRect,
   );
 
-  const deltaX =
-    destinationRect.left -
-    currentRect.left;
-
-  const deltaY =
-    destinationRect.top -
-    currentRect.top;
-
-  const scaleX =
-    destinationRect.width /
-    currentRect.width;
-
-  const scaleY =
-    destinationRect.height /
-    currentRect.height;
-
   gsap.set(
     ghost,
     {
       opacity: 1,
-      x: 0,
-      y: 0,
-      scaleX: 1,
-      scaleY: 1,
-      transformOrigin: "0 0",
-      force3D: true,
     },
   );
 
@@ -361,9 +336,7 @@ export async function runGalleryFocusClose({
             resolve();
           },
         })
-        // Closing uses compositor transforms instead of continuously
-        // changing left/top/width/height. This avoids layout work on
-        // every frame while preserving the same start/end geometry.
+        // Match the reference return morph exactly.
         .to(
           ghost,
           {

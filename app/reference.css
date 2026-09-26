@@ -347,10 +347,6 @@
 .portfolio .gallery-intro-name .slash{display:inline-block;margin:0 .16em;font-weight:300;opacity:.34}
 .portfolio .gallery-intro-role{margin-top:9px;font-size:5px;letter-spacing:.15em;text-transform:uppercase;opacity:0;will-change:opacity,transform;white-space:nowrap}
 .portfolio .gallery-intro-count{position:absolute;left:50%;top:calc(50% + clamp(62px,7vw,108px));z-index:21;transform:translateX(-50%);font-size:6px;letter-spacing:.16em;font-variant-numeric:tabular-nums;opacity:0;pointer-events:none}
-.portfolio .gallery-focus{position:absolute;inset:0;z-index:90;display:grid;place-items:center;pointer-events:none;visibility:hidden}
-.portfolio .gallery-focus.is-open{pointer-events:auto;visibility:visible}
-.portfolio .gallery-focus__veil{position:absolute;inset:0;opacity:0;cursor:zoom-out}
-.portfolio .gallery-focus__count{z-index:3;font-variant-numeric:tabular-nums}
 @media (max-width:800px){.portfolio .gallery-open{right:calc(var(--side) + 142px);top:17px}
 .portfolio .gallery-head{height:54px}
 .portfolio .gallery-home{top:16px}
@@ -358,7 +354,7 @@
 .portfolio .gallery-theme{top:11px}
 .portfolio .gallery-space-label,
 .portfolio .gallery-orbit-index{bottom:14px}
-.portfolio .gallery-focus__img{max-width:88vw;max-height:76vh}}
+}
 @media (max-width:520px){.portfolio .gallery-open{right:calc(var(--side) + 128px);letter-spacing:.16em}
 .portfolio .gallery-home{font-size:6px}
 .portfolio .gallery-nav button{font-size:6px}
@@ -402,20 +398,9 @@
 .portfolio .gallery-panel .gallery-intro-assets.is-sphere .gallery-intro-card{cursor:pointer!important}
 /* [gallery] zeudi-gallery-polish-v1 */
 .portfolio .gallery-hover-tag{position:absolute;z-index:78;left:0;top:0;padding:4px 5px;background:rgba(255,255,255,.92);font-size:6px;line-height:1;letter-spacing:.14em;font-variant-numeric:tabular-nums;text-transform:uppercase;white-space:nowrap;pointer-events:none;opacity:0;transform:translate3d(0,0,0);will-change:transform,opacity}
-.portfolio .gallery-focus{overflow:hidden}
-.portfolio .gallery-focus__ghost{position:absolute;z-index:3;object-fit:cover;background:#eee;opacity:0;pointer-events:none;will-change:left,top,width,height,opacity,transform}
-.portfolio .gallery-focus__img{position:absolute!important;z-index:4!important;display:block!important;max-width:none!important;max-height:none!important;width:auto;height:auto;object-fit:contain!important;opacity:0;transform:none!important;will-change:left,top,width,height,opacity}
-.portfolio .gallery-focus__meta{position:absolute;left:var(--side);bottom:20px;z-index:5;grid-template-columns:auto auto auto;align-items:end;gap:18px;font-size:6px;line-height:1;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;opacity:0;pointer-events:none}
-.portfolio .gallery-focus__count{position:static!important;left:auto!important;bottom:auto!important;opacity:1!important;font-size:inherit!important;letter-spacing:inherit!important}
-.portfolio .gallery-focus__name{opacity:.72}
-.portfolio .gallery-focus__place{opacity:.38}
 .portfolio .gallery-intro-role{min-width:130px}
-@media (max-width:800px){.portfolio .gallery-focus__meta{left:16px;bottom:15px;gap:11px;font-size:5.5px}}
-@media (max-width:520px){.portfolio .gallery-focus__meta{grid-template-columns:1fr;gap:5px}}
 /* [gallery] zeudi-gallery-clean-focus-v1 */
 .portfolio .gallery-hover-tag{display:none!important}
-.portfolio .gallery-focus__ghost{display:none!important}
-.portfolio .gallery-focus__img{box-shadow:none!important}
 /* [home] zeudi-home-music-style */
 .portfolio .home-music-toggle{right:var(--side);bottom:calc(var(--strip-h) + 18px);width:28px;height:28px;display:grid;place-items:center;border:0;padding:0;background:transparent;color:#080808;cursor:pointer;opacity:.45;transition:opacity .22s ease,visibility .22s ease}
 .portfolio .home-music-toggle:hover{opacity:.82}
@@ -429,18 +414,11 @@
 @media (max-width:800px){.portfolio .home-music-toggle{right:16px;bottom:calc(var(--strip-h) + 12px);width:30px;height:30px}}
 /* [gallery] zeudi-gallery-video-cards */
 .portfolio .gallery-intro-card video{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;background:#eee}
-.portfolio .gallery-focus__video{position:absolute;z-index:4;display:none;max-width:none;max-height:none;width:auto;height:auto;object-fit:contain;opacity:0;background:#000;will-change:left,top,width,height,opacity}
 /* [gallery] zeudi-gallery-cleanup-v2 */
 .portfolio .gallery-back{align-items:center}
 .portfolio .gallery-back__arrow{font-size:13px;line-height:.7;letter-spacing:0;transform:translateY(-1px)}
 .portfolio .gallery-space-label,
 .portfolio .gallery-orbit-index{display:none!important}
-.portfolio .gallery-focus__meta{display:none!important}
-.portfolio .gallery-focus__img,
-.portfolio .gallery-focus__video{left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;margin:0!important}
-.portfolio .gallery-focus__veil{background:rgba(255,255,255,.965)!important;backdrop-filter:none!important}
-.portfolio .gallery-focus__img{cursor:zoom-out!important}
-.portfolio .gallery-focus__video{cursor:default!important}
 .portfolio .gallery-instruction{opacity:.34}
 @media (max-width:800px){.portfolio .gallery-back{left:16px;gap:6px}}
 /* [gallery] zeudi-gallery-consistency-fixes */
@@ -454,8 +432,6 @@
 @media (max-width:800px){.portfolio .gallery-back{right:16px!important;top:17px!important;font-size:8px!important}}
 /* [gallery] zeudi-music-mobile-gallery-fixes */
 .portfolio .gallery-panel .gallery-space{touch-action:none!important}
-@media (max-width:800px){.portfolio .gallery-focus__img,
-.portfolio .gallery-focus__video{max-width:88vw!important;max-height:78dvh!important}}
 /* [home] zeudi-unified-back-navigation */
 .portfolio .gallery-back.unified-back,
 .portfolio .about-close.unified-back,
@@ -500,11 +476,6 @@
 .portfolio .gallery-intro-count{top:calc(50% + 64px)!important;font-size:5px!important}
 .portfolio .gallery-intro-card{width:clamp(36px,10vw,42px)!important}
 .portfolio .gallery-instruction{font-size:6px!important;letter-spacing:.16em!important;opacity:.30!important}
-.portfolio .gallery-focus{height:100dvh!important}
-.portfolio .gallery-focus__veil{background:#fff!important}
-.portfolio .gallery-focus__img,
-.portfolio .gallery-focus__video{max-width:88vw!important;max-height:calc(100dvh - 132px)!important}
-.portfolio .gallery-focus__video{background:#000!important}
 .portfolio .about-panel{overflow:hidden!important}
 .portfolio .about-sheet{height:100dvh!important;padding:0 max(18px,env(safe-area-inset-right)) 0 max(18px,env(safe-area-inset-left))!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch}
 .portfolio .about-story-shell{width:100%!important;display:flex!important;flex-direction:column!important;gap:0!important;min-height:100dvh!important}
@@ -557,13 +528,6 @@
 .portfolio .contact-sheet h2{font-size:40px!important;margin-bottom:22px!important}
 .portfolio .rep-row{padding:11px 0!important}}
 /* [gallery] zeudi-gallery-focus-center-final */
-.portfolio #galleryFocus.gallery-focus{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;z-index:3600!important;padding:0!important;box-sizing:border-box!important}
-.portfolio #galleryFocus .gallery-focus__veil{position:absolute!important;inset:0!important}
-.portfolio #galleryFocus .gallery-focus__img,
-.portfolio #galleryFocus .gallery-focus__video{position:relative!important;left:auto!important;top:auto!important;right:auto!important;bottom:auto!important;transform:none!important;margin:0!important;width:auto!important;height:auto!important;max-width:min(86vw,780px)!important;max-height:80dvh!important;object-fit:contain!important;flex:0 0 auto!important;align-self:center!important;justify-self:center!important}
-@media (max-width:800px){.portfolio #galleryFocus.gallery-focus{padding:56px 16px 44px!important}
-.portfolio #galleryFocus .gallery-focus__img,
-.portfolio #galleryFocus .gallery-focus__video{max-width:calc(100vw - 32px)!important;max-height:calc(100dvh - 116px)!important}}
 /* [about] zeudi-mobile-menu-and-about-center */
 .portfolio .mobile-menu-toggle,
 .portfolio .mobile-nav-panel{display:none}
@@ -684,11 +648,6 @@
 .portfolio .gallery-intro-assets.is-grid-transition .gallery-intro-card{pointer-events:none!important}
 @media (max-width:520px){}
 /* [base-tokens] zeudi-native-cinematic-focus-fix */
-.portfolio #galleryFocus .gallery-focus__ghost{display:block!important;position:fixed!important;z-index:6!important;object-fit:cover!important;pointer-events:none!important;opacity:0;will-change:left,top,width,height,opacity!important}
-.portfolio #galleryFocus .gallery-focus__img,
-.portfolio #galleryFocus .gallery-focus__video{z-index:7!important}
-.portfolio #galleryFocus .gallery-focus__veil{z-index:1!important}
-.portfolio #galleryFocus.is-native-cinematic-closing{visibility:visible!important}
 /* [home] zeudi-spacing-balance-final */
 @media (min-width:801px){.portfolio{--side:clamp(34px,5.4vw,92px)!important}
 .portfolio .about-story-shell{grid-template-columns:minmax(0,680px) minmax(360px,500px)!important;gap:clamp(48px,5vw,88px)!important}
@@ -1130,11 +1089,7 @@
 .portfolio .gallery-intro-card:focus-visible,
 .portfolio .mobile-nav-link:focus-visible{outline:1px solid currentColor!important;outline-offset:5px!important}
 .portfolio .gallery-intro-card:focus-visible{outline-offset:4px!important}
-@media (prefers-reduced-motion:reduce){.portfolio .gallery-intro-card,
-.portfolio .gallery-focus__ghost,
-.portfolio .gallery-focus__veil,
-.portfolio .gallery-focus__img,
-.portfolio .gallery-focus__video{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){.portfolio .gallery-intro-card{transition:none!important;animation:none!important}}
 /* [home] zeudi-main-nav-spacing-refinement */
 .portfolio .desktop-main-nav{position:absolute;z-index:40;right:var(--side);top:21px;display:flex;align-items:center;gap:17px;white-space:nowrap}
 .portfolio .desktop-main-nav>.gallery-open,
