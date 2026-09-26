@@ -300,7 +300,7 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
 
   return (
     <>
-      {loading && active && <div ref={loader} className="loader reference-loader" aria-hidden="true"><div className="loader__veil" /><div className="loader__signature-wrap"><div className="loader__signature" dangerouslySetInnerHTML={{ __html: signatureSvg }} /></div></div>}
+      {loading && active && <div ref={loader} className="loader reference-loader z-[5600]" aria-hidden="true"><div className="loader__veil" /><div className="loader__signature-wrap"><div className="loader__signature" dangerouslySetInnerHTML={{ __html: signatureSvg }} /></div></div>}
       <main id="stage" ref={stage} className="stage" aria-hidden={!active}>
         {currentItem && <div ref={media} className="media frame-portrait" style={mediaGeometry ? { width: mediaGeometry.width, height: mediaGeometry.height, top: mediaGeometry.top } : undefined}>
           {previousItem && <div ref={backMedia} className="media-layer is-back"><MediaView media={previousItem} priority={false} draft={preview} /></div>}

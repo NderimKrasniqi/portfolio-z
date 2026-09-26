@@ -75,6 +75,7 @@ export function Frame({ content, locale, locales, shopVisible, section, preview 
     <NavigationProvider navigate={navigate}>
     <div className={`portfolio zeudi-preload-complete${section !== "home" ? " zeudi-subpage-open" : ""}`}>
       <LocaleDocument locale={locale} />
+
       <a className="reference-skip" href={section === "home" ? "#stage" : "#main"}>Skip to content</a>
       {preview && <div className="reference-preview-banner">Draft preview · <Link href="/admin">Return to editor</Link></div>}
       <HomeView content={content} base={base} active={section === "home"} shopVisible={shopVisible} preview={preview} />
@@ -117,6 +118,7 @@ export function Frame({ content, locale, locales, shopVisible, section, preview 
       {section === "about" && <AboutView content={content} preview={preview} onBack={goHome} />}
       {section === "shop" && <ShopView content={content} preview={preview} onBack={goHome} />}
       {section === "contact" && <ContactView content={content} onBack={goHome} />}
+
     </div>
     </NavigationProvider>
   );

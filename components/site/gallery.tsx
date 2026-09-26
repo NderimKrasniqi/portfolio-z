@@ -1,12 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import type { Content } from "@/lib/model";
 import { mediaUrl } from "./media";
 import { BackButton, SocialLinks } from "./site-controls";
 import { SiteLink } from "./navigation";
 import { loadGsap, prefersReducedMotion } from "./motion";
+import {
+  projectSpherePoint,
+  sphereUnits,
+} from "./gallery-geometry";
 import {
   applyBaseCardSizing,
   applyGridLayout,
@@ -17,12 +20,10 @@ import {
   type CardSnapshot,
 } from "./gallery-motion";
 
-const Sphere = dynamic(() => import("./sphere"), { ssr: false });
 const pad = (value: number) => String(value).padStart(2, "0");
 
 type GalleryPhase =
   | "opening"
-  | "sphere-waiting"
   | "sphere"
   | "to-grid"
   | "grid"
@@ -40,19 +41,22 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
   const [focused, setFocused] = useState<number | null>(null);
   const [focusClosing, setFocusClosing] = useState(false);
-  const [threeReady, setThreeReady] = useState(false);
-  const [threeSettled, setThreeSettled] = useState(false);
-  const [handoffRotation, setHandoffRotation] = useState(0);
 
   const introPlayed = useRef(false);
   const sphereSnapshot = useRef<CardSnapshot[]>([]);
   const liveSphereRotation = useRef(0);
   const sphereRotationSnapshot = useRef(0);
+  const sphereVelocity = useRef(0);
+  const sphereLastInput = useRef(0);
+  const suppressSphereTap = useRef(false);
 
   const panelRef = useRef<HTMLElement | null>(null);
   const assetsRef = useRef<HTMLDivElement | null>(null);
   const copyRef = useRef<HTMLDivElement | null>(null);
   const countRef = useRef<HTMLDivElement | null>(null);
+  const spaceLabelRef = useRef<HTMLDivElement | null>(null);
+  const instructionRef = useRef<HTMLDivElement | null>(null);
+  const orbitIndexRef = useRef<HTMLDivElement | null>(null);
 
   const setGalleryPhase = useCallback((next: GalleryPhase) => {
     phaseRef.current = next;
@@ -70,7 +74,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
     phase === "opening" ||
     phase === "to-sphere";
 
-  const threeLive = phase === "sphere";
   const onSelect = useCallback((index: number) => {
     const current = phaseRef.current;
 
@@ -84,102 +87,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
     setFocused(index);
   }, []);
-  const onReady = useCallback((ready: boolean) => {
-    setThreeReady(ready);
-    setThreeSettled(true);
-  }, []);
-
-  const onSphereRotation = useCallback((rotation: number) => {
-    liveSphereRotation.current = rotation;
-  }, []);
-  useEffect(() => {
-    if (phase !== "sphere-waiting" || !threeReady) return;
-
-    const assets = assetsRef.current;
-    const sphere =
-      panelRef.current?.querySelector<HTMLElement>(
-        ".reference-three-sphere",
-      ) ?? null;
-
-    if (!assets || !sphere) {
-      setGalleryPhase("sphere");
-      return;
-    }
-
-    let cancelled = false;
-    let timeline: { kill: () => void } | null = null;
-
-    void loadGsap().then((gsap) => {
-      if (cancelled) return;
-
-      if (!gsap || prefersReducedMotion()) {
-        setGalleryPhase("sphere");
-        return;
-      }
-
-      gsap.killTweensOf([assets, sphere]);
-
-      gsap.set(assets, {
-        opacity: 1,
-        visibility: "visible",
-      });
-
-      gsap.set(sphere, {
-        opacity: 0,
-        visibility: "visible",
-      });
-
-      const crossfade = gsap.timeline({
-        onComplete: () => {
-          if (!cancelled) {
-            setGalleryPhase("sphere");
-          }
-        },
-      });
-
-      crossfade
-        .to(
-          assets,
-          {
-            opacity: 0,
-            duration: 0.18,
-            ease: "sine.inOut",
-          },
-          0,
-        )
-        .to(
-          sphere,
-          {
-            opacity: 1,
-            duration: 0.18,
-            ease: "sine.inOut",
-          },
-          0,
-        );
-
-      timeline = crossfade;
-    });
-
-    return () => {
-      cancelled = true;
-      timeline?.kill();
-    };
-  }, [phase, threeReady, setGalleryPhase]);
-
-  useLayoutEffect(() => {
-    if (phase !== "sphere") return;
-
-    const assets = assetsRef.current;
-    const sphere =
-      panelRef.current?.querySelector<HTMLElement>(
-        ".reference-three-sphere",
-      ) ?? null;
-
-    assets?.style.removeProperty("opacity");
-    assets?.style.removeProperty("visibility");
-    sphere?.style.removeProperty("opacity");
-    sphere?.style.removeProperty("visibility");
-  }, [phase]);
   const switchMode = useCallback((next: "sphere" | "grid") => {
     const current = phaseRef.current;
 
@@ -198,6 +105,356 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         : "to-sphere",
     );
   }, [mode, setGalleryPhase]);
+  useEffect(() => {
+    if (phase !== "sphere") return;
+
+    const assets = assetsRef.current;
+    const space =
+      panelRef.current?.querySelector<HTMLElement>(
+        ".gallery-space",
+      ) ?? null;
+
+    if (!assets || !space) return;
+
+    const cards = [
+      ...assets.querySelectorAll<HTMLElement>(
+        ".gallery-intro-card",
+      ),
+    ];
+
+    if (!cards.length) return;
+
+    const units =
+      sphereUnits(cards.length);
+
+    let cancelled = false;
+    let frame = 0;
+    let last =
+      performance.now();
+
+    let touchStartY: number | null = null;
+    let touchLastY: number | null = null;
+    let touchMoved = false;
+
+    const clamp = (
+      value: number,
+      min: number,
+      max: number,
+    ) =>
+      Math.max(
+        min,
+        Math.min(max, value),
+      );
+
+    const markInput = () => {
+      sphereLastInput.current =
+        performance.now();
+    };
+
+    const addSpinImpulse = (
+      delta: number,
+    ) => {
+      markInput();
+
+      const impulse = clamp(
+        delta * 0.0002,
+        -0.026,
+        0.026,
+      );
+
+      sphereVelocity.current =
+        clamp(
+          sphereVelocity.current +
+            impulse,
+          -0.072,
+          0.072,
+        );
+    };
+
+    const onWheel = (
+      event: WheelEvent,
+    ) => {
+      if (
+        phaseRef.current !==
+          "sphere" ||
+        focused !== null
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const horizontal =
+        Math.abs(event.deltaX) >
+        Math.abs(event.deltaY);
+
+      // Exact reference direction:
+      // horizontal gestures are inverted,
+      // vertical gestures are not.
+      const delta = horizontal
+        ? -event.deltaX
+        : event.deltaY;
+
+      addSpinImpulse(delta);
+    };
+
+    const onTouchStart = (
+      event: TouchEvent,
+    ) => {
+      if (
+        phaseRef.current !==
+          "sphere" ||
+        focused !== null
+      ) {
+        return;
+      }
+
+      const y =
+        event.touches[0]?.clientY;
+
+      touchStartY = y ?? null;
+      touchLastY = y ?? null;
+      touchMoved = false;
+    };
+
+    const onTouchMove = (
+      event: TouchEvent,
+    ) => {
+      if (
+        touchLastY === null ||
+        phaseRef.current !==
+          "sphere" ||
+        focused !== null
+      ) {
+        return;
+      }
+
+      const y =
+        event.touches[0]?.clientY;
+
+      if (y == null) return;
+
+      const delta =
+        touchLastY - y;
+
+      touchLastY = y;
+
+      if (
+        touchStartY !== null &&
+        Math.abs(
+          y - touchStartY,
+        ) > 8
+      ) {
+        touchMoved = true;
+      }
+
+      if (
+        Math.abs(delta) > 0.25
+      ) {
+        addSpinImpulse(
+          delta * 1.65,
+        );
+
+        event.preventDefault();
+      }
+    };
+
+    const endTouch = () => {
+      if (touchMoved) {
+        suppressSphereTap.current =
+          true;
+
+        window.setTimeout(() => {
+          suppressSphereTap.current =
+            false;
+        }, 220);
+      }
+
+      touchStartY = null;
+      touchLastY = null;
+      touchMoved = false;
+    };
+
+    space.addEventListener(
+      "wheel",
+      onWheel,
+      {
+        passive: false,
+        capture: true,
+      },
+    );
+
+    space.addEventListener(
+      "touchstart",
+      onTouchStart,
+      { passive: true },
+    );
+
+    space.addEventListener(
+      "touchmove",
+      onTouchMove,
+      { passive: false },
+    );
+
+    space.addEventListener(
+      "touchend",
+      endTouch,
+      { passive: true },
+    );
+
+    space.addEventListener(
+      "touchcancel",
+      endTouch,
+      { passive: true },
+    );
+
+    void loadGsap().then((gsap) => {
+      if (
+        cancelled ||
+        !gsap
+      ) {
+        return;
+      }
+
+      const reduced =
+        prefersReducedMotion();
+
+      const render = (
+        now: number,
+      ) => {
+        if (cancelled) return;
+
+        const deltaTime =
+          Math.min(
+            0.05,
+            Math.max(
+              0,
+              (now - last) / 1000,
+            ),
+          );
+
+        last = now;
+
+        if (
+          phaseRef.current ===
+            "sphere" &&
+          focused === null
+        ) {
+          if (
+            Math.abs(
+              sphereVelocity.current,
+            ) > 0.00002
+          ) {
+            liveSphereRotation.current +=
+              sphereVelocity.current *
+              (deltaTime * 60);
+
+            sphereVelocity.current *=
+              Math.pow(
+                0.875,
+                deltaTime * 60,
+              );
+
+            if (
+              Math.abs(
+                sphereVelocity.current,
+              ) < 0.00002
+            ) {
+              sphereVelocity.current = 0;
+            }
+          } else if (
+            !reduced &&
+            now -
+              sphereLastInput.current >=
+              1300
+          ) {
+            liveSphereRotation.current +=
+              0.13 * deltaTime;
+          }
+
+          const width =
+            window.innerWidth;
+
+          const height =
+            window.innerHeight;
+
+          cards.forEach(
+            (card, index) => {
+              const point =
+                projectSpherePoint(
+                  units[index],
+                  liveSphereRotation.current,
+                  width,
+                  height,
+                );
+
+              gsap.set(card, {
+                xPercent: -50,
+                yPercent: -50,
+                x: point.x,
+                y: point.y,
+                scale: point.scale,
+                rotation: 0,
+                opacity:
+                  point.opacity,
+                zIndex:
+                  point.zIndex,
+                visibility:
+                  "visible",
+              });
+            },
+          );
+        }
+
+        frame =
+          requestAnimationFrame(
+            render,
+          );
+      };
+
+      frame =
+        requestAnimationFrame(
+          render,
+        );
+    });
+
+    return () => {
+      cancelled = true;
+
+      cancelAnimationFrame(frame);
+
+      space.removeEventListener(
+        "wheel",
+        onWheel,
+        true,
+      );
+
+      space.removeEventListener(
+        "touchstart",
+        onTouchStart,
+      );
+
+      space.removeEventListener(
+        "touchmove",
+        onTouchMove,
+      );
+
+      space.removeEventListener(
+        "touchend",
+        endTouch,
+      );
+
+      space.removeEventListener(
+        "touchcancel",
+        endTouch,
+      );
+    };
+  }, [
+    focused,
+    phase,
+  ]);
+
   const dismissFocus = useCallback(() => {
     if (focused === null || focusClosing) return;
     setFocusClosing(true);
@@ -231,7 +488,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
     const media = focus?.querySelector<HTMLElement>(".reference-focus-media");
     if (!focus || !media) return;
     let cancelled = false;
-    loadGsap().then((gsap) => {
+    loadGsap().then(async (gsap) => {
       if (cancelled || !gsap) return;
       if (prefersReducedMotion()) { gsap.set([focus, media], { clearProps: "all" }); return; }
       gsap.set(focus, { opacity: 0 });
@@ -259,16 +516,10 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
     if (!cards.length) return;
 
-    // The first sphere sequence should not compete with Three.js texture
-    // uploads. Sphere reports once its first frame is prepared (or WebGL has
-    // settled into the accessible grid fallback), so the DOM sequence gets a
-    // clean, uninterrupted clock from its first visible frame.
-    if (!introPlayed.current && mode === "sphere" && !threeSettled) return;
-
     let cancelled = false;
     let timeline: { kill: () => void } | null = null;
     let removeResize: (() => void) | null = null;
-    loadGsap().then((gsap) => {
+    loadGsap().then(async (gsap) => {
       if (cancelled || !gsap) return;
       gsap.killTweensOf([...cards, copy, count].filter(Boolean));
       applyBaseCardSizing(
@@ -354,18 +605,63 @@ export function GalleryView({ content, preview = false, base, onBack }: {
             onComplete: () => {
               sphereSnapshot.current = [];
 
-              setHandoffRotation(
-                sphereRotationSnapshot.current,
-              );
+              liveSphereRotation.current =
+                sphereRotationSnapshot.current;
+
+              sphereVelocity.current = 0;
+
+              sphereLastInput.current =
+                performance.now() -
+                1301;
 
               setGalleryPhase(
-                "sphere-waiting",
+                "sphere",
               );
             },
           });
 
         return;
       }
+
+      await Promise.all(
+        cards.map(async (card) => {
+          const image =
+            card.querySelector<HTMLImageElement>(
+              "img",
+            );
+
+          if (!image) return;
+
+          if (!image.complete) {
+            await new Promise<void>(
+              (resolve) => {
+                const done = () =>
+                  resolve();
+
+                image.addEventListener(
+                  "load",
+                  done,
+                  { once: true },
+                );
+
+                image.addEventListener(
+                  "error",
+                  done,
+                  { once: true },
+                );
+              },
+            );
+          }
+
+          try {
+            await image.decode?.();
+          } catch {
+            // A painted image is sufficient.
+          }
+        }),
+      );
+
+      if (cancelled) return;
 
       introPlayed.current = true;
 
@@ -377,6 +673,12 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           panel,
           copy,
           count,
+          spaceLabel:
+            spaceLabelRef.current,
+          instruction:
+            instructionRef.current,
+          orbitIndex:
+            orbitIndexRef.current,
           reduced:
             prefersReducedMotion(),
           onComplete: ({
@@ -390,25 +692,32 @@ export function GalleryView({ content, preview = false, base, onBack }: {
                 snapshot;
             }
 
-            setHandoffRotation(
-              handoffRotation,
-            );
+            liveSphereRotation.current =
+              handoffRotation;
+
+            sphereVelocity.current = 0;
+
+            // Reference resumes the quiet idle motion immediately
+            // after the intro has completed.
+            sphereLastInput.current =
+              performance.now() -
+              1301;
 
             setGalleryPhase(
-              "sphere-waiting",
+              "sphere",
             );
           },
         });
     });
 
     return () => { cancelled = true; timeline?.kill(); removeResize?.(); };
-  }, [items.length, mode, threeSettled]);
+  }, [items.length, mode]);
   const selected = focused === null ? null : items[focused];
   return (
     <section
       ref={panelRef}
       id="galleryPanel"
-      className={`gallery-panel open is-ready fixed inset-0 z-[3250] isolate visible overflow-hidden bg-white text-[#080808] opacity-100 pointer-events-auto${opening ? " is-opening" : ""}${mode === "sphere" && threeLive ? " is-three-live" : ""}${mode === "grid" ? " is-grid-mode" : ""}`}
+      className={`gallery-panel open is-ready fixed inset-0 z-[3250] isolate visible overflow-hidden bg-white text-[#080808] opacity-100 pointer-events-auto${opening ? " is-opening" : ""}${mode === "grid" ? " is-grid-mode" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label="Gallery"
@@ -432,7 +741,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           aria-label="Gallery view"
         >
           <button
-            className={`appearance-none border-0 bg-transparent py-2 -my-2 [color:inherit] [font:inherit] [letter-spacing:inherit] uppercase cursor-pointer transition-opacity duration-[250ms] ${mode === "sphere" ? "opacity-100" : "opacity-[.58]"}`}
+            className={`appearance-none border-0 bg-transparent py-2 -my-2 [color:inherit] [font:inherit] [letter-spacing:inherit] uppercase cursor-pointer transition-opacity [transition-duration:250ms] ${mode === "sphere" ? "opacity-100" : "opacity-[.58]"}`}
             type="button"
             aria-pressed={mode === "sphere"}
             onClick={() => switchMode("sphere")}
@@ -441,7 +750,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           </button>
           <span className="opacity-[.42]" aria-hidden="true">/</span>
           <button
-            className={`appearance-none border-0 bg-transparent py-2 -my-2 [color:inherit] [font:inherit] [letter-spacing:inherit] uppercase cursor-pointer transition-opacity duration-[250ms] ${mode === "grid" ? "opacity-100" : "opacity-[.58]"}`}
+            className={`appearance-none border-0 bg-transparent py-2 -my-2 [color:inherit] [font:inherit] [letter-spacing:inherit] uppercase cursor-pointer transition-opacity [transition-duration:250ms] ${mode === "grid" ? "opacity-100" : "opacity-[.58]"}`}
             type="button"
             aria-pressed={mode === "grid"}
             onClick={() => switchMode("grid")}
@@ -449,18 +758,9 @@ export function GalleryView({ content, preview = false, base, onBack }: {
             GRID
           </button>
         </div>
-        <Sphere
-          items={items}
-          draft={preview}
-          onSelect={onSelect}
-          onReady={onReady}
-          onRotationChange={onSphereRotation}
-          rotationY={handoffRotation}
-          animate={mode === "sphere" && threeLive}
-        />
         <div
           ref={assetsRef}
-          className={`gallery-intro-assets absolute inset-0 z-[12] overflow-hidden pointer-events-none [perspective:980px] [transform-style:preserve-3d] ${phase === "grid" ? "is-grid" : "is-sphere"}${mode === "sphere" && threeLive ? " is-three" : ""}`}
+          className={`gallery-intro-assets absolute inset-0 z-[12] overflow-hidden pointer-events-none [perspective:980px] [transform-style:preserve-3d] ${phase === "grid" ? "is-grid" : "is-sphere"}`}
         >
           {items.map((item, index) => {
             return (
@@ -468,7 +768,30 @@ export function GalleryView({ content, preview = false, base, onBack }: {
                 key={item.id}
                 type="button"
                 className="gallery-intro-card absolute left-1/2 top-1/2 aspect-[3/4] overflow-hidden bg-[#eee] opacity-0 origin-center [width:clamp(44px,3.95vw,58px)] [will-change:transform,opacity] [backface-visibility:hidden] [box-shadow:0_0_0_1px_rgba(0,0,0,0.026)]"
-                onClick={() => onSelect(index)}
+                onClick={() => {
+                  if (
+                    suppressSphereTap.current
+                  ) {
+                    return;
+                  }
+
+                  onSelect(index);
+                }}
+                onPointerEnter={() => {
+                  if (
+                    phaseRef.current !==
+                    "sphere"
+                  ) {
+                    return;
+                  }
+
+                  if (
+                    orbitIndexRef.current
+                  ) {
+                    orbitIndexRef.current.textContent =
+                      `${pad(index + 1)} / ${pad(items.length)}`;
+                  }
+                }}
                 aria-label={`View ${item.title}`}
               >
                 <img
@@ -485,18 +808,21 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         <div ref={copyRef} className="gallery-intro-copy" aria-hidden="true"><h2 className="gallery-intro-name">ZEUDI <span className="slash">/</span> DI PALMA</h2></div>
         <div ref={countRef} className="gallery-intro-count" aria-hidden="true">{intro ? "00" : "01"} / {pad(items.length)}</div>
         <div
+          ref={spaceLabelRef}
           className="gallery-space-label absolute left-[var(--side)] bottom-[19px] z-30 pointer-events-none text-[6px] tracking-[.14em] uppercase opacity-0 max-[800px]:bottom-[14px] max-[520px]:hidden"
           aria-hidden="true"
         >
           ARCHIVE — {items.length} ASSETS
         </div>
         <div
-          className="gallery-instruction absolute left-1/2 bottom-[32px] z-30 -translate-x-1/2 pointer-events-none whitespace-nowrap text-[6px] tracking-[.15em] uppercase opacity-[.56] max-[800px]:bottom-[max(32px,calc(env(safe-area-inset-bottom)+26px))]"
+          ref={instructionRef}
+          className="gallery-instruction absolute left-1/2 bottom-[32px] z-30 -translate-x-1/2 pointer-events-none whitespace-nowrap text-[6px] tracking-[.15em] uppercase opacity-0 max-[800px]:bottom-[max(32px,calc(env(safe-area-inset-bottom)+26px))]"
           aria-hidden="true"
         >
           {mode === "sphere" ? "SCROLL" : "SELECT"}
         </div>
         <div
+          ref={orbitIndexRef}
           className="gallery-orbit-index absolute right-[var(--side)] bottom-[19px] z-30 pointer-events-none text-[6px] tracking-[.12em] tabular-nums opacity-0 max-[800px]:bottom-[14px]"
           aria-hidden="true"
         >

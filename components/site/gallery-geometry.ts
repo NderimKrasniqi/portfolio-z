@@ -150,8 +150,13 @@ function projectSphereBase(
   const projection =
     focalPx(height) / depth;
 
-  const depth01 =
-    (z2 / scale.z + 1) / 2;
+  const depth01 = Math.max(
+    0,
+    Math.min(
+      1,
+      (z2 / scale.z + 1) / 2,
+    ),
+  );
 
   return {
     x: x1 * projection,
@@ -203,6 +208,9 @@ export function projectSpherePoint(
     x: projection.x,
     y: projection.y,
     scale: projection.scale * depthScale,
+    opacity:
+      0.78 +
+      projection.depth01 * 0.22,
     zIndex: projection.zIndex,
   };
 }

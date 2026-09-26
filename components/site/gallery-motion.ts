@@ -459,6 +459,9 @@ export function runGalleryIntroTransition({
   panel,
   copy,
   count,
+  spaceLabel,
+  instruction,
+  orbitIndex,
   reduced,
   onComplete,
 }: {
@@ -468,6 +471,9 @@ export function runGalleryIntroTransition({
   panel: HTMLElement | null;
   copy: HTMLElement | null;
   count: HTMLElement | null;
+  spaceLabel: HTMLElement | null;
+  instruction: HTMLElement | null;
+  orbitIndex: HTMLElement | null;
   reduced: boolean;
   onComplete: (result: {
     handoffRotation: number;
@@ -484,42 +490,6 @@ export function runGalleryIntroTransition({
   if (copy) {
     gsap.set(copy, { opacity: 0 });
   }
-
-  const mediaReady = { value: false };
-
-  void Promise.all(
-    cards.map((card) => {
-      const image =
-        card.querySelector<HTMLImageElement>("img");
-
-      if (!image || image.complete) {
-        return (
-          image
-            ?.decode?.()
-            .catch(() => undefined) ??
-          Promise.resolve()
-        );
-      }
-
-      return new Promise<void>((resolve) => {
-        const done = () => resolve();
-
-        image.addEventListener(
-          "load",
-          done,
-          { once: true },
-        );
-
-        image.addEventListener(
-          "error",
-          done,
-          { once: true },
-        );
-      });
-    }),
-  ).then(() => {
-    mediaReady.value = true;
-  });
 
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -572,7 +542,7 @@ export function runGalleryIntroTransition({
 
   const state = { progress: 0 };
 
-  const flowStart = 0.36;
+  const flowStart = 0.72;
   const flowDuration = 7.35;
   const revealEnd = 0.385;
   const collapseStart = 0.405;
@@ -741,12 +711,10 @@ export function runGalleryIntroTransition({
               (cards.length - 1)) *
             revealSpan;
 
-      const appear = mediaReady.value
-        ? smoother(
-            (progress - revealStart) /
-              0.092,
-          )
-        : 0;
+      const appear = smoother(
+        (progress - revealStart) /
+          0.092,
+      );
 
       const angle =
         baseAngles[index] +
@@ -856,6 +824,14 @@ export function runGalleryIntroTransition({
         sharedAngle,
       );
 
+      // Blend into the live sphere's depth opacity during the burst.
+      // Without this, every card ends the intro at opacity 1 and the
+      // rear cards visibly pop darker on the first live-sphere frame.
+      const sphereOpacity =
+        appear +
+        (target.opacity - appear) *
+          sphereEase;
+
       const baseScale =
         0.88 + 0.12 * appear;
 
@@ -916,7 +892,7 @@ export function runGalleryIntroTransition({
             orbitRadius *
             (1 - sphereEase) +
           stackTwist,
-        opacity: appear,
+        opacity: sphereOpacity,
         zIndex,
         visibility: "visible",
       });
@@ -925,7 +901,6 @@ export function runGalleryIntroTransition({
 
   if (reduced) {
     state.progress = 1;
-    mediaReady.value = true;
 
     renderFlow();
 
@@ -939,6 +914,18 @@ export function runGalleryIntroTransition({
 
     if (count) {
       gsap.set(count, { opacity: 0 });
+    }
+
+    if (spaceLabel) {
+      gsap.set(spaceLabel, { opacity: 0.28 });
+    }
+
+    if (instruction) {
+      gsap.set(instruction, { opacity: 0.32 });
+    }
+
+    if (orbitIndex) {
+      gsap.set(orbitIndex, { opacity: 0.38 });
     }
 
     onComplete({
@@ -960,6 +947,15 @@ export function runGalleryIntroTransition({
   if (count) {
     gsap.set(count, { opacity: 0 });
   }
+
+  gsap.set(
+    [
+      spaceLabel,
+      instruction,
+      orbitIndex,
+    ].filter(Boolean),
+    { opacity: 0 },
+  );
 
   if (panel) {
     gsap.set(panel, {
@@ -1024,7 +1020,7 @@ export function runGalleryIntroTransition({
       panel,
       {
         opacity: 1,
-        duration: 0.42,
+        duration: 0.28,
         ease: "power2.out",
       },
       0,
@@ -1041,7 +1037,7 @@ export function runGalleryIntroTransition({
         duration: 0.48,
         ease: "power3.out",
       },
-      0.14,
+      0.08,
     );
   }
 
@@ -1065,6 +1061,45 @@ export function runGalleryIntroTransition({
         ease: "sine.inOut",
       },
       flowStart + 2.56,
+    );
+  }
+
+  const uiAt =
+    flowStart + flowDuration - 0.5;
+
+  if (spaceLabel) {
+    timeline.to(
+      spaceLabel,
+      {
+        opacity: 0.28,
+        duration: 0.34,
+        ease: "power2.out",
+      },
+      uiAt,
+    );
+  }
+
+  if (instruction) {
+    timeline.to(
+      instruction,
+      {
+        opacity: 0.32,
+        duration: 0.34,
+        ease: "power2.out",
+      },
+      uiAt + 0.05,
+    );
+  }
+
+  if (orbitIndex) {
+    timeline.to(
+      orbitIndex,
+      {
+        opacity: 0.38,
+        duration: 0.34,
+        ease: "power2.out",
+      },
+      uiAt + 0.09,
     );
   }
 

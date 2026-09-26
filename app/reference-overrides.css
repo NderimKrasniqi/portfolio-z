@@ -136,16 +136,6 @@
   border:0!important;
 }
 
-/* Paint the grain on the root surface itself. Route transitions therefore
-   never expose a white frame while the page-specific layer is mounting. */
-.portfolio{
-  background-color:#fff!important;
-  background-image:url("/filmgrain.svg")!important;
-  background-repeat:repeat!important;
-  background-size:118px 118px!important;
-  background-blend-mode:multiply!important;
-}
-
 /* The compact code stays in the reference position. The full list opens
    upward so adding languages never stretches the bottom control row. */
 .portfolio .language-picker{
@@ -193,9 +183,6 @@
   overscroll-behavior:contain;
   border:1px solid rgba(8,8,8,.16);
   background-color:#fff;
-  background-image:url("/filmgrain.svg");
-  background-repeat:repeat;
-  background-size:118px 118px;
   box-shadow:0 12px 32px rgba(8,8,8,.08);
   letter-spacing:.08em;
   animation:language-picker-in .2s ease both;
@@ -236,3 +223,88 @@
   .portfolio .language-picker__chevron,
   .portfolio .language-picker__panel a{transition:none}
 }
+
+
+
+/* === Global paper material ===
+   Grain belongs to white surfaces, never above media. */
+.portfolio{
+  --zeudi-paper-grain:url("/filmgrain.png");
+  --zeudi-paper-grain-size:118px 118px;
+}
+
+.portfolio :is(
+  .stage,
+  .loader,
+  .gallery-panel,
+  .about-panel,
+  .shop-panel,
+  .contact-panel,
+  .mobile-nav-panel,
+  .gallery-focus__veil,
+  .shop-detail,
+  .shop-bag,
+  .language-picker__panel
+){
+  background-color:#fff!important;
+  background-image:var(--zeudi-paper-grain)!important;
+  background-repeat:repeat!important;
+  background-size:var(--zeudi-paper-grain-size)!important;
+  background-blend-mode:multiply!important;
+}
+/* === End global paper material === */
+
+
+/* === Canonical site paper ===
+   The grain belongs to the persistent site surface.
+   Route shells remain transparent so transitions never reveal
+   a different white/grain state. Media remains opaque above it. */
+
+.portfolio{
+  background-color:#fff!important;
+  background-image:url("/filmgrain.png")!important;
+  background-repeat:repeat!important;
+  background-size:118px 118px!important;
+  background-blend-mode:multiply!important;
+}
+
+/* Full-screen route surfaces expose the same persistent paper. */
+.portfolio .stage,
+.portfolio .loader,
+.portfolio .reference-loader,
+.portfolio .gallery-panel,
+.portfolio .gallery-panel.is-dark,
+.portfolio .gallery-space,
+.portfolio .about-panel,
+.portfolio .about-sheet,
+.portfolio .shop-panel,
+.portfolio .shop-sheet,
+.portfolio .contact-panel,
+.portfolio .contact-sheet,
+.portfolio .mobile-nav-panel{
+  background-color:transparent!important;
+  background-image:none!important;
+}
+
+/* Contact has a legacy full-screen white pseudo-surface. */
+.portfolio .contact-panel::before{
+  background:transparent!important;
+}
+
+/* Actual media remains clean and opaque — no grain over photos/video. */
+.portfolio .media,
+.portfolio .media-layer,
+.portfolio .hero-flight{
+  background-color:#fff!important;
+  background-image:none!important;
+}
+
+.portfolio .media-layer img,
+.portfolio .media-layer video,
+.portfolio .hero-flight img,
+.portfolio .hero-flight video{
+  background-color:#fff!important;
+  background-image:none!important;
+}
+
+/* === End canonical site paper === */
