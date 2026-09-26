@@ -677,7 +677,6 @@
 .portfolio .identity__name{font-size:38px!important;line-height:.86!important}}
 @media (max-width:520px){.portfolio .identity__name{font-size:34px!important}}
 /* [gallery] zeudi-gallery-grid-view-final */
-.portfolio .gallery-panel:has(.gallery-focus.is-open) .gallery-view-toggle{opacity:0!important;pointer-events:none!important}
 .portfolio .gallery-intro-assets.is-grid .gallery-intro-card{opacity:1!important;visibility:visible!important;box-shadow:0 0 0 1px rgba(0,0,0,.035)!important}
 .portfolio .gallery-intro-assets.is-grid{pointer-events:auto!important}
 .portfolio .gallery-intro-assets.is-grid .gallery-intro-card{pointer-events:auto!important;cursor:pointer!important}

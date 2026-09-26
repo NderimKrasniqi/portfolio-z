@@ -56,18 +56,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   const sphereLastInput = useRef(0);
   const suppressSphereTap = useRef(false);
 
-  // When focus opens, let the live sphere decelerate for a few frames
-  // instead of freezing every card on a single frame.
-  const sphereFocusGlideUntil = useRef(0);
-  const sphereFocusGlideSpeed = useRef(0);
-
-  // Keep a few full-resolution focus images decoded while the Gallery
-  // intro is running. This prevents the first interaction from paying
-  // the browser's initial image decode cost.
-  const focusWarmImagesRef = useRef<Map<number, HTMLImageElement>>(
-    new Map(),
-  );
-
   const panelRef = useRef<HTMLElement | null>(null);
   const assetsRef = useRef<HTMLDivElement | null>(null);
   const copyRef = useRef<HTMLDivElement | null>(null);
@@ -83,10 +71,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
   const focusVideoRef = useRef<HTMLVideoElement | null>(null);
   const focusSourceIndex = useRef<number | null>(null);
   const focusSourceRect = useRef<FocusRect | null>(null);
-
-  useEffect(() => {
-    focusedRef.current = focused;
-  }, [focused]);
 
   useEffect(() => {
     focusedRef.current = focused;
@@ -140,94 +124,13 @@ export function GalleryView({ content, preview = false, base, onBack }: {
           }
         : null;
 
-    const now =
+    sphereVelocity.current = 0;
+    sphereLastInput.current =
       performance.now();
 
-    // Preserve whatever motion the sphere currently has. Idle rotation
-    // is 0.13 rad/s; wheel/touch inertia is stored as radians/frame.
-    sphereFocusGlideSpeed.current =
-      Math.abs(sphereVelocity.current) >
-      0.00002
-        ? sphereVelocity.current * 60
-        : 0.13;
-
-    sphereFocusGlideUntil.current =
-      now + 180;
-
-    sphereVelocity.current = 0;
-    sphereLastInput.current = now;
-
-    focusedRef.current = index;
     focusedRef.current = index;
     setFocused(index);
   }, []);
-  useEffect(() => {
-    let cancelled = false;
-
-    // The reference intro gives us several seconds before the sphere
-    // becomes interactive. Use that time to warm the most likely
-    // first focus interactions instead of decoding on click.
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        const candidates = items
-          .map((item, index) => ({
-            item,
-            index,
-          }))
-          .filter(({ item }) => item.kind !== "video")
-          .slice(0, 3);
-
-        for (const {
-          item,
-          index,
-        } of candidates) {
-          if (cancelled) return;
-
-          if (
-            focusWarmImagesRef.current.has(
-              index,
-            )
-          ) {
-            continue;
-          }
-
-          const image =
-            new Image();
-
-          image.decoding = "async";
-
-          image.src =
-            mediaUrl(
-              item.key,
-              preview,
-            );
-
-          // Retain the element so the browser is more likely to keep
-          // the decoded bitmap hot for the upcoming focus morph.
-          focusWarmImagesRef.current.set(
-            index,
-            image,
-          );
-
-          try {
-            await image.decode();
-          } catch {
-            // A successfully fetched image is still useful even if
-            // explicit decode is unsupported or rejects.
-          }
-        }
-      })();
-    }, 350);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [
-    items,
-    preview,
-  ]);
-
   const switchMode = useCallback((next: "sphere" | "grid") => {
     const current = phaseRef.current;
 
@@ -479,118 +382,73 @@ export function GalleryView({ content, preview = false, base, onBack }: {
 
         if (
           phaseRef.current ===
-          "sphere"
+            "sphere" &&
+          focusedRef.current === null
         ) {
-          const focusIndex =
-            focusedRef.current;
+          if (
+            Math.abs(
+              sphereVelocity.current,
+            ) > 0.00002
+          ) {
+            liveSphereRotation.current +=
+              sphereVelocity.current *
+              (deltaTime * 60);
 
-          const focusActive =
-            focusIndex !== null;
+            sphereVelocity.current *=
+              Math.pow(
+                0.875,
+                deltaTime * 60,
+              );
 
-          const focusGliding =
-            focusActive &&
-            now <
-              sphereFocusGlideUntil.current;
-
-          if (!focusActive) {
             if (
               Math.abs(
                 sphereVelocity.current,
-              ) > 0.00002
+              ) < 0.00002
             ) {
-              liveSphereRotation.current +=
-                sphereVelocity.current *
-                (deltaTime * 60);
-
-              sphereVelocity.current *=
-                Math.pow(
-                  0.875,
-                  deltaTime * 60,
-                );
-
-              if (
-                Math.abs(
-                  sphereVelocity.current,
-                ) < 0.00002
-              ) {
-                sphereVelocity.current = 0;
-              }
-            } else if (
-              !reduced &&
-              now -
-                sphereLastInput.current >=
-                1300
-            ) {
-              liveSphereRotation.current +=
-                0.13 * deltaTime;
+              sphereVelocity.current = 0;
             }
           } else if (
-            focusGliding &&
-            !reduced
+            !reduced &&
+            now -
+              sphereLastInput.current >=
+              1300
           ) {
-            const remaining =
-              clamp(
-                (
-                  sphereFocusGlideUntil.current -
-                  now
-                ) / 180,
-                0,
-                1,
-              );
-
-            // Ease velocity to zero rather than stopping the entire
-            // sphere on the click frame.
-            const velocityFactor =
-              remaining * remaining;
-
             liveSphereRotation.current +=
-              sphereFocusGlideSpeed.current *
-              velocityFactor *
-              deltaTime;
+              0.13 * deltaTime;
           }
 
-          if (
-            !focusActive ||
-            focusGliding
-          ) {
-            const width =
-              window.innerWidth;
+          const width =
+            window.innerWidth;
 
-            const height =
-              window.innerHeight;
+          const height =
+            window.innerHeight;
 
-            cards.forEach(
-              (card, index) => {
-                const point =
-                  projectSpherePoint(
-                    units[index],
-                    liveSphereRotation.current,
-                    width,
-                    height,
-                  );
+          cards.forEach(
+            (card, index) => {
+              const point =
+                projectSpherePoint(
+                  units[index],
+                  liveSphereRotation.current,
+                  width,
+                  height,
+                );
 
-                gsap.set(card, {
-                  xPercent: -50,
-                  yPercent: -50,
-                  x: point.x,
-                  y: point.y,
-                  scale: point.scale,
-                  rotation: 0,
-                  opacity:
-                    point.opacity,
-                  zIndex:
-                    point.zIndex,
-
-                  // The selected card is represented by the focus
-                  // ghost during this short deceleration.
-                  visibility:
-                    focusIndex === index
-                      ? "hidden"
-                      : "visible",
-                });
-              },
-            );
-          }
+              gsap.set(card, {
+                xPercent: -50,
+                yPercent: -50,
+                x: point.x,
+                y: point.y,
+                scale: point.scale,
+                rotation: 0,
+                opacity:
+                  point.opacity,
+                zIndex:
+                  point.zIndex,
+                visibility:
+                  "visible",
+              });
+            },
+          );
         }
 
         frame =
@@ -683,7 +541,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
       }
 
       focusedRef.current = null;
-      focusedRef.current = null;
       setFocused(null);
       setFocusClosing(false);
 
@@ -728,7 +585,6 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         }
       })
       .finally(() => {
-        focusedRef.current = null;
         focusedRef.current = null;
         setFocused(null);
         setFocusClosing(false);
@@ -1156,7 +1012,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
               <button
                 key={item.id}
                 type="button"
-                className="gallery-intro-card absolute left-1/2 top-1/2 aspect-[3/4] overflow-hidden bg-[#eee] opacity-0 origin-center [width:clamp(44px,3.95vw,58px)] [will-change:left,top,width,height,opacity] [backface-visibility:hidden] [box-shadow:0_0_0_1px_rgba(0,0,0,0.026)]"
+                className="gallery-intro-card absolute left-1/2 top-1/2 aspect-[3/4] overflow-hidden bg-[#eee] opacity-0 origin-center [width:clamp(44px,3.95vw,58px)] [will-change:transform,opacity] [backface-visibility:hidden] [box-shadow:0_0_0_1px_rgba(0,0,0,0.026)]"
                 onClick={() => {
                   if (
                     suppressSphereTap.current

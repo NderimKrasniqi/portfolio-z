@@ -127,6 +127,15 @@ export async function runGalleryFocusOpen({
   media: FocusMedia;
   veil: HTMLElement;
 }) {
+  // Establish the closed visual state synchronously, before any
+  // image loading/decoding can yield to the browser.
+  //
+  // This prevents legacy/open-state CSS or a cold image decode from
+  // painting the full-screen veil before GSAP starts the transition.
+  veil.style.opacity = "0";
+  media.style.opacity = "0";
+  ghost.style.opacity = "0";
+
   await waitForMedia(media);
 
   const targetRect =
