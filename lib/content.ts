@@ -7,14 +7,13 @@ import { type Content, type Locale, parseContent } from "./model";
 export const localReference =
   process.env.LOCAL_REFERENCE_PREVIEW === "true" &&
   process.env.SITE_MODE !== "production";
-// Visibility controls routes that may be withdrawn immediately, so keep this query live.
+// Locale/publication visibility stays live so published language changes apply immediately.
 export async function getVisibility() {
   return getLiveVisibility();
 }
 export async function getLiveVisibility() {
   if (localReference)
     return {
-      shopVisible: false,
       locales: ["en", "it", "pt"] as Locale[],
       publication: 0,
     };

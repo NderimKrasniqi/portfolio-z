@@ -852,7 +852,7 @@
 .portfolio .shop-site-home__name{font-size:10px;line-height:1;letter-spacing:-.025em;font-weight:500;text-transform:uppercase}
 .portfolio .shop-site-home:hover .shop-site-home__name{opacity:.58}
 .portfolio .shop-bag-toggle{position:relative!important;right:auto!important;left:auto!important;top:auto!important;z-index:auto!important;margin:0!important;border:0;background:transparent;color:#080808;padding:0;font-size:8px;line-height:1;letter-spacing:.18em;text-transform:uppercase;cursor:pointer}
-.portfolio .shop-sheet{height:100dvh!important;min-height:100dvh!important;overflow:auto;overscroll-behavior:contain;padding:64px var(--side) 0!important;box-sizing:border-box!important;scroll-behavior:smooth}
+.portfolio .shop-sheet{position:relative;z-index:2;height:100dvh!important;min-height:100dvh!important;overflow:auto;overscroll-behavior:contain;padding:64px var(--side) 0!important;box-sizing:border-box!important;scroll-behavior:smooth}
 .portfolio .shop-panel.is-detail .shop-sheet{overflow:hidden!important}
 .portfolio .shop-inner{width:100%;max-width:1660px;margin:0 auto;min-height:100%;padding:clamp(70px,7.5vh,102px) 0 clamp(84px,11vh,144px)}
 .portfolio .shop-header{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:clamp(14px,1.7vw,28px);row-gap:0;align-items:end;margin-bottom:clamp(58px,7.5vw,118px)}

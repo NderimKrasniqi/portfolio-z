@@ -56,6 +56,34 @@
  .portfolio .about-chapter:not(.is-visible){opacity:1;transform:none}
 }
 
+
+/* === Rack Shop shell =====================================================
+   The redesigned Shop is a permanent full-screen rack experience.
+   Do not inherit the legacy catalog panel's hidden/clip-path state machine.
+   GSAP enhances children inside this shell; it is never responsible for
+   making the page itself visible.
+   ======================================================================= */
+.portfolio .shop-panel.shop-rack-panel,
+.portfolio .shop-panel.shop-rack-panel.open,
+.portfolio.motion-gsap .shop-panel.shop-rack-panel,
+.portfolio.motion-gsap .shop-panel.shop-rack-panel.open{
+  visibility:visible!important;
+  pointer-events:auto!important;
+  opacity:1!important;
+  clip-path:none!important;
+  -webkit-clip-path:none!important;
+  animation:none!important;
+  transition:none!important;
+}
+
+/* The rack design draws its own subtle wall texture. The old Shop pseudo
+   material must not sit above or compete with the new composition. */
+.portfolio .shop-panel.shop-rack-panel::before{
+  display:none!important;
+}
+
+/* === End Rack Shop shell =============================================== */
+
 /* GSAP owns the public panel timelines when motion is available. The CSS
    animations remain the no-JS fallback and the reduced-motion path. */
 .portfolio.motion-gsap .gallery-panel.open,

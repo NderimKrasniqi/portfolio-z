@@ -53,8 +53,6 @@ export const settings = query({
   args: {},
   returns: v.union(
     v.object({
-      draftShopVisible: v.boolean(),
-      shopVisible: v.boolean(),
       version: v.number(),
       syncState: v.string(),
       publication: v.number(),
@@ -69,8 +67,6 @@ export const settings = query({
       .unique();
     return s
       ? {
-          draftShopVisible: s.draftShopVisible,
-          shopVisible: s.shopVisible,
           version: s.version,
           syncState: s.syncState,
           publication: s.publication,
@@ -98,24 +94,6 @@ export const save = mutation({
       updatedAt: Date.now(),
     });
     return p.version + 1;
-  },
-});
-export const saveSettings = mutation({
-  args: { shopVisible: v.boolean(), version: v.number() },
-  returns: v.number(),
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const s = await ctx.db
-      .query("settings")
-      .withIndex("by_key", (q) => q.eq("key", "site"))
-      .unique();
-    if (!s || s.version !== args.version)
-      throw Error("Settings changed. Reload before saving.");
-    await ctx.db.patch(s._id, {
-      draftShopVisible: args.shopVisible,
-      version: s.version + 1,
-    });
-    return s.version + 1;
   },
 });
 export const publish = mutation({
@@ -184,7 +162,6 @@ export const publish = mutation({
     });
     const publication = s.publication + 1;
     await ctx.db.patch(s._id, {
-      shopVisible: s.draftShopVisible,
       publication,
       syncState: "pending",
     });
@@ -270,20 +247,12 @@ export const published = query({
       .withIndex("by_locale", (q) => q.eq("locale", args.locale))
       .unique();
     if (!p?.enabled || !p.published) return null;
-    const s = await ctx.db
-      .query("settings")
-      .withIndex("by_key", (q) => q.eq("key", "site"))
-      .unique();
-    return {
-      ...p.published,
-      products: s?.shopVisible ? p.published.products : [],
-    };
+    return p.published;
   },
 });
 export const visibility = query({
   args: { secret: v.string() },
   returns: v.object({
-    shopVisible: v.boolean(),
     locales: v.array(locale),
     publication: v.number(),
   }),
@@ -295,7 +264,6 @@ export const visibility = query({
       .unique();
     const pages = await ctx.db.query("pages").take(5);
     return {
-      shopVisible: s?.shopVisible ?? false,
       locales: pages
         .filter((p) => p.enabled && p.published)
         .map((p) => p.locale),

@@ -7,7 +7,6 @@ import { authClient } from "@/lib/auth-client";
 import {
   loadEditor,
   saveDraft,
-  saveShop,
   publishDraft,
   restoreDraft,
   retryRefresh,
@@ -472,27 +471,9 @@ export function Editor({ email, owner }: { email: string; owner: boolean }) {
             {data.settings && (
               <>
                 <p>
-                  Published shop:{" "}
-                  {data.settings.shopVisible ? "Visible" : "Hidden"} · Site
-                  refresh: {data.settings.syncState}
+                  Shop is always published · Site refresh:{" "}
+                  {data.settings.syncState}
                 </p>
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    run(async () => {
-                      await saveShop(
-                        !data.settings!.draftShopVisible,
-                        data.settings!.version,
-                      );
-                      const settings = await loadEditor(locale);
-                      setData({ ...data, settings: settings.settings });
-                    }, "Shop setting saved. Publish to apply it.")
-                  }
-                >
-                  {data.settings.draftShopVisible
-                    ? "Hide shop on next publish"
-                    : "Show shop on next publish"}
-                </button>
                 <button
                   disabled={busy}
                   onClick={() =>

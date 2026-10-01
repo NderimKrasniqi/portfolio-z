@@ -26,10 +26,6 @@ export async function saveDraft(
     version,
   });
 }
-export async function saveShop(shopVisible: boolean, version: number) {
-  await requireSiteAccess();
-  return fetchAuthMutation(api.cms.saveSettings, { shopVisible, version });
-}
 export async function publishDraft(
   locale: Locale,
   version: number,

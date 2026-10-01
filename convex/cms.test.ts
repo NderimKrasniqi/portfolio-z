@@ -27,7 +27,7 @@ describe("CMS boundaries", () => {
     ).rejects.toThrow("Content access denied");
     vi.unstubAllEnvs();
   });
-  it("excludes drafts, disabled languages, and hidden products", async () => {
+  it("excludes drafts and disabled languages while keeping published products", async () => {
     vi.stubEnv("CONTENT_READ_SECRET", "test-secret");
     const t = convexTest(schema, modules);
     await t.run(async (ctx) => {
@@ -63,14 +63,14 @@ describe("CMS boundaries", () => {
       secret: "test-secret",
     });
     expect(page?.name).toBe(reference.en.name);
-    expect(page?.products).toEqual([]);
+    expect(page?.products).toEqual(reference.en.products);
     expect(
       await t.query(api.cms.published, { locale: "fr", secret: "test-secret" }),
     ).toBeNull();
     expect(
       (await t.query(api.cms.visibility, { secret: "test-secret" }))
-        .shopVisible,
-    ).toBe(false);
+        .locales,
+    ).toEqual(["en"]);
     vi.unstubAllEnvs();
   });
 });
