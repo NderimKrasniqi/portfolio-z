@@ -15,10 +15,7 @@ export async function generateMetadata({
   if (!isLocale(locale)) return {};
   const visibility = await getLiveVisibility();
   const section = page[0] || "home";
-  if (
-    !visibility.locales.includes(locale) ||
-    (section === "shop" && !visibility.shopVisible)
-  )
+  if (!visibility.locales.includes(locale))
     return {};
   const content = await getContent(locale, visibility.publication);
   if (!content) return {};
@@ -60,8 +57,7 @@ export default async function Portfolio({
   if (!visibility.locales.includes(locale)) notFound();
   const section = page[0] || "home";
   if (
-    !["home", "gallery", "about", "contact", "shop"].includes(section) ||
-    (section === "shop" && !visibility.shopVisible)
+    !["home", "gallery", "about", "contact", "shop"].includes(section)
   )
     notFound();
   const content = await getContent(locale, visibility.publication);
@@ -71,7 +67,6 @@ export default async function Portfolio({
       content={content}
       locale={locale}
       locales={visibility.locales}
-      shopVisible={visibility.shopVisible}
       section={section as Section}
     />
   );

@@ -12,7 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       "/gallery",
       "/about",
       "/contact",
-      ...(visibility.shopVisible ? ["/shop"] : []),
+      "/shop",
     ].map((path) => ({ url: `${site}/${locale}${path}` })),
   );
 }

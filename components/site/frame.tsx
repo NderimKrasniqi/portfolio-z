@@ -16,11 +16,10 @@ import {
 
 export type Section = "home" | "gallery" | "about" | "shop" | "contact";
 
-export function Frame({ content, locale, locales, shopVisible, section, preview = false }: {
+export function Frame({ content, locale, locales, section, preview = false }: {
   content: Content;
   locale: Locale;
   locales: Locale[];
-  shopVisible: boolean;
   section: Section;
   preview?: boolean;
 }) {
@@ -78,7 +77,7 @@ export function Frame({ content, locale, locales, shopVisible, section, preview 
 
       <a className="reference-skip" href={section === "home" ? "#stage" : "#main"}>Skip to content</a>
       {preview && <div className="reference-preview-banner">Draft preview · <Link href="/admin">Return to editor</Link></div>}
-      <HomeView content={content} base={base} active={section === "home"} shopVisible={shopVisible} preview={preview} />
+      <HomeView content={content} base={base} active={section === "home"} preview={preview} />
       {section === "home" && (
         <div key={`${locale}-${section}`} className={`language-picker${languageOpen ? " is-open" : ""}`} ref={languagePicker}>
           <button

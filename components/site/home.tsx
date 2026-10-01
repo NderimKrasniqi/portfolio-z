@@ -29,11 +29,10 @@ function identityText(value: string, keyPrefix: string) {
   });
 }
 
-export function HomeView({ content, base, active, shopVisible, preview = false }: {
+export function HomeView({ content, base, active, preview = false }: {
   content: Content;
   base: string;
   active: boolean;
-  shopVisible: boolean;
   preview?: boolean;
 }) {
   const items = useMemo(() => content.media.filter((item) => item.featured), [content.media]);
@@ -311,7 +310,7 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
         <nav className="desktop-main-nav" aria-label="Primary navigation">
           <SiteLink className="gallery-open" href={`${base}/gallery`}>{content.nav.gallery}</SiteLink>
           <SiteLink className="about-open" href={`${base}/about`}>{content.nav.about}</SiteLink>
-          {shopVisible && <SiteLink className="shop-open" href={`${base}/shop`}>{content.nav.shop}</SiteLink>}
+          <SiteLink className="shop-open" href={`${base}/shop`}>{content.nav.shop}</SiteLink>
           <SiteLink className="contact-open" href={`${base}/contact`}>{content.nav.contact}</SiteLink>
         </nav>
         <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} aria-controls="mobileNavPanel" onClick={() => setMenuOpen(!menuOpen)}><span className="mobile-menu-toggle__icon" aria-hidden="true" /></button>
@@ -319,7 +318,7 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
           <div className="mobile-nav-panel__inner">
             <SiteLink className="mobile-nav-link" href={`${base}/gallery`}>{content.nav.gallery}</SiteLink>
             <SiteLink className="mobile-nav-link" href={`${base}/about`}>{content.nav.about}</SiteLink>
-            {shopVisible && <SiteLink className="mobile-nav-link" href={`${base}/shop`}>{content.nav.shop}</SiteLink>}
+            <SiteLink className="mobile-nav-link" href={`${base}/shop`}>{content.nav.shop}</SiteLink>
             <SiteLink className="mobile-nav-link" href={`${base}/contact`}>{content.nav.contact}</SiteLink>
           </div>
         </nav>

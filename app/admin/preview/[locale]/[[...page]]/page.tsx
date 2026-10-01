@@ -27,7 +27,6 @@ export default async function Preview({
       content={content}
       locale={locale}
       locales={[...locales]}
-      shopVisible={true}
       section={section as Section}
       preview
     />
