@@ -244,6 +244,7 @@ export function HomeView({ content, base, active, shopVisible, preview = false }
     thumbFlightSource.current = null;
 
     return runHomeHeroTransition({
+      frame: media.current,
       front: frontMedia.current,
       back: backMedia.current,
       flightSource,

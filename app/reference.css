@@ -38,16 +38,16 @@
 .portfolio .socials svg{display:block;width:100%;height:100%;fill:currentColor}
 .portfolio .identity{left:var(--side);top:50%;transform:translateY(-50%);overflow:visible}
 .portfolio .identity__name{margin:0;text-transform:uppercase;font-weight:400}
-.portfolio .media{position:absolute;z-index:5;left:50%;top:46%;width:480px;height:640px;transform:translate(-50%,-50%);overflow:hidden;background:#fff;visibility:hidden;contain:layout paint;will-change:top,width,height,transform}
+.portfolio .media{position:absolute;z-index:5;left:50%;top:46%;width:480px;height:640px;transform:translate(-50%,-50%);overflow:hidden;background:transparent;visibility:hidden;contain:layout paint;will-change:top,width,height,transform}
 .portfolio .media.frame-portrait,
 .portfolio .media.frame-editorial,
 .portfolio .media.frame-close,
 .portfolio .media.frame-film{left:50%;max-width:none;aspect-ratio:auto}
-.portfolio .media-layer{position:absolute;inset:0;overflow:hidden;background:#fff;will-change:transform,opacity;transform-origin:center center}
+.portfolio .media-layer{position:absolute;inset:0;overflow:hidden;background:transparent;will-change:transform,opacity;transform-origin:center center}
 .portfolio .media-layer.is-front{z-index:3}
 .portfolio .media-layer.is-back{z-index:2}
 .portfolio .media-layer img,
-.portfolio .media-layer video{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;background:#fff;will-change:transform,opacity}
+.portfolio .media-layer video{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;background:transparent;will-change:transform,opacity}
 .portfolio .media-gate{display:none}
 .portfolio .sound{position:absolute;right:9px;bottom:9px;z-index:10;padding:5px 7px;background:rgba(255,255,255,.9);font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;opacity:0;visibility:hidden;cursor:pointer}
 .portfolio .media.has-video .sound{opacity:.76;visibility:visible}
@@ -150,8 +150,8 @@
 .portfolio .media.frame-editorial,
 .portfolio .media.frame-close,
 .portfolio .media.frame-film{left:50%!important;right:auto!important;transform:translate(-50%,-50%)!important;max-width:none!important;aspect-ratio:auto!important;transform-origin:50% 50%!important}
-.portfolio .media-layer img{object-fit:contain!important;object-position:50% 50%!important;background:#fff!important}
-.portfolio .media-layer video{object-fit:cover!important;object-position:50% 50%!important;background:#fff!important}
+.portfolio .media-layer img{object-fit:contain!important;object-position:50% 50%!important;background:transparent!important}
+.portfolio .media-layer video{object-fit:cover!important;object-position:50% 50%!important;background:transparent!important}
 .portfolio .contact-transition-line{display:none!important}
 .portfolio .contact-panel .contact-sheet{display:flex;align-items:center;padding:70px var(--side)}
 .portfolio .contact-panel .contact-inner{width:min(670px,70vw);margin-left:clamp(0px,7vw,120px);opacity:1;transform:none}
@@ -225,9 +225,9 @@
 .portfolio .about-copy,
 .portfolio .about-portrait{transform:none!important}}
 /* [home] zeudi-thumb-flight-style */
-.portfolio .hero-flight{position:fixed;left:0;top:0;z-index:5000;pointer-events:none;overflow:hidden;background:#fff;transform-origin:0 0;will-change:left,top,width,height,opacity,transform}
+.portfolio .hero-flight{position:fixed;left:0;top:0;z-index:5000;pointer-events:none;overflow:hidden;background:transparent;transform-origin:0 0;will-change:left,top,width,height,opacity,transform}
 .portfolio .hero-flight img,
-.portfolio .hero-flight video{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 50%;background:#fff}
+.portfolio .hero-flight video{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 50%;background:transparent}
 .portfolio .hero-flight.is-video img,
 .portfolio .hero-flight.is-video video{object-fit:cover}
 @media (prefers-reduced-motion:reduce){.portfolio .hero-flight{display:none!important}}
@@ -337,8 +337,6 @@
 .portfolio .gallery-theme:focus-visible{outline:1px solid currentColor;outline-offset:3px}
 .portfolio .gallery-space.is-dragging{cursor:default}
 .portfolio .gallery-space.is-intro{cursor:default}
-.portfolio .gallery-intro-assets.is-sphere{pointer-events:auto}
-.portfolio .gallery-intro-assets.is-sphere .gallery-intro-card{pointer-events:auto;cursor:pointer}
 .portfolio .gallery-panel.is-dark .gallery-intro-card{box-shadow:0 0 0 1px rgba(255,255,255,.07)}
 .portfolio .gallery-intro-copy{position:absolute;left:50%;top:50%;z-index:20;transform:translate(-50%,-50%);text-align:center;pointer-events:none;white-space:nowrap}
 .portfolio .gallery-intro-name{margin:0;font-size:clamp(8px,.72vw,11px);font-weight:500;line-height:1;letter-spacing:.015em;text-transform:uppercase;will-change:transform,opacity;white-space:nowrap}
@@ -393,7 +391,6 @@
 /* [gallery] zeudi-gallery-scroll-only-input */
 .portfolio .gallery-panel .gallery-space{cursor:default!important}
 .portfolio .gallery-panel .gallery-space.is-dragging{cursor:default!important}
-.portfolio .gallery-panel .gallery-intro-assets.is-sphere .gallery-intro-card{cursor:pointer!important}
 /* [gallery] zeudi-gallery-polish-v1 */
 .portfolio .gallery-hover-tag{position:absolute;z-index:78;left:0;top:0;padding:4px 5px;background:rgba(255,255,255,.92);font-size:6px;line-height:1;letter-spacing:.14em;font-variant-numeric:tabular-nums;text-transform:uppercase;white-space:nowrap;pointer-events:none;opacity:0;transform:translate3d(0,0,0);will-change:transform,opacity}
 .portfolio .gallery-intro-role{min-width:130px}
@@ -411,7 +408,6 @@
 .portfolio .home-music-toggle.is-hidden{opacity:0!important;visibility:hidden;pointer-events:none}
 @media (max-width:800px){.portfolio .home-music-toggle{right:16px;bottom:calc(var(--strip-h) + 12px);width:30px;height:30px}}
 /* [gallery] zeudi-gallery-video-cards */
-.portfolio .gallery-intro-card video{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;background:#eee}
 /* [gallery] zeudi-gallery-cleanup-v2 */
 .portfolio .gallery-back{align-items:center}
 .portfolio .gallery-back__arrow{font-size:13px;line-height:.7;letter-spacing:0;transform:translateY(-1px)}
@@ -425,8 +421,6 @@
 .portfolio .gallery-back:hover{opacity:1!important}
 .portfolio .gallery-back:focus-visible{outline:1px solid currentColor;outline-offset:5px}
 .portfolio .gallery-back__arrow{display:none!important}
-.portfolio .gallery-intro-card.is-video{aspect-ratio:3/4!important}
-.portfolio .gallery-intro-card.is-video video{width:100%!important;height:100%!important;object-fit:cover!important;background:#eee!important}
 @media (max-width:800px){.portfolio .gallery-back{right:16px!important;top:17px!important;font-size:8px!important}}
 /* [gallery] zeudi-music-mobile-gallery-fixes */
 .portfolio .gallery-panel .gallery-space{touch-action:none!important}
@@ -639,11 +633,6 @@
 .portfolio .identity__name{font-size:38px!important;line-height:.86!important}}
 @media (max-width:520px){.portfolio .identity__name{font-size:34px!important}}
 /* [gallery] zeudi-gallery-grid-view-final */
-.portfolio .gallery-intro-assets.is-grid .gallery-intro-card{opacity:1!important;visibility:visible!important;box-shadow:0 0 0 1px rgba(0,0,0,.035)!important}
-.portfolio .gallery-intro-assets.is-grid{pointer-events:auto!important}
-.portfolio .gallery-intro-assets.is-grid .gallery-intro-card{pointer-events:auto!important;cursor:pointer!important}
-.portfolio .gallery-intro-assets.is-grid-transition{pointer-events:none!important}
-.portfolio .gallery-intro-assets.is-grid-transition .gallery-intro-card{pointer-events:none!important}
 @media (max-width:520px){}
 /* [base-tokens] zeudi-native-cinematic-focus-fix */
 /* [home] zeudi-spacing-balance-final */
@@ -673,7 +662,6 @@
 .portfolio .about-portrait,
 .portfolio .about-portrait-meta{width:min(34vw,540px)!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}}
 /* [gallery] zeudi-gallery-production-polish */
-.portfolio .gallery-intro-assets.is-grid-transition .gallery-intro-card{will-change:transform!important;backface-visibility:hidden!important}
 .portfolio .gallery-view-toggle{transition:opacity .28s ease!important}
 @media (min-width:801px) and (max-width:1180px){.portfolio .gallery-view-toggle{bottom:18px!important}
 .portfolio .about-story-shell{column-gap:clamp(32px,4vw,54px)!important}}
@@ -818,9 +806,6 @@
 .portfolio #stage .thumb img{height:43px!important}}
 @media (prefers-reduced-motion:reduce){.portfolio #stage .thumb{filter:none!important}}
 /* [gallery] zeudi-gallery-uniform-grid-frames */
-.portfolio .gallery-intro-assets.is-grid .gallery-intro-card{aspect-ratio:3 / 4!important;height:auto!important}
-.portfolio .gallery-intro-assets.is-grid .gallery-intro-card img,
-.portfolio .gallery-intro-assets.is-grid .gallery-intro-card video{width:100%!important;height:100%!important;object-fit:cover!important}
 /* [home] zeudi-filmstrip-true-centering */
 .portfolio #stage .filmstrip__track{justify-content:flex-start!important}
 .portfolio #stage .filmstrip__track .thumb:first-of-type{margin-left:auto!important}

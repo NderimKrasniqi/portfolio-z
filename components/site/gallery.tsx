@@ -960,7 +960,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
     <section
       ref={panelRef}
       id="galleryPanel"
-      className={`gallery-panel open is-ready fixed inset-0 z-[3250] isolate visible overflow-hidden bg-white text-[#080808] opacity-100 pointer-events-auto${opening ? " is-opening" : ""}${mode === "grid" ? " is-grid-mode" : ""}`}
+      className={`gallery-panel open is-ready fixed inset-0 z-[3250] isolate visible overflow-hidden bg-white text-[#080808] opacity-100 pointer-events-auto${opening ? " is-opening" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label="Gallery"
@@ -1003,14 +1003,29 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         </div>
         <div
           ref={assetsRef}
-          className={`gallery-intro-assets absolute inset-0 z-[12] overflow-hidden pointer-events-none [perspective:980px] [transform-style:preserve-3d] ${phase === "grid" ? "is-grid" : "is-sphere"}`}
+          className={`gallery-intro-assets absolute inset-0 z-[12] overflow-hidden [perspective:980px] [transform-style:preserve-3d] ${
+            phase === "sphere" ||
+            phase === "grid"
+              ? "pointer-events-auto"
+              : "pointer-events-none"
+          } ${
+            phase === "grid"
+              ? "is-grid"
+              : phase === "sphere"
+                ? "is-sphere"
+                : ""
+          }`}
         >
           {items.map((item, index) => {
             return (
               <button
                 key={item.id}
                 type="button"
-                className="gallery-intro-card absolute left-1/2 top-1/2 aspect-[3/4] overflow-hidden bg-[#eee] opacity-0 origin-center [width:clamp(44px,3.95vw,58px)] [will-change:transform,opacity] [backface-visibility:hidden] [box-shadow:0_0_0_1px_rgba(0,0,0,0.026)]"
+                className={`gallery-intro-card absolute left-1/2 top-1/2 aspect-[3/4] overflow-hidden bg-[#eee] opacity-0 origin-center cursor-pointer [width:clamp(44px,3.95vw,58px)] [will-change:transform,opacity] [backface-visibility:hidden] ${
+                  phase === "grid"
+                    ? "[box-shadow:0_0_0_1px_rgba(0,0,0,0.035)]"
+                    : "[box-shadow:0_0_0_1px_rgba(0,0,0,0.026)]"
+                }`}
                 onClick={() => {
                   if (
                     suppressSphereTap.current

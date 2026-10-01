@@ -247,6 +247,7 @@ function makeHeroFlight({
 }
 
 export function runHomeHeroTransition({
+  frame,
   front,
   back,
   flightSource,
@@ -260,6 +261,7 @@ export function runHomeHeroTransition({
   onUnlock,
   onFinish,
 }: {
+  frame: HTMLDivElement | null;
   front: HTMLDivElement | null;
   back: HTMLDivElement | null;
   flightSource: HTMLButtonElement | null;
@@ -392,11 +394,11 @@ export function runHomeHeroTransition({
         return true;
       })();
 
-      gsap.to(back, {
-        opacity: 0,
-        duration: 0.20,
-        ease: "power1.inOut",
-        overwrite: "auto",
+      // Keep the outgoing hero visible underneath the travelling
+      // thumbnail. Fading it now exposes the media frame for most of
+      // the 640ms flight.
+      gsap.set(back, {
+        opacity: 1,
       });
 
       metaTimer = gsap.delayedCall(
@@ -419,13 +421,32 @@ export function runHomeHeroTransition({
         return;
       }
 
+      // The flight is now sitting over the final hero position, so it
+      // can mask the physical frame resize and media handoff completely.
       if (nextGeometry) {
+        if (frame) {
+          gsap.set(frame, {
+            width:
+              nextGeometry.width,
+            height:
+              nextGeometry.height,
+            top:
+              nextGeometry.top,
+          });
+        }
+
         onGeometry(nextGeometry);
       }
 
       gsap.set(front, {
         opacity: 1,
         scale: 1,
+      });
+
+      // Incoming media is already opaque before the outgoing layer
+      // disappears. There is no empty hero frame between them.
+      gsap.set(back, {
+        opacity: 0,
       });
 
       if (flightPlayed) {
@@ -450,46 +471,76 @@ export function runHomeHeroTransition({
       return;
     }
 
-    // Wheel, keyboard and browse navigation use the quieter
-    // fade from the reference HTML.
+    // Wheel, keyboard and browse navigation use a quiet overlapping
+    // handoff. Never fade the outgoing hero completely away before the
+    // incoming hero is visible — doing so exposes the white media frame.
     await frontReady;
 
     if (cancelled) return;
 
-    await new Promise<void>(
-      (resolve) =>
-        gsap.to(back, {
-          opacity: 0,
-          duration: 0.20,
-          ease: "power1.inOut",
+    onMeta();
+
+    await new Promise<void>((resolve) => {
+      const timeline = gsap.timeline({
+        defaults: {
           overwrite: "auto",
-          onComplete: resolve,
-        }),
-    );
+        },
+        onComplete: resolve,
+      });
+
+      timeline
+        .to(
+          back,
+          {
+            opacity: 0,
+            duration: 0.28,
+            ease: "power1.inOut",
+          },
+          0,
+        )
+        .to(
+          front,
+          {
+            opacity: 1,
+            scale: 1,
+            duration: 0.32,
+            ease: "power1.inOut",
+          },
+          0.03,
+        );
+
+      // Resize the physical hero frame during the crossfade instead of
+      // after the old image has disappeared. The overlap masks the ratio
+      // change and prevents the page background from flashing through.
+      if (
+        frame &&
+        nextGeometry
+      ) {
+        timeline.to(
+          frame,
+          {
+            width:
+              nextGeometry.width,
+            height:
+              nextGeometry.height,
+            top:
+              nextGeometry.top,
+            duration: 0.38,
+            ease: "power3.inOut",
+          },
+          0,
+        );
+      }
+    });
 
     if (cancelled) return;
 
+    // Synchronize React's geometry with the final GSAP frame.
     if (nextGeometry) {
       onGeometry(nextGeometry);
     }
 
-    onMeta();
-
-    await new Promise<void>(
-      (resolve) =>
-        gsap.to(front, {
-          opacity: 1,
-          scale: 1,
-          duration: 0.32,
-          ease: "power1.inOut",
-          overwrite: "auto",
-          onComplete: resolve,
-        }),
-    );
-
-    if (!cancelled) {
-      onFinish();
-    }
+    onFinish();
   });
 
   return () => {
