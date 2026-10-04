@@ -1,3 +1,15 @@
+/* Global layer scale. Only one view is mounted at a time, so all panels
+   share one layer. Values inside a single component stay local. */
+:root{
+  --z-panel:100;
+  --z-panel-chrome:110;
+  --z-menu:200;
+  --z-focus:300;
+  --z-popover:400;
+  --z-flight:500;
+  --z-loader:600;
+  --z-system:900;
+}
 /* React supplies the states that the reference page's inline script supplied. */
 .portfolio{position:fixed;inset:0;overflow:hidden;background:#fff;color:#080808;font-family:Arial,Helvetica,sans-serif;--paper:#fff;--ink:#080808}
 .portfolio .media-layer{background:transparent}
@@ -5,9 +17,9 @@
 .portfolio .social-icon{display:block;width:100%;height:100%}
 .portfolio .social-icon svg{display:block;width:100%;height:100%}
 .portfolio .social-icon-text{display:block;font-size:11px;font-weight:700;line-height:13px;text-align:center}
-.portfolio .reference-skip{position:fixed;top:-100px;left:16px;z-index:6000;background:#fff;padding:12px;font-size:12px}
+.portfolio .reference-skip{position:fixed;top:-100px;left:16px;z-index:calc(var(--z-system) + 10);background:#fff;padding:12px;font-size:12px}
 .portfolio .reference-skip:focus{top:12px}
-.portfolio .reference-preview-banner{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:5000;background:#fff8e1;border:1px solid #080808;padding:7px 12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.portfolio .reference-preview-banner{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:var(--z-system);background:#fff8e1;border:1px solid #080808;padding:7px 12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 .portfolio .reference-preview-banner a{text-decoration:underline}
 /* Hide the home UI until GSAP takes over; its inline opacity wins over this. */
 .portfolio:has(.reference-loader) #stage :is(.identity,.desktop-main-nav,.mobile-menu-toggle,.meta,.socials,.browse,.filmstrip){opacity:0}
@@ -143,7 +155,7 @@
   position:fixed;
   left:var(--side);
   bottom:calc(var(--strip-gap, 6px) + var(--strip-h, 56px) + 18px);
-  z-index:3650;
+  z-index:calc(var(--z-popover) + 10);
   color:#080808;
   font-size:8px;
   line-height:1;

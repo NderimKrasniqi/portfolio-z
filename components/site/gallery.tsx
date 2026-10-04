@@ -960,7 +960,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
     <section
       ref={panelRef}
       id="galleryPanel"
-      className={`gallery-panel open is-ready fixed inset-0 z-[3250] isolate visible overflow-hidden bg-white text-[#080808] opacity-100 pointer-events-auto${opening ? " is-opening" : ""}`}
+      className={`gallery-panel open is-ready fixed inset-0 z-[var(--z-panel)] isolate visible overflow-hidden bg-white text-[#080808] opacity-100 pointer-events-auto${opening ? " is-opening" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label="Gallery"
@@ -1088,7 +1088,7 @@ export function GalleryView({ content, preview = false, base, onBack }: {
         </div>
         <div
           id="galleryFocus"
-          className={`gallery-focus fixed inset-0 z-[3600] flex h-dvh w-screen items-center justify-center overflow-hidden p-0 visible ${selected ? "is-open pointer-events-auto" : "pointer-events-none"}`}
+          className={`gallery-focus fixed inset-0 z-[var(--z-focus)] flex h-dvh w-screen items-center justify-center overflow-hidden p-0 visible ${selected ? "is-open pointer-events-auto" : "pointer-events-none"}`}
           aria-hidden={!selected}
         >
           <button
