@@ -3,6 +3,7 @@
 import {
   loadGsap,
   prefersReducedMotion,
+  restingOpacity,
 } from "./motion";
 
 export function runFrameExitTransition(
@@ -175,6 +176,8 @@ export function runFrameEnterTransition() {
           Boolean(piece),
       );
 
+      pieces.forEach(restingOpacity);
+
       gsap.set(pieces, {
         opacity: 0,
       });
@@ -203,7 +206,8 @@ export function runFrameEnterTransition() {
         .to(
           close,
           {
-            opacity: 1,
+            opacity: (_index: number, target: Element) =>
+              restingOpacity(target),
             duration: 0.22,
             ease: "power3.out",
           },
@@ -212,7 +216,8 @@ export function runFrameEnterTransition() {
         .to(
           portrait,
           {
-            opacity: 1,
+            opacity: (_index: number, target: Element) =>
+              restingOpacity(target),
             duration: 0.46,
             ease: "power2.out",
           },
@@ -221,7 +226,8 @@ export function runFrameEnterTransition() {
         .to(
           intro,
           {
-            opacity: 1,
+            opacity: (_index: number, target: Element) =>
+              restingOpacity(target),
             y: 0,
             duration: 0.46,
             stagger: 0.035,

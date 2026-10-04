@@ -9,6 +9,14 @@ export function loadGsap() {
   return gsapPromise;
 }
 
+/** The opacity the CSS gives an element at rest. GSAP fades to it, so the
+ *  CSS dimming stays in one place and GSAP never needs to beat `!important`. */
+export function restingOpacity(element: Element) {
+  const el = element as HTMLElement;
+  el.dataset.restOpacity ??= getComputedStyle(el).opacity;
+  return Number(el.dataset.restOpacity);
+}
+
 export function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }

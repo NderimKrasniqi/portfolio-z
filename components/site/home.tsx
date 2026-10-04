@@ -29,18 +29,20 @@ function identityText(value: string, keyPrefix: string) {
   });
 }
 
-export function HomeView({ content, base, active, preview = false }: {
+// Keeps the slideshow position while the user visits other sections.
+let lastHomeIndex = 0;
+
+export function HomeView({ content, base, preview = false }: {
   content: Content;
   base: string;
-  active: boolean;
   preview?: boolean;
 }) {
   const items = useMemo(() => content.media.filter((item) => item.featured), [content.media]);
-  const [selection, setSelection] = useState<{ current: number; previous: number | null }>({ current: 0, previous: null });
+  const [selection, setSelection] = useState<{ current: number; previous: number | null }>(() => ({ current: Math.min(lastHomeIndex, Math.max(0, items.length - 1)), previous: null }));
   const current = selection.current;
   const previous = selection.previous;
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(active);
+  const [loading, setLoading] = useState(true);
   const [mediaGeometry, setMediaGeometry] = useState<{ width: number; height: number; top: number }>();
   const stage = useRef<HTMLElement>(null);
   const loader = useRef<HTMLDivElement>(null);
@@ -52,7 +54,7 @@ export function HomeView({ content, base, active, preview = false }: {
   const marker = useRef<HTMLSpanElement>(null);
   const countNow = useRef<HTMLSpanElement>(null);
   const progressDot = useRef<HTMLSpanElement>(null);
-  const activeIndex = useRef(0);
+  const activeIndex = useRef(current);
   const transitionLock = useRef(false);
   const thumbFlightSource = useRef<HTMLButtonElement | null>(null);
   const suppressThumbClick = useRef(false);
@@ -75,7 +77,7 @@ export function HomeView({ content, base, active, preview = false }: {
     musicFrame,
     toggleMusic,
     handleMusicFrameLoad,
-  } = useHomeMusic(active);
+  } = useHomeMusic();
 
 
   const measureMediaGeometry = useCallback((item: Content["media"][number]) => {
@@ -180,6 +182,7 @@ export function HomeView({ content, base, active, preview = false }: {
     if (activeIndex.current === next || transitionLock.current) return;
     const old = activeIndex.current;
     activeIndex.current = next;
+    lastHomeIndex = next;
     thumbFlightSource.current = source;
     transitionLock.current = true;
     setSelection({ current: next, previous: old });
@@ -188,7 +191,6 @@ export function HomeView({ content, base, active, preview = false }: {
 
   useLayoutEffect(() => {
     return runHomeLoaderTransition({
-      active,
       preview,
       stage: stage.current,
       loader: loader.current,
@@ -196,17 +198,16 @@ export function HomeView({ content, base, active, preview = false }: {
       front: frontMedia.current,
       onDone: () => setLoading(false),
     });
-  }, [active, preview]);
+  }, [preview]);
 
   useLayoutEffect(() => {
     return runHomeIdentityMotion({
-      active,
       preview,
       loading,
       name: identityName.current,
       stage: stage.current,
     });
-  }, [active, loading, preview]);
+  }, [loading, preview]);
 
   useLayoutEffect(() => {
     if (!items.length) return;
@@ -225,7 +226,7 @@ export function HomeView({ content, base, active, preview = false }: {
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, [active, items, measureMediaGeometry]);
+  }, [items, measureMediaGeometry]);
 
   useHomeFilmstrip({
     track,
@@ -292,7 +293,6 @@ export function HomeView({ content, base, active, preview = false }: {
   }, [current, items.length, measureMediaGeometry]);
 
   useHomeInput({
-    active,
     menuOpen,
     stage,
     step,
@@ -300,11 +300,11 @@ export function HomeView({ content, base, active, preview = false }: {
 
   return (
     <>
-      {loading && active && <div ref={loader} className="loader reference-loader z-[5600]" aria-hidden="true"><div className="loader__veil" /><div className="loader__signature-wrap"><div className="loader__signature" dangerouslySetInnerHTML={{ __html: signatureSvg }} /></div></div>}
-      <main id="stage" ref={stage} className="stage" aria-hidden={!active}>
+      {loading && <div ref={loader} className="loader reference-loader z-[5600]" aria-hidden="true"><div className="loader__veil" /><div className="loader__signature-wrap"><div className="loader__signature" dangerouslySetInnerHTML={{ __html: signatureSvg }} /></div></div>}
+      <main id="stage" ref={stage} className="stage">
         {currentItem && <div ref={media} className="media frame-portrait" style={mediaGeometry ? { width: mediaGeometry.width, height: mediaGeometry.height, top: mediaGeometry.top } : undefined}>
           {previousItem && <div ref={backMedia} className="media-layer is-back"><MediaView media={previousItem} priority={false} draft={preview} /></div>}
-          <div ref={frontMedia} className="media-layer is-front"><MediaView media={currentItem} priority={active} draft={preview} /></div>
+          <div ref={frontMedia} className="media-layer is-front"><MediaView media={currentItem} priority draft={preview} /></div>
         </div>}
         <div className="identity"><h1 ref={identityName} className="identity__name" aria-label={content.name}>{identityText(firstName, "first")}<br />{identityText(restName, "rest")}</h1></div>
         <nav className="desktop-main-nav" aria-label="Primary navigation">
@@ -338,15 +338,13 @@ export function HomeView({ content, base, active, preview = false }: {
           <span className="thumb-active-marker" ref={marker} aria-hidden="true" />
         </div></div>
       </main>
-      {active && <>
-        <button id="homeMusicToggle" className={`home-music-toggle${musicPlaying ? "" : " is-muted"}`} type="button" aria-label={musicPlaying ? "Pause Nuvole Bianche" : "Play Nuvole Bianche"} aria-pressed={musicPlaying} aria-expanded={musicOpen} aria-controls="homeMusicPlayer" title="Nuvole Bianche — Ludovico Einaudi" onClick={toggleMusic}><svg viewBox="0 0 24 24" aria-hidden="true">
-          <path className="music-wave" d="M4 9v6h4l5 4V5L8 9H4z" />
-          <path className="music-wave" d="M16 6.5a7 7 0 0 1 0 11" />
-          <path className="music-wave" d="M14 9a3 3 0 0 1 0 6" />
-          <path className="music-slash" d="M3.4 3.5l17.2 17" />
-        </svg></button>
-        <div id="homeMusicPlayer" className={`home-music-player home-music-frame${musicOpen ? " is-open" : ""}`} aria-hidden={!musicOpen}>{musicOpen && <iframe ref={musicFrame} title="Ludovico Einaudi — Nuvole Bianche" src={`https://www.youtube.com/embed/${HOME_MUSIC_VIDEO_ID}?enablejsapi=1&autoplay=1&controls=0&playsinline=1&loop=1&playlist=${HOME_MUSIC_VIDEO_ID}&rel=0&fs=0&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" onLoad={handleMusicFrameLoad} />}</div>
-      </>}
+      <button id="homeMusicToggle" className={`home-music-toggle${musicPlaying ? "" : " is-muted"}`} type="button" aria-label={musicPlaying ? "Pause Nuvole Bianche" : "Play Nuvole Bianche"} aria-pressed={musicPlaying} aria-expanded={musicOpen} aria-controls="homeMusicPlayer" title="Nuvole Bianche — Ludovico Einaudi" onClick={toggleMusic}><svg viewBox="0 0 24 24" aria-hidden="true">
+        <path className="music-wave" d="M4 9v6h4l5 4V5L8 9H4z" />
+        <path className="music-wave" d="M16 6.5a7 7 0 0 1 0 11" />
+        <path className="music-wave" d="M14 9a3 3 0 0 1 0 6" />
+        <path className="music-slash" d="M3.4 3.5l17.2 17" />
+      </svg></button>
+      <div id="homeMusicPlayer" className={`home-music-player home-music-frame${musicOpen ? " is-open" : ""}`} aria-hidden={!musicOpen}>{musicOpen && <iframe ref={musicFrame} title="Ludovico Einaudi — Nuvole Bianche" src={`https://www.youtube.com/embed/${HOME_MUSIC_VIDEO_ID}?enablejsapi=1&autoplay=1&controls=0&playsinline=1&loop=1&playlist=${HOME_MUSIC_VIDEO_ID}&rel=0&fs=0&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" onLoad={handleMusicFrameLoad} />}</div>
     </>
   );
 }

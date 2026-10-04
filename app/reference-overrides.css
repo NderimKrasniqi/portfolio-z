@@ -1,7 +1,5 @@
 /* React supplies the states that the reference page's inline script supplied. */
 .portfolio{position:fixed;inset:0;overflow:hidden;background:#fff;color:#080808;font-family:Arial,Helvetica,sans-serif;--paper:#fff;--ink:#080808}
-.portfolio .media{visibility:visible}
-.portfolio.zeudi-subpage-open .stage{pointer-events:none}
 .portfolio .media-layer{background:transparent}
 .portfolio .media-layer img,.portfolio .media-layer video{object-fit:contain;max-width:none}
 .portfolio .social-icon{display:block;width:100%;height:100%}
@@ -11,7 +9,8 @@
 .portfolio .reference-skip:focus{top:12px}
 .portfolio .reference-preview-banner{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:5000;background:#fff8e1;border:1px solid #080808;padding:7px 12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 .portfolio .reference-preview-banner a{text-decoration:underline}
-.portfolio:has(.reference-loader) .language-switcher,
+/* Hide the home UI until GSAP takes over; its inline opacity wins over this. */
+.portfolio:has(.reference-loader) #stage :is(.identity,.desktop-main-nav,.mobile-menu-toggle,.meta,.socials,.browse,.filmstrip){opacity:0}
 .portfolio:has(.reference-loader) .language-picker,
 .portfolio:has(.reference-loader) .home-music-toggle{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
 .portfolio .mobile-nav-panel.is-open{visibility:visible!important;opacity:1!important;pointer-events:auto!important;clip-path:inset(0)!important}
@@ -41,21 +40,12 @@
 .portfolio .contact-panel .contact-close{opacity:1}
 .portfolio .shop-panel.open{animation:reference-shop-in .72s cubic-bezier(.22,1,.36,1) both}
 @keyframes reference-shop-in{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0)}}
-.portfolio .shop-card__visual>img,.portfolio .shop-card__visual>video,.portfolio .shop-card__visual>.shop-card__placeholder{display:block;width:100%;height:100%;object-fit:cover}
-.portfolio .shop-card__placeholder{display:grid!important;place-items:center;background:#efefed;color:#777;font-size:8px;letter-spacing:.12em}
-.portfolio .shop-product__visual>img,.portfolio .shop-product__visual>video{width:100%;height:100%;object-fit:contain}
-.portfolio .shop-panel.is-detail .shop-detail{visibility:visible;pointer-events:auto}
-.portfolio .shop-panel.is-detail .shop-detail-backdrop{visibility:visible;pointer-events:auto}
-.portfolio .shop-panel.is-bag-open .shop-bag,.portfolio .shop-panel.is-bag-open .shop-bag-backdrop{visibility:visible;pointer-events:auto;transform:none;opacity:1}
-.portfolio .reference-bag-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:15px 0;border-bottom:1px solid #ddd;font-size:10px}
-.portfolio .reference-bag-row button{grid-column:1/-1;text-align:left;font-size:8px;letter-spacing:.12em}
 @media(prefers-reduced-motion:reduce){
  .portfolio .reference-loader{display:none}
  .portfolio .gallery-panel.open,.portfolio .about-panel.open,.portfolio .contact-panel.open,.portfolio .shop-panel.open{animation:none!important}
  .portfolio .gallery-intro-copy{animation:none!important;opacity:0!important}
  .portfolio .about-chapter:not(.is-visible){opacity:1;transform:none}
 }
-
 
 /* === Rack Shop shell =====================================================
    The redesigned Shop is a permanent full-screen rack experience.
@@ -70,14 +60,13 @@
   visibility:visible!important;
   pointer-events:auto!important;
   opacity:1!important;
-  clip-path:none!important;
-  -webkit-clip-path:none!important;
+  clip-path:inset(0);
+  -webkit-clip-path:inset(0);
   animation:none!important;
   transition:none!important;
 }
 
-/* The rack design draws its own subtle wall texture. The old Shop pseudo
-   material must not sit above or compete with the new composition. */
+/* The old Shop pseudo material must not sit above the rack composition. */
 .portfolio .shop-panel.shop-rack-panel::before{
   display:none!important;
 }
@@ -236,64 +225,41 @@
   .portfolio .language-picker__panel a{transition:none}
 }
 
-
-
-/* === Global paper material ===
-   Grain belongs to white surfaces, never above media. */
-.portfolio{
-  --zeudi-paper-grain:url("/filmgrain.png");
-  --zeudi-paper-grain-size:118px 118px;
-}
+/* === Global paper material === */
 
 .portfolio :is(
-  .stage,
-  .loader,
-  .gallery-panel,
-  .about-panel,
-  .shop-panel,
-  .contact-panel,
-  .mobile-nav-panel,
   .gallery-focus__veil,
-  .shop-detail,
-  .shop-bag,
   .language-picker__panel
 ){
   background-color:#fff!important;
-  background-image:var(--zeudi-paper-grain)!important;
-  background-repeat:repeat!important;
-  background-size:var(--zeudi-paper-grain-size)!important;
-  background-blend-mode:multiply!important;
+  background-image:none!important;
 }
 /* === End global paper material === */
 
-
 /* === Canonical site paper ===
-   The grain belongs to the persistent site surface.
-   Route shells remain transparent so transitions never reveal
-   a different white/grain state. Media remains opaque above it. */
+   Every full-screen layer is opaque white, so a layer never shows
+   what is under it. Inner sheets stay transparent above their panel. */
 
 .portfolio{
   background-color:#fff!important;
-  background-image:url("/filmgrain.png")!important;
-  background-repeat:repeat!important;
-  background-size:118px 118px!important;
-  background-blend-mode:multiply!important;
+  background-image:none!important;
 }
 
-/* Full-screen route surfaces expose the same persistent paper. */
 .portfolio .stage,
 .portfolio .loader,
 .portfolio .reference-loader,
 .portfolio .gallery-panel,
-.portfolio .gallery-panel.is-dark,
-.portfolio .gallery-space,
 .portfolio .about-panel,
-.portfolio .about-sheet,
 .portfolio .shop-panel,
-.portfolio .shop-sheet,
 .portfolio .contact-panel,
-.portfolio .contact-sheet,
 .portfolio .mobile-nav-panel{
+  background-color:#fff!important;
+  background-image:none!important;
+}
+
+.portfolio .gallery-space,
+.portfolio .about-sheet,
+.portfolio .contact-sheet{
   background-color:transparent!important;
   background-image:none!important;
 }
@@ -303,7 +269,7 @@
   background:transparent!important;
 }
 
-/* Actual media remains clean and opaque — no grain over photos/video. */
+/* Actual media remains clean and opaque. */
 .portfolio .media,
 .portfolio .media-layer,
 .portfolio .hero-flight{

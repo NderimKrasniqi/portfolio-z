@@ -7,12 +7,10 @@ import {
 } from "react";
 
 export function useHomeInput({
-  active,
   menuOpen,
   stage,
   step,
 }: {
-  active: boolean;
   menuOpen: boolean;
   stage: RefObject<HTMLElement | null>;
   step: (amount: number) => void;
@@ -28,7 +26,7 @@ export function useHomeInput({
   } | null>(null);
 
   useEffect(() => {
-    if (!active || menuOpen) return;
+    if (menuOpen) return;
 
     wheelAmount.current = 0;
     wheelConsumed.current = false;
@@ -241,7 +239,6 @@ export function useHomeInput({
       );
     };
   }, [
-    active,
     menuOpen,
     stage,
     step,

@@ -6,7 +6,6 @@ import {
 } from "./motion";
 
 export function runHomeLoaderTransition({
-  active,
   preview,
   stage,
   loader,
@@ -14,7 +13,6 @@ export function runHomeLoaderTransition({
   front,
   onDone,
 }: {
-  active: boolean;
   preview: boolean;
   stage: HTMLElement | null;
   loader: HTMLDivElement | null;
@@ -23,7 +21,6 @@ export function runHomeLoaderTransition({
   onDone: () => void;
 }) {
   if (
-    !active ||
     preview ||
     !loader ||
     !stage ||
@@ -32,7 +29,7 @@ export function runHomeLoaderTransition({
     ) ||
     prefersReducedMotion()
   ) {
-    if (active && stage) {
+    if (stage) {
       stage.style.visibility = "visible";
       stage.style.opacity = "1";
     }

@@ -65,24 +65,6 @@ export function focalPx(height: number) {
   );
 }
 
-export function targetCardPx(
-  index: number,
-  width: number,
-) {
-  const base = Math.min(
-    58,
-    Math.max(44, width * 0.0395),
-  );
-
-  return (
-    base *
-    CARD_WIDTH_FACTORS[
-      index % CARD_WIDTH_FACTORS.length
-    ] *
-    (width <= 800 ? 0.9 : 1)
-  );
-}
-
 export function roomScale(
   width: number,
   height: number,

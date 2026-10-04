@@ -160,9 +160,7 @@ function loadYouTubeApi() {
   return youTubeApiPromise;
 }
 
-export function useHomeMusic(
-  active: boolean,
-) {
+export function useHomeMusic() {
   const [musicOpen, setMusicOpen] =
     useState(false);
 
@@ -417,15 +415,6 @@ export function useHomeMusic(
       musicPlayer.current = null;
     };
   }, [musicOpen]);
-
-  useEffect(() => {
-    if (active) return;
-
-    queueMicrotask(() => {
-      setMusicOpen(false);
-      setMusicPlaying(false);
-    });
-  }, [active]);
 
   return {
     musicOpen,

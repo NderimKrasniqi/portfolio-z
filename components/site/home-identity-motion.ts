@@ -6,20 +6,17 @@ import {
 } from "./motion";
 
 export function runHomeIdentityMotion({
-  active,
   preview,
   loading,
   name,
   stage,
 }: {
-  active: boolean;
   preview: boolean;
   loading: boolean;
   name: HTMLHeadingElement | null;
   stage: HTMLElement | null;
 }) {
   if (
-    !active ||
     preview ||
     loading ||
     prefersReducedMotion()
@@ -131,15 +128,6 @@ export function runHomeIdentityMotion({
           duration: 0.28,
           ease: "power2.out",
         });
-
-      gsap.to(stage, {
-        "--zeudi-grain-lift": 0.018,
-        duration: 0.12,
-        yoyo: true,
-        repeat: 1,
-        ease: "power1.out",
-        overwrite: true,
-      });
     };
 
     const chooseGroup = () => {
@@ -430,10 +418,6 @@ export function runHomeIdentityMotion({
         opacity: 0,
       });
 
-      stage.style.setProperty(
-        "--zeudi-grain-lift",
-        "0",
-      );
     };
 
     window.addEventListener(
