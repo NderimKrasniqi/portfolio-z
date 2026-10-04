@@ -10,6 +10,11 @@
   --z-loader:600;
   --z-system:900;
 }
+
+/* Public base. These were inherited from the old global element rules. */
+.portfolio :is(a, button, input, textarea, select){outline-offset:5px}
+.portfolio .filmstrip{display:flex}
+.portfolio .language-picker__label{line-height:1.5}
 /* React supplies the states that the reference page's inline script supplied. */
 .portfolio{position:fixed;inset:0;overflow:hidden;background:#fff;color:#080808;font-family:Arial,Helvetica,sans-serif;--paper:#fff;--ink:#080808}
 .portfolio .media-layer{background:transparent}
