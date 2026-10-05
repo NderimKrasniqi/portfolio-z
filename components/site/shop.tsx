@@ -412,9 +412,11 @@ export function ShopView({
    * DETAIL ENTRY / PRODUCT CHANGE
    * ------------------------------------------------------------
    */
+  const selectedProductId = selectedProduct?.id;
+
   useLayoutEffect(() => {
     if (
-      !selectedProduct ||
+      !selectedProductId ||
       !detail.current ||
       !detailHero.current
     ) {
@@ -506,7 +508,7 @@ export function ShopView({
     return () => {
       cancelled = true;
     };
-  }, [selectedProduct?.id]);
+  }, [selectedProductId]);
 
   const openDetail = useCallback(() => {
     if (!products[current]) return;
