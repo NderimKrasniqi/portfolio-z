@@ -1,5 +1,5 @@
 /* Shop: rack panel shell. */
-.portfolio .shop-panel{position:fixed;inset:0;z-index:var(--z-panel);background:#fff;color:#080808;visibility:hidden;pointer-events:none;overflow:hidden;clip-path:inset(0 0 0 100%);-webkit-clip-path:inset(0 0 0 100%);transition:clip-path .72s cubic-bezier(.22,1,.36,1),-webkit-clip-path .72s cubic-bezier(.22,1,.36,1),visibility 0s linear .72s!important;isolation:isolate;height:100dvh!important;min-height:100dvh!important}
+.portfolio .shop-panel{position:fixed;inset:0;z-index:var(--z-panel);background:#fff;color:#080808;visibility:hidden;pointer-events:none;overflow:hidden;clip-path:inset(0 0 0 100%);-webkit-clip-path:inset(0 0 0 100%);transition:clip-path .72s cubic-bezier(.22,1,.36,1),-webkit-clip-path .72s cubic-bezier(.22,1,.36,1),visibility 0s linear .72s;isolation:isolate;height:100dvh!important;min-height:100dvh!important}
 .portfolio .shop-panel:focus{outline:none}
 .portfolio .shop-panel.open{visibility:visible;pointer-events:auto;clip-path:inset(0);-webkit-clip-path:inset(0);transition:clip-path .72s cubic-bezier(.22,1,.36,1),-webkit-clip-path .72s cubic-bezier(.22,1,.36,1),visibility 0s!important}
 @media (prefers-reduced-motion:reduce){
@@ -19,4 +19,4 @@
 .portfolio .shop-panel.shop-rack-panel::before{display:none!important}
 .portfolio.motion-gsap .shop-panel.open{animation:none!important}
 .portfolio.motion-gsap .shop-panel{transition:none!important}
-.portfolio .shop-panel{background-color:#fff!important;background-image:none!important}
+.portfolio .shop-panel{background-color:#fff;background-image:none}

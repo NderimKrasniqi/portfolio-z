@@ -53,7 +53,7 @@
 .portfolio .about-progress-track span{position:absolute;background:#080808;transform-origin:top center;will-change:transform}
 @media (max-width:900px){
 .portfolio .about-story-shell{grid-template-columns:minmax(0,1fr) minmax(280px,36vw)!important;gap:46px}
-.portfolio .about-copy h2{font-size:clamp(58px,8vw,88px)!important}
+.portfolio .about-copy h2{font-size:clamp(58px,8vw,88px)}
 .portfolio .about-lead{font-size:18px}
 .portfolio .about-chapter h3{font-size:clamp(32px,4.4vw,48px)}
 }
@@ -80,8 +80,8 @@
 .portfolio .about-portrait img,
 .portfolio .about-progress-track span{transform:none!important;opacity:1!important}
 }
-.portfolio .about-close.unified-back{position:fixed!important;display:flex!important;align-items:center;gap:7px;padding:0!important;border:0!important;background:transparent!important;font-size:8px!important;line-height:1!important;letter-spacing:.18em!important;text-transform:uppercase!important;cursor:pointer!important;opacity:1;z-index:var(--z-panel-chrome)!important}
-.portfolio .about-close.unified-back{color:#080808!important;-webkit-text-fill-color:#080808}
+.portfolio .about-close.unified-back{position:fixed;display:flex!important;align-items:center;gap:7px;padding:0!important;border:0!important;background:transparent;font-size:8px;line-height:1;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;opacity:1;z-index:var(--z-panel-chrome)!important}
+.portfolio .about-close.unified-back{color:#080808;-webkit-text-fill-color:#080808}
 .portfolio .about-close.unified-back::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 .portfolio .about-close.unified-back:hover{opacity:.62!important}
 .portfolio .about-close.unified-back:focus-visible{outline:1px solid #080808;outline-offset:5px}
@@ -89,14 +89,14 @@
 .portfolio .about-close.unified-back::before{width:calc(100% + 28px)!important;height:44px!important}
 .portfolio .about-panel{height:100dvh;min-height:100dvh}
 @media (max-width:800px){
-.portfolio .about-close.unified-back{left:auto!important;top:max(18px,env(safe-area-inset-top))!important;font-size:7px!important;gap:6px;letter-spacing:.17em!important}
-.portfolio .about-panel{overflow:hidden!important}
+.portfolio .about-close.unified-back{left:auto!important;top:max(18px,env(safe-area-inset-top))!important;font-size:7px;gap:6px;letter-spacing:.17em}
+.portfolio .about-panel{overflow:hidden}
 .portfolio .about-sheet{height:100dvh!important;padding:0 max(18px,env(safe-area-inset-right)) 0 max(18px,env(safe-area-inset-left))!important;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
 .portfolio .about-story-shell{width:100%!important;display:flex!important;flex-direction:column;gap:0;min-height:100dvh!important}
 .portfolio .about-copy{display:contents!important}
 .portfolio .about-intro{order:1;width:100%!important;min-height:auto!important;padding:max(98px,calc(env(safe-area-inset-top) + 82px)) 0 54px!important}
 .portfolio .about-eyebrow{margin-bottom:15px!important;font-size:7px}
-.portfolio .about-copy h2{font-size:clamp(50px,15vw,70px)!important;line-height:.84!important;letter-spacing:-.06em!important}
+.portfolio .about-copy h2{font-size:clamp(50px,15vw,70px);line-height:.84;letter-spacing:-.06em}
 .portfolio .about-lead{max-width:92%!important;margin-top:27px!important;font-size:clamp(17px,4.8vw,21px);line-height:1.13}
 .portfolio .about-location{margin-top:26px!important;font-size:7px}
 .portfolio .about-scroll-hint{margin-top:30px!important;font-size:6px;opacity:.32}
@@ -108,9 +108,9 @@
 .portfolio .about-body{order:3;padding-bottom:max(54px,env(safe-area-inset-bottom))!important}
 .portfolio .about-chapter{min-height:auto!important}
 .portfolio .about-chapter-index{padding-top:5px!important;font-size:7px}
-.portfolio .about-chapter-kicker{font-size:7px!important;margin-bottom:11px!important}
+.portfolio .about-chapter-kicker{font-size:7px;margin-bottom:11px!important}
 .portfolio .about-chapter h3{margin-bottom:19px!important;font-size:clamp(30px,8.8vw,42px);line-height:.97;letter-spacing:-.045em}
-.portfolio .about-chapter-copy>p:last-child{font-size:13px!important;line-height:1.62!important;letter-spacing:-.008em!important}
+.portfolio .about-chapter-copy>p:last-child{font-size:13px;line-height:1.62;letter-spacing:-.008em}
 }
 @media (max-width:430px){
 .portfolio .about-intro{padding-top:max(90px,calc(env(safe-area-inset-top) + 76px))!important;padding-bottom:48px!important}
@@ -118,12 +118,12 @@
 .portfolio .about-visual{padding-bottom:62px!important}
 .portfolio .about-portrait,
 .portfolio .about-portrait-meta{width:80vw!important}
-.portfolio .about-chapter h3{font-size:clamp(29px,8.7vw,38px)!important}
+.portfolio .about-chapter h3{font-size:clamp(29px,8.7vw,38px)}
 }
 @media (max-width:900px) and (max-height:560px) and (orientation:landscape){
 .portfolio .about-intro{padding-top:74px!important;padding-bottom:38px!important}
-.portfolio .about-copy h2{font-size:48px!important}
-.portfolio .about-lead{font-size:16px!important;max-width:72%!important}
+.portfolio .about-copy h2{font-size:48px}
+.portfolio .about-lead{font-size:16px;max-width:72%!important}
 .portfolio .about-visual{align-items:flex-start;padding-bottom:48px!important}
 .portfolio .about-portrait{width:42vw!important;max-width:260px!important}
 .portfolio .about-portrait-meta{width:42vw!important;max-width:260px!important}
@@ -138,7 +138,7 @@
 .portfolio .about-portrait-meta{margin-left:auto!important;margin-right:auto!important}
 }
 @media (max-width:800px){
-.portfolio .about-visual{align-items:center!important}
+.portfolio .about-visual{align-items:center}
 .portfolio .about-portrait,
 .portfolio .about-portrait-meta{margin-left:auto!important;margin-right:auto!important}
 .portfolio .about-body{width:100%!important;max-width:none!important}
@@ -156,8 +156,8 @@
 .portfolio .about-chapter-kicker{margin-top:0!important;line-height:1}
 @media (max-width:800px){
 .portfolio .about-chapter{display:grid!important;grid-template-columns:30px minmax(0,1fr)!important;gap:13px}
-.portfolio .about-chapter-index{margin:0!important;padding:0!important;line-height:1!important}
-.portfolio .about-chapter-kicker{line-height:1!important}
+.portfolio .about-chapter-index{margin:0!important;padding:0!important;line-height:1}
+.portfolio .about-chapter-kicker{line-height:1}
 }
 @media (max-width:430px){
 .portfolio .about-chapter{grid-template-columns:28px minmax(0,1fr)!important;gap:11px}
@@ -173,7 +173,7 @@
 }
 @media (min-width:801px){
 .portfolio .about-story-shell{grid-template-columns:minmax(0,680px) minmax(360px,500px)!important;gap:clamp(48px,5vw,88px)}
-.portfolio .about-visual{align-items:flex-end!important;padding-right:clamp(42px,5.5vw,104px)!important;box-sizing:border-box}
+.portfolio .about-visual{align-items:flex-end;padding-right:clamp(42px,5.5vw,104px)!important;box-sizing:border-box}
 .portfolio .about-portrait,
 .portfolio .about-portrait-meta{width:min(30vw,500px)!important;margin-left:auto!important;margin-right:0!important}
 }
@@ -185,38 +185,38 @@
 .portfolio .about-visual{position:sticky;top:0!important;height:100dvh!important;align-self:start}
 }
 @media (max-width:800px){
-.portfolio .about-visual{position:relative!important;top:auto!important;height:auto!important}
+.portfolio .about-visual{position:relative;top:auto!important;height:auto!important}
 }
 @media (min-width:901px){
-.portfolio .about-story-shell{grid-template-columns:minmax(0,50%) minmax(350px,36%)!important;justify-content:start!important;column-gap:4%!important}
+.portfolio .about-story-shell{grid-template-columns:minmax(0,50%) minmax(350px,36%)!important;justify-content:start;column-gap:4%}
 .portfolio .about-copy,
 .portfolio .about-intro,
 .portfolio .about-body{max-width:650px!important}
-.portfolio .about-visual{width:100%!important;padding-right:0!important;align-items:flex-start!important}
+.portfolio .about-visual{width:100%!important;padding-right:0!important;align-items:flex-start}
 .portfolio .about-portrait,
 .portfolio .about-portrait-meta{width:min(34vw,540px)!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}
 }
 @media (min-width:801px) and (max-width:1180px){
-.portfolio .about-story-shell{column-gap:clamp(32px,4vw,54px)!important}
+.portfolio .about-story-shell{column-gap:clamp(32px,4vw,54px)}
 }
 @media (min-width:801px) and (max-width:900px){
-.portfolio .about-story-shell{width:calc(100vw - (var(--side) * 2))!important;grid-template-columns:minmax(0,55%) minmax(0,36%)!important;column-gap:5%!important;justify-content:start!important}
+.portfolio .about-story-shell{width:calc(100vw - (var(--side) * 2))!important;grid-template-columns:minmax(0,55%) minmax(0,36%)!important;column-gap:5%;justify-content:start}
 .portfolio .about-copy,
 .portfolio .about-intro,
 .portfolio .about-body{width:100%!important;max-width:none!important}
 .portfolio .about-intro{padding-top:78px!important;padding-bottom:64px!important}
-.portfolio .about-copy h2{font-size:clamp(58px,8vw,72px)!important}
-.portfolio .about-lead{font-size:17px!important;line-height:1.16!important}
+.portfolio .about-copy h2{font-size:clamp(58px,8vw,72px)}
+.portfolio .about-lead{font-size:17px;line-height:1.16}
 .portfolio .about-chapter{grid-template-columns:34px minmax(0,1fr)!important;gap:12px}
-.portfolio .about-chapter h3{font-size:clamp(31px,4.25vw,38px)!important;line-height:.99!important}
-.portfolio .about-chapter-copy>p:last-child{font-size:12.5px!important;line-height:1.58!important}
-.portfolio .about-visual{width:100%!important;padding-right:0!important;align-items:flex-start!important}
+.portfolio .about-chapter h3{font-size:clamp(31px,4.25vw,38px);line-height:.99}
+.portfolio .about-chapter-copy>p:last-child{font-size:12.5px;line-height:1.58}
+.portfolio .about-visual{width:100%!important;padding-right:0!important;align-items:flex-start}
 .portfolio .about-portrait,
 .portfolio .about-portrait-meta{width:100%!important;max-width:330px!important;margin-left:0!important;margin-right:0!important}
 }
 @media (min-width:901px) and (max-height:720px){
 .portfolio .about-intro{padding-top:68px!important;padding-bottom:54px!important}
-.portfolio .about-copy h2{font-size:clamp(58px,6.8vw,92px)!important}
+.portfolio .about-copy h2{font-size:clamp(58px,6.8vw,92px)}
 .portfolio .about-lead{margin-top:28px!important}
 .portfolio .about-portrait{height:min(66vh,610px)!important}
 .portfolio .about-progress-track{top:17vh!important;height:66vh!important}
@@ -273,5 +273,5 @@
 @media (max-width:800px){
 .portfolio .about-progress-track{right:clamp(-24px,-4vw,-16px)!important}
 }
-.portfolio .about-panel{background-color:#fff!important;background-image:none!important}
+.portfolio .about-panel{background-color:#fff;background-image:none}
 .portfolio .about-sheet{background-color:transparent;background-image:none}

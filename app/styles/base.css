@@ -12,18 +12,18 @@
 .portfolio a{text-decoration:none}
 .portfolio .unified-back__arrow{display:inline-block!important;font-size:13px;line-height:.7;letter-spacing:0;transform:translateY(-1px)!important}
 @media (max-width:800px){
-.portfolio .unified-back__arrow{font-size:12px!important}
+.portfolio .unified-back__arrow{font-size:12px}
 }
 @media (max-width:800px){
 .portfolio{--mobile-header-center:max(22px,calc(env(safe-area-inset-top) + 12px))}
 }
 .portfolio{--site-max:1520px;--side:max(clamp(36px,5vw,84px), calc((100vw - var(--site-max))/2))}
 @media (max-width:800px){
-.portfolio{--side:20px!important}
+.portfolio{--side:20px}
 }
 .portfolio{--strip-h:68px;--strip-gap:8px}
 @media (max-width:800px){
-.portfolio{--strip-h:62px!important;--strip-gap:8px!important}
+.portfolio{--strip-h:62px;--strip-gap:8px}
 }
 /* Global layer scale. Only one view is mounted at a time, so all panels
    share one layer. Values inside a single component stay local. */

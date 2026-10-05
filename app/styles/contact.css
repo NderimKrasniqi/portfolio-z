@@ -14,24 +14,24 @@
 .portfolio .contact-inner{width:100%;margin:0}
 }
 .portfolio .contact-close,
-.portfolio .contact-inner{transition:none!important}
+.portfolio .contact-inner{transition:none}
 .portfolio .contact-panel .contact-sheet{display:flex;align-items:center;padding:70px var(--side)}
 .portfolio .contact-panel .contact-inner{width:min(670px,70vw);margin-left:clamp(0px,7vw,120px)}
-.portfolio .contact-panel .contact-close{display:block!important;position:fixed!important;right:var(--side)!important;top:24px!important;font-size:8px;line-height:1;letter-spacing:.21em;text-transform:uppercase;cursor:pointer;visibility:visible!important;pointer-events:auto!important;mix-blend-mode:normal}
+.portfolio .contact-panel .contact-close{display:block!important;position:fixed;right:var(--side)!important;top:24px!important;font-size:8px;line-height:1;letter-spacing:.21em;text-transform:uppercase;cursor:pointer;visibility:visible!important;pointer-events:auto!important;mix-blend-mode:normal}
 @media (max-width:800px){
 .portfolio .contact-panel .contact-close{top:17px!important;right:16px!important}
 }
-.portfolio .contact-panel{position:fixed!important;inset:0!important;z-index:var(--z-panel)!important;visibility:hidden!important;pointer-events:none!important;overflow:hidden;opacity:1!important;transform:none!important;clip-path:inset(100% 0 0 0);-webkit-clip-path:inset(100% 0 0 0);will-change:clip-path;-webkit-backface-visibility:hidden;backface-visibility:hidden;isolation:isolate}
+.portfolio .contact-panel{position:fixed;inset:0!important;z-index:var(--z-panel)!important;visibility:hidden!important;pointer-events:none!important;overflow:hidden;opacity:1!important;transform:none!important;clip-path:inset(100% 0 0 0);-webkit-clip-path:inset(100% 0 0 0);will-change:clip-path;-webkit-backface-visibility:hidden;backface-visibility:hidden;isolation:isolate}
 .portfolio .contact-panel.is-ready{pointer-events:auto!important}
 .portfolio .contact-panel::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none}
 .portfolio .contact-panel .contact-sheet{min-height:100%}
 .portfolio .contact-panel .contact-inner{position:relative;z-index:2}
-.portfolio .contact-panel .contact-close{color:#fff!important;-webkit-text-fill-color:#fff;touch-action:manipulation}
+.portfolio .contact-panel .contact-close{color:#fff;-webkit-text-fill-color:#fff;touch-action:manipulation}
 .portfolio .contact-close::before{content:"";position:absolute;left:50%;top:50%;width:max(40px,100%);height:max(40px,100%);transform:translate(-50%,-50%)}
 .portfolio .contact-close:focus-visible,
 .portfolio .rep-name a:focus-visible{outline:1px solid #fff;outline-offset:5px}
-.portfolio .contact-close.unified-back{position:fixed!important;display:flex!important;align-items:center;gap:7px;padding:0!important;border:0!important;background:transparent!important;font-size:8px!important;line-height:1!important;letter-spacing:.18em!important;text-transform:uppercase!important;cursor:pointer!important;opacity:1;z-index:var(--z-panel-chrome)!important}
-.portfolio .contact-close.unified-back{color:#fff!important;-webkit-text-fill-color:#fff!important}
+.portfolio .contact-close.unified-back{position:fixed;display:flex!important;align-items:center;gap:7px;padding:0;border:0;background:transparent;font-size:8px;line-height:1;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;opacity:1;z-index:var(--z-panel-chrome)!important}
+.portfolio .contact-close.unified-back{color:#fff;-webkit-text-fill-color:#fff}
 .portfolio .contact-close.unified-back::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 .portfolio .contact-close.unified-back:hover{opacity:.62!important}
 .portfolio .contact-close.unified-back:focus-visible{outline:1px solid #fff!important;outline-offset:5px}
@@ -39,37 +39,37 @@
 .portfolio .contact-close.unified-back::before{width:calc(100% + 28px)!important;height:44px!important}
 .portfolio .contact-panel{height:100dvh;min-height:100dvh}
 @media (max-width:800px){
-.portfolio .contact-close.unified-back{left:auto!important;top:max(18px,env(safe-area-inset-top))!important;font-size:7px!important;gap:6px;letter-spacing:.17em!important}
-.portfolio .contact-panel{overflow-y:auto!important;overscroll-behavior:contain}
-.portfolio .contact-panel .contact-sheet{min-height:100dvh!important;height:auto!important;padding:max(96px,calc(env(safe-area-inset-top) + 82px)) 20px max(48px,calc(env(safe-area-inset-bottom) + 34px))!important;display:flex!important;align-items:center}
-.portfolio .contact-panel .contact-inner{width:100%!important;max-width:520px!important;margin:0!important}
-.portfolio .contact-eyebrow{margin-bottom:15px!important;font-size:7px}
-.portfolio .contact-sheet h2{margin-bottom:30px!important;font-size:clamp(39px,12vw,50px);line-height:.90;letter-spacing:-.055em}
-.portfolio .rep-row{grid-template-columns:78px minmax(0,1fr);gap:14px;padding:16px 0!important;font-size:7px;line-height:1.48}
+.portfolio .contact-close.unified-back{left:auto!important;top:max(18px,env(safe-area-inset-top))!important;font-size:7px;gap:6px;letter-spacing:.17em}
+.portfolio .contact-panel{overflow-y:auto;overscroll-behavior:contain}
+.portfolio .contact-panel .contact-sheet{min-height:100dvh!important;height:auto!important;padding:max(96px,calc(env(safe-area-inset-top) + 82px)) 20px max(48px,calc(env(safe-area-inset-bottom) + 34px));display:flex!important;align-items:center}
+.portfolio .contact-panel .contact-inner{width:100%!important;max-width:520px!important;margin:0}
+.portfolio .contact-eyebrow{margin-bottom:15px;font-size:7px}
+.portfolio .contact-sheet h2{margin-bottom:30px;font-size:clamp(39px,12vw,50px);line-height:.90;letter-spacing:-.055em}
+.portfolio .rep-row{grid-template-columns:78px minmax(0,1fr);gap:14px;padding:16px 0;font-size:7px;line-height:1.48}
 .portfolio .rep-name,
 .portfolio .rep-name a{min-width:0;overflow-wrap:anywhere;word-break:break-word}
 }
 @media (max-width:430px){
-.portfolio .contact-panel .contact-sheet{padding-left:18px!important;padding-right:18px!important}
-.portfolio .rep-row{grid-template-columns:70px minmax(0,1fr)!important;gap:12px}
+.portfolio .contact-panel .contact-sheet{padding-left:18px;padding-right:18px}
+.portfolio .rep-row{grid-template-columns:70px minmax(0,1fr);gap:12px}
 }
 @media (max-width:900px) and (max-height:560px) and (orientation:landscape){
-.portfolio .contact-panel .contact-sheet{align-items:flex-start!important;padding-top:76px!important}
-.portfolio .contact-sheet h2{font-size:40px!important;margin-bottom:22px!important}
-.portfolio .rep-row{padding:11px 0!important}
+.portfolio .contact-panel .contact-sheet{align-items:flex-start;padding-top:76px}
+.portfolio .contact-sheet h2{font-size:40px;margin-bottom:22px}
+.portfolio .rep-row{padding:11px 0}
 }
 @media (max-width:800px){
 .portfolio .contact-close.unified-back{right:max(20px,env(safe-area-inset-right))!important}
 }
 @media (min-width:901px) and (max-height:720px){
-.portfolio .contact-panel .contact-sheet{padding-top:64px!important;padding-bottom:44px!important}
+.portfolio .contact-panel .contact-sheet{padding-top:64px;padding-bottom:44px}
 }
 .portfolio .contact-panel .contact-sheet{position:relative;z-index:2!important}
 .portfolio .contact-panel .contact-close{z-index:4!important}
 .portfolio .contact-panel{background:#fff;background-color:#fff;color:#080808}
-.portfolio .contact-panel .contact-sheet{background:transparent!important;color:#080808}
+.portfolio .contact-panel .contact-sheet{background:transparent;color:#080808}
 .portfolio .contact-panel .contact-close,
-.portfolio .contact-close.unified-back{color:#080808!important;-webkit-text-fill-color:#080808!important}
+.portfolio .contact-close.unified-back{color:#080808;-webkit-text-fill-color:#080808}
 .portfolio .contact-eyebrow{color:#080808}
 .portfolio .contact-sheet h2{color:#080808}
 .portfolio .rep-list{border-top-color:rgba(8,8,8,.24)}
@@ -80,11 +80,11 @@
 .portfolio .contact-close.unified-back:focus-visible,
 .portfolio .rep-name a:focus-visible{outline-color:#080808!important}
 @media (min-width:801px){
-.portfolio .contact-panel .contact-sheet{padding-left:var(--side)!important;padding-right:var(--side)!important}
-.portfolio .contact-panel .contact-inner{margin-left:0!important}
+.portfolio .contact-panel .contact-sheet{padding-left:var(--side);padding-right:var(--side)}
+.portfolio .contact-panel .contact-inner{margin-left:0}
 }
 @media (max-width:800px){
-.portfolio .contact-panel .contact-sheet{padding-left:var(--side)!important;padding-right:var(--side)!important}
+.portfolio .contact-panel .contact-sheet{padding-left:var(--side);padding-right:var(--side)}
 }
 .portfolio .contact-panel .contact-eyebrow{opacity:.64}
 .portfolio .contact-panel .rep-role{opacity:.60!important}
@@ -98,7 +98,7 @@
 }
 .portfolio.motion-gsap .contact-panel.open{animation:none!important}
 .portfolio.motion-gsap .contact-panel{transition:none!important}
-.portfolio .contact-panel{background-color:#fff!important;background-image:none!important}
+.portfolio .contact-panel{background-color:#fff;background-image:none}
 .portfolio .contact-sheet{background-color:transparent;background-image:none}
 /* Contact has a legacy full-screen white pseudo-surface. */
-.portfolio .contact-panel::before{background:transparent!important}
+.portfolio .contact-panel::before{background:transparent}
