@@ -9,7 +9,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import type { Content } from "@/lib/model";
 import { SiteLink } from "./navigation";
 import {
@@ -17,6 +18,9 @@ import {
   prefersReducedMotion,
 } from "./motion";
 import { SHOP_ASSETS } from "./shop-assets";
+
+// Prototype: 3D rack with cloth physics, shown with ?rack3d. Loaded on demand.
+const ShopRack3D = dynamic(() => import("./shop-rack-3d"), { ssr: false });
 
 type Product = Content["products"][number];
 
@@ -97,6 +101,7 @@ export function ShopView({
   base?: string;
 }) {
   const pathname = usePathname();
+  const rack3d = useSearchParams().has("rack3d");
 
   const resolvedBase =
     base ??
@@ -680,7 +685,11 @@ export function ShopView({
           </SiteLink>
         </header>
 
-        {!products.length ? (
+        {rack3d ? (
+          <main id="main" className="relative h-full w-full">
+            <ShopRack3D asset={SHOP_ASSETS["closet-01"]} />
+          </main>
+        ) : !products.length ? (
           <main
             id="main"
             className="grid h-full place-items-center"
