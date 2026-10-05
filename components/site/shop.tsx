@@ -3,7 +3,9 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -17,6 +19,51 @@ import {
 import { SHOP_ASSETS } from "./shop-assets";
 
 type Product = Content["products"][number];
+
+/*
+ * Wooden hanger with a metal hook. The front view shows the full shoulder
+ * bar; the side view shows the hanger edge-on, like the garment photo.
+ * Height is a share of the garment box, so it scales with the garment.
+ */
+function Hanger({ view }: { view: "front" | "side" }) {
+  const wood = `hanger-wood-${useId()}`;
+  const front = view === "front";
+
+  return (
+    <svg
+      viewBox={front ? "0 0 120 30" : "0 0 24 30"}
+      className="pointer-events-none absolute left-1/2 top-0 z-0 h-[10%] w-auto -translate-x-1/2 overflow-visible"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={wood} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#b8743f" />
+          <stop offset="1" stopColor="#74391b" />
+        </linearGradient>
+      </defs>
+      <path
+        d={front
+          ? "M60 16V12C60 8 66 7.5 66 4C66 1.4 63.6 0 61.2 .3C58.8 .6 57.6 2.2 57.6 3.8"
+          : "M12 16V12C12 8 18 7.5 18 4C18 1.4 15.6 0 13.2 .3C10.8 .6 9.6 2.2 9.6 3.8"}
+        fill="none"
+        stroke="#9d9d9b"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      {front ? (
+        <>
+          <rect x="56.6" y="12.8" width="6.8" height="5" rx="1.2" fill={`url(#${wood})`} />
+          <path
+            d="M4 28.4C30 20 45 16.2 60 16.2S90 20 116 28.4c1.6.5 1.1 1.6-.9 1.6C90 23.6 75 20.6 60 20.6S30 23.6 4.9 30c-2 0-2.5-1.1-.9-1.6Z"
+            fill={`url(#${wood})`}
+          />
+        </>
+      ) : (
+        <rect x="9" y="13" width="6" height="17" rx="2" fill={`url(#${wood})`} />
+      )}
+    </svg>
+  );
+}
 
 function wrapIndex(index: number, length: number) {
   if (!length) return 0;
@@ -67,7 +114,11 @@ export function ShopView({
       return pieces[0] ? `/${pieces[0]}` : "/en";
     })();
 
-  const products = content.products;
+  // Only garments hang on the rack; items without hanger assets stay off it.
+  const products = useMemo(
+    () => content.products.filter((product) => product.id in SHOP_ASSETS),
+    [content.products],
+  );
 
   /*
    * hovered:
@@ -135,16 +186,16 @@ export function ShopView({
     }
 
     return (
-      <img
-        src={asset[view]}
-        alt={view === "front" ? product.title : ""}
-        aria-hidden={view === "side" ? true : undefined}
-        draggable={false}
-        className={`h-full w-full select-none object-contain ${className}`}
-        style={{
-          transform: `scale(${asset.scale ?? 1})`,
-        }}
-      />
+      <span className={`relative block h-full w-full ${className}`}>
+        <Hanger view={view} />
+        <img
+          src={asset[view]}
+          alt={view === "front" ? product.title : ""}
+          aria-hidden={view === "side" ? true : undefined}
+          draggable={false}
+          className={`absolute inset-x-0 bottom-0 z-[1] w-full select-none object-contain object-top ${view === "front" ? "top-[1.5%] h-[98.5%]" : "top-[4%] h-[96%]"}`}
+        />
+      </span>
     );
   };
 
@@ -179,7 +230,7 @@ export function ShopView({
         ? 116
         : Math.min(235, window.innerWidth * 0.155);
 
-      const closedWidth = mobile ? 38 : 55;
+      const closedWidth = mobile ? 64 : 112;
 
       const itemHeight = mobile
         ? Math.min(window.innerHeight * 0.34, 290)
@@ -666,10 +717,10 @@ export function ShopView({
                       setCurrent(index);
                       setHovered(index);
                     }}
-                    className="absolute top-[3px] h-[42vh] w-[55px]
+                    className="absolute top-[3px] h-[42vh] w-[112px]
                       -translate-x-1/2 origin-top
                       border-0 bg-transparent p-0
-                      max-[800px]:h-[34vh] max-[800px]:w-[38px]"
+                      max-[800px]:h-[34vh] max-[800px]:w-[64px]"
                     style={{
                       left: `${left}%`,
                     }}
@@ -698,7 +749,7 @@ export function ShopView({
                 ================================================= */}
             {hovered !== null && products[hovered] && (
               <p
-                className="absolute top-[76.5%] z-[12]
+                className="absolute top-[70%] z-[12]
                   -translate-x-1/2 whitespace-nowrap
                   text-[8px] tracking-[-.01em] text-[#171717]/65
                   max-[800px]:top-[68%]"
@@ -790,7 +841,7 @@ export function ShopView({
                 return (
                   <div
                     key={product.id}
-                    className="absolute top-0 h-[41vh] w-[52px]
+                    className="absolute top-0 h-[41vh] w-[106px]
                       -translate-x-1/2"
                     style={{
                       left: `${railPosition(

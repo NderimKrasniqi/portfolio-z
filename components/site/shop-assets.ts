@@ -1,9 +1,9 @@
 export type ShopAsset = {
   front: string;
   side: string;
-  scale?: number;
 };
 
+// Only garments that hang on the rack have assets.
 export const SHOP_ASSETS: Record<string, ShopAsset> = {
   // closet-01 = LEATHER JACKET
   "closet-01": {
@@ -15,27 +15,6 @@ export const SHOP_ASSETS: Record<string, ShopAsset> = {
   "closet-02": {
     front: "/shop/placeholders/pinstripe-blazer-front.png",
     side: "/shop/placeholders/pinstripe-blazer-side.png",
-  },
-
-  // closet-03 = PURPLE BAG
-  "closet-03": {
-    front: "/shop/placeholders/purple-bag-front.png",
-    side: "/shop/placeholders/purple-bag-side.png",
-    scale: 0.82,
-  },
-
-  // closet-04 = SUNGLASSES
-  "closet-04": {
-    front: "/shop/placeholders/sunglasses-front.png",
-    side: "/shop/placeholders/sunglasses-side.png",
-    scale: 0.68,
-  },
-
-  // closet-05 = GREY SNEAKERS
-  "closet-05": {
-    front: "/shop/placeholders/grey-sneakers-front.png",
-    side: "/shop/placeholders/grey-sneakers-side.png",
-    scale: 0.72,
   },
 
   // closet-06 = VINTAGE VARSITY
@@ -50,13 +29,6 @@ export const SHOP_ASSETS: Record<string, ShopAsset> = {
     side: "/shop/placeholders/workwear-jacket-side.png",
   },
 
-  // closet-08 = SMALL HANDBAG
-  "closet-08": {
-    front: "/shop/placeholders/small-handbag-front.png",
-    side: "/shop/placeholders/small-handbag-side.png",
-    scale: 0.78,
-  },
-
   // drop-01 = GRAPHIC HOODIE
   "drop-01": {
     front: "/shop/placeholders/graphic-hoodie-front.png",
@@ -69,17 +41,4 @@ export const SHOP_ASSETS: Record<string, ShopAsset> = {
     side: "/shop/placeholders/city-hoodie-side.png",
   },
 
-  // drop-03 = SIGNATURE CAP
-  "drop-03": {
-    front: "/shop/placeholders/signature-cap-front.png",
-    side: "/shop/placeholders/signature-cap-side.png",
-    scale: 0.66,
-  },
-
-  // drop-04 = ARCHIVE OBJECT
-  "drop-04": {
-    front: "/shop/placeholders/archive-object-front.png",
-    side: "/shop/placeholders/archive-object-side.png",
-    scale: 0.65,
-  },
 };
