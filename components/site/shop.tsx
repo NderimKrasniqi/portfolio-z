@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -19,8 +20,20 @@ import {
 } from "./motion";
 import { SHOP_ASSETS } from "./shop-assets";
 
-// Prototype: 3D rack with cloth physics, shown with ?rack3d. Loaded on demand.
+// 3D rack with cloth physics. Loaded on demand, only where it can run.
 const ShopRack3D = dynamic(() => import("./shop-rack-3d"), { ssr: false });
+
+const noSubscribe = () => () => {};
+
+/* WebGL is available and the visitor does not prefer reduced motion. */
+function canRun3d() {
+  if (prefersReducedMotion()) return false;
+  try {
+    return Boolean(document.createElement("canvas").getContext("webgl2"));
+  } catch {
+    return false;
+  }
+}
 
 type Product = Content["products"][number];
 
@@ -101,7 +114,11 @@ export function ShopView({
   base?: string;
 }) {
   const pathname = usePathname();
-  const rack3d = useSearchParams().has("rack3d");
+  // ?rack2d keeps the flat rack, for comparison and as a manual fallback
+  const force2d = useSearchParams().has("rack2d");
+  const supports3d = useSyncExternalStore(noSubscribe, canRun3d, () => false);
+  const rack3d = supports3d && !force2d;
+  const rackLabel = useRef<HTMLParagraphElement>(null);
 
   const resolvedBase =
     base ??
@@ -685,9 +702,47 @@ export function ShopView({
           </SiteLink>
         </header>
 
-        {rack3d ? (
+        {rack3d && products.length ? (
           <main id="main" className="relative h-full w-full">
-            <ShopRack3D asset={SHOP_ASSETS["closet-01"]} />
+            <ShopRack3D
+              items={products.map((product) => ({ id: product.id, asset: SHOP_ASSETS[product.id] }))}
+              onLabel={(position) => {
+                const element = rackLabel.current;
+                if (!element) return;
+                element.style.opacity = position ? "1" : "0";
+                if (position) {
+                  element.style.left = `${position.x}px`;
+                  element.style.top = `${position.y}px`;
+                }
+              }}
+              onActive={(index) => {
+                setHovered(index);
+                if (index !== null) setCurrent(index);
+              }}
+            />
+
+            {/* name of the open garment; the 3D scene keeps it under the garment */}
+            <p
+              ref={rackLabel}
+              className="pointer-events-none absolute z-[12] -translate-x-1/2 whitespace-nowrap
+                text-[10px] tracking-[-.01em] text-[#171717]/80 opacity-0 transition-opacity"
+              aria-live="polite"
+            >
+              {hovered !== null && products[hovered] ? displayTitle(products[hovered].title) : ""}
+            </p>
+
+            <button
+              type="button"
+              onClick={openDetail}
+              className="absolute bottom-[49px] left-1/2 z-[15]
+                min-w-[176px] -translate-x-1/2 rounded-full
+                border border-[#171d38]/70 bg-transparent
+                px-6 py-[8px]
+                text-[8px] uppercase tracking-[.06em]
+                transition-opacity hover:opacity-55"
+            >
+              SEE AVAILABILITY
+            </button>
           </main>
         ) : !products.length ? (
           <main
