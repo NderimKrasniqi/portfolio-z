@@ -621,13 +621,13 @@ export function ShopView({
             >
               <span
                 className="absolute left-[-9px] top-1/2 h-[28px] w-[13px]
-                  -translate-y-1/2 rounded-sm border border-black/15
+                  -translate-y-1/2 border border-black/15
                   [background:linear-gradient(90deg,#999,#eee,#888)]"
               />
 
               <span
                 className="absolute right-[-9px] top-1/2 h-[28px] w-[13px]
-                  -translate-y-1/2 rounded-sm border border-black/15
+                  -translate-y-1/2 border border-black/15
                   [background:linear-gradient(90deg,#888,#eee,#999)]"
               />
             </div>
