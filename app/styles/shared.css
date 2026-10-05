@@ -1,0 +1,5 @@
+/* Rules that target elements in more than one view (Back buttons, shared labels). */
+.portfolio :is(
+  .gallery-focus__veil,
+  .language-picker__panel
+){background-color:#fff;background-image:none}

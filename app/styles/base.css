@@ -1,0 +1,49 @@
+/* Root surface, layer scale and shared resets for the public site. */
+/* Generated from the supplied HTML. Keep its cascade order intact. */
+/* Consolidated site stylesheet. Source order is preserved for cascade stability.
+   Modules: base/tokens · home · gallery · about · shop · contact · responsive/accessibility. */
+.portfolio *{box-sizing:border-box}
+.portfolio{--ui-micro:9px;--ui-nav:10px}
+.portfolio,
+.portfolio{margin:0;width:100%;height:100%;overflow:hidden;background:var(--paper);color:var(--ink)}
+.portfolio button,
+.portfolio a{font:inherit;color:inherit}
+.portfolio button{border:0;background:none;padding:0}
+.portfolio a{text-decoration:none}
+.portfolio .unified-back__arrow{display:inline-block!important;font-size:13px;line-height:.7;letter-spacing:0;transform:translateY(-1px)!important}
+@media (max-width:800px){
+.portfolio .unified-back__arrow{font-size:12px!important}
+}
+@media (max-width:800px){
+.portfolio{--mobile-header-center:max(22px,calc(env(safe-area-inset-top) + 12px))}
+}
+.portfolio{--site-max:1520px;--side:max(clamp(36px,5vw,84px), calc((100vw - var(--site-max))/2))}
+@media (max-width:800px){
+.portfolio{--side:20px!important}
+}
+.portfolio{--strip-h:68px;--strip-gap:8px}
+@media (max-width:800px){
+.portfolio{--strip-h:62px!important;--strip-gap:8px!important}
+}
+/* Global layer scale. Only one view is mounted at a time, so all panels
+   share one layer. Values inside a single component stay local. */
+:root{--z-panel:100;--z-panel-chrome:110;--z-menu:200;--z-focus:300;--z-popover:400;--z-flight:500;--z-loader:600;--z-system:900}
+/* Public base. These were inherited from the old global element rules. */
+.portfolio :is(a, button, input, textarea, select){outline-offset:5px}
+/* React supplies the states that the reference page's inline script supplied. */
+.portfolio{position:fixed;inset:0;overflow:hidden;background:#fff;color:#080808;font-family:Arial,Helvetica,sans-serif;--paper:#fff;--ink:#080808}
+.portfolio .social-icon{display:block;width:100%;height:100%}
+.portfolio .social-icon svg{display:block;width:100%;height:100%}
+.portfolio .social-icon-text{display:block;font-size:11px;font-weight:700;line-height:13px;text-align:center}
+.portfolio .reference-skip{position:fixed;top:-100px;left:16px;z-index:calc(var(--z-system) + 10);background:#fff;padding:12px;font-size:12px}
+.portfolio .reference-skip:focus{top:12px}
+.portfolio .reference-preview-banner{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:var(--z-system);background:#fff8e1;border:1px solid #080808;padding:7px 12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.portfolio .reference-preview-banner a{text-decoration:underline}
+.portfolio .reference-loader{display:grid;place-items:center}
+@media(prefers-reduced-motion:reduce){
+.portfolio .reference-loader{display:none}
+}
+/* Keep the loader a clean signature field. */
+.portfolio .reference-loader{background-color:#fff!important}
+.portfolio{background-color:#fff;background-image:none}
+.portfolio .reference-loader{background-color:#fff!important;background-image:none!important}

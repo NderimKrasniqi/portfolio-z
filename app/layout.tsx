@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./reference.css";
-import "./reference-overrides.css";
+import "./styles/base.css";
+import "./styles/home.css";
+import "./styles/gallery.css";
+import "./styles/about.css";
+import "./styles/contact.css";
+import "./styles/shop.css";
+import "./styles/shared.css";
 export const metadata: Metadata = {
   title: {
     default: "Zeudi Di Palma — Portfolio",
