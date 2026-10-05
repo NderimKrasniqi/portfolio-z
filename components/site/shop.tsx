@@ -32,7 +32,7 @@ function Hanger({ view }: { view: "front" | "side" }) {
   return (
     <svg
       viewBox={front ? "0 0 120 30" : "0 0 24 30"}
-      className="pointer-events-none absolute left-1/2 top-0 z-0 h-[10%] w-auto -translate-x-1/2 overflow-visible"
+      className="pointer-events-none absolute left-1/2 top-0 z-0 h-[12%] w-auto -translate-x-1/2 overflow-visible"
       aria-hidden="true"
     >
       <defs>
@@ -47,14 +47,14 @@ function Hanger({ view }: { view: "front" | "side" }) {
           : "M12 16V12C12 8 18 7.5 18 4C18 1.4 15.6 0 13.2 .3C10.8 .6 9.6 2.2 9.6 3.8"}
         fill="none"
         stroke="#9d9d9b"
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinecap="round"
       />
       {front ? (
         <>
           <rect x="56.6" y="12.8" width="6.8" height="5" rx="1.2" fill={`url(#${wood})`} />
           <path
-            d="M4 28.4C30 20 45 16.2 60 16.2S90 20 116 28.4c1.6.5 1.1 1.6-.9 1.6C90 23.6 75 20.6 60 20.6S30 23.6 4.9 30c-2 0-2.5-1.1-.9-1.6Z"
+            d="M6 26.6C30 19.6 45 16 60 16s30 3.6 54 10.6c2 .6 1.5 2.2-.9 2.1C90 22.6 75 21.6 60 21.6S30 22.6 6.9 28.7c-2.4.1-2.9-1.5-.9-2.1Z"
             fill={`url(#${wood})`}
           />
         </>
@@ -71,13 +71,11 @@ function wrapIndex(index: number, length: number) {
 }
 
 function railPosition(index: number, length: number) {
-  if (length <= 1) return 50;
-
   /*
-   * Reference rack occupies roughly 74% of the viewport.
-   * Garments keep permanent hanger positions.
+   * Garments hang close together around the centre of the rail. The step
+   * comes from --rack-step on the rack container, so it can differ on mobile.
    */
-  return 13 + (index / (length - 1)) * 74;
+  return `calc(50% + ${index - (length - 1) / 2} * var(--rack-step))`;
 }
 
 function displayTitle(value: string) {
@@ -193,7 +191,7 @@ export function ShopView({
           alt={view === "front" ? product.title : ""}
           aria-hidden={view === "side" ? true : undefined}
           draggable={false}
-          className={`absolute inset-x-0 bottom-0 z-[1] w-full select-none object-contain object-top ${view === "front" ? "top-[1.5%] h-[98.5%]" : "top-[4%] h-[96%]"}`}
+          className={`absolute inset-x-0 bottom-0 z-[1] w-full select-none object-contain object-top ${view === "front" ? "top-[4.5%] h-[95.5%]" : "top-[5%] h-[95%]"}`}
         />
       </span>
     );
@@ -227,13 +225,13 @@ export function ShopView({
       const mobile = window.innerWidth <= 800;
 
       const openWidth = mobile
-        ? 116
-        : Math.min(235, window.innerWidth * 0.155);
+        ? 170
+        : Math.min(300, window.innerWidth * 0.21);
 
-      const closedWidth = mobile ? 64 : 112;
+      const closedWidth = mobile ? 70 : 112;
 
       const itemHeight = mobile
-        ? Math.min(window.innerHeight * 0.34, 290)
+        ? Math.min(window.innerHeight * 0.42, 360)
         : Math.min(window.innerHeight * 0.43, 420);
 
       rackItems.current.forEach((element, index) => {
@@ -256,11 +254,11 @@ export function ShopView({
            * then quickly decay. This is what the reference does.
            */
           if (absolute === 1) {
-            push = direction * (mobile ? 54 : 102);
+            push = direction * (mobile ? 50 : 118);
           } else if (absolute === 2) {
-            push = direction * (mobile ? 27 : 52);
+            push = direction * (mobile ? 22 : 62);
           } else if (absolute === 3) {
-            push = direction * (mobile ? 11 : 22);
+            push = direction * (mobile ? 8 : 26);
           }
         }
 
@@ -658,42 +656,43 @@ export function ShopView({
             className="relative h-full w-full"
           >
             {/* =================================================
-                RAIL
-                ================================================= */}
-            <div
-              className="pointer-events-none absolute
-                left-[12.2%] right-[12.2%] top-[25.9%]
-                z-[2] h-[5px] rounded-full
-                border border-black/10
-                [background:linear-gradient(180deg,#949493_0%,#e8e8e6_46%,#979795_100%)]
-                shadow-[0_2px_3px_rgba(0,0,0,.12)]
-                max-[800px]:left-[5%] max-[800px]:right-[5%] max-[800px]:top-[24%]"
-              aria-hidden="true"
-            >
-              <span
-                className="absolute left-[-9px] top-1/2 h-[28px] w-[13px]
-                  -translate-y-1/2 border border-black/15
-                  [background:linear-gradient(90deg,#999,#eee,#888)]"
-              />
-
-              <span
-                className="absolute right-[-9px] top-1/2 h-[28px] w-[13px]
-                  -translate-y-1/2 border border-black/15
-                  [background:linear-gradient(90deg,#888,#eee,#999)]"
-              />
-            </div>
-
-            {/* =================================================
                 CLOTHING RACK
                 ================================================= */}
             <div
               className="absolute left-[11%] right-[11%] top-[25.9%]
                 z-[4] h-[48vh]
-                max-[800px]:left-[2%] max-[800px]:right-[2%] max-[800px]:top-[24%]"
+                [--rack-margin:90px] [--rack-step:9.5%]
+                max-[800px]:left-[2%] max-[800px]:right-[2%] max-[800px]:top-[31%]
+                max-[800px]:[--rack-margin:26px] max-[800px]:[--rack-step:14.5%]"
               onPointerLeave={() => {
                 setHovered(null);
               }}
             >
+              {/* rail: as long as the garments plus a margin */}
+              <div
+                className="pointer-events-none absolute top-0 z-[1] h-[5px]
+                  rounded-full border border-black/10
+                  [background:linear-gradient(180deg,#949493_0%,#e8e8e6_46%,#979795_100%)]
+                  shadow-[0_2px_3px_rgba(0,0,0,.12)]"
+                style={{
+                  left: `calc(50% - ${(products.length - 1) / 2} * var(--rack-step) - var(--rack-margin))`,
+                  right: `calc(50% - ${(products.length - 1) / 2} * var(--rack-step) - var(--rack-margin))`,
+                }}
+                aria-hidden="true"
+              >
+                <span
+                  className="absolute left-[-9px] top-1/2 h-[28px] w-[13px]
+                    -translate-y-1/2 border border-black/15
+                    [background:linear-gradient(90deg,#999,#eee,#888)]"
+                />
+
+                <span
+                  className="absolute right-[-9px] top-1/2 h-[28px] w-[13px]
+                    -translate-y-1/2 border border-black/15
+                    [background:linear-gradient(90deg,#888,#eee,#999)]"
+                />
+              </div>
+
               {products.map((product, index) => {
                 const left = railPosition(index, products.length);
 
@@ -720,9 +719,9 @@ export function ShopView({
                     className="absolute top-[3px] h-[42vh] w-[112px]
                       -translate-x-1/2 origin-top
                       border-0 bg-transparent p-0
-                      max-[800px]:h-[34vh] max-[800px]:w-[64px]"
+                      max-[800px]:h-[42vh] max-[800px]:w-[70px]"
                     style={{
-                      left: `${left}%`,
+                      left,
                     }}
                   >
                     <span
@@ -741,28 +740,22 @@ export function ShopView({
                   </button>
                 );
               })}
-            </div>
 
-            {/* =================================================
-                ACTIVE PRODUCT LABEL
-                only visible while garment is expanded
-                ================================================= */}
-            {hovered !== null && products[hovered] && (
-              <p
-                className="absolute top-[70%] z-[12]
-                  -translate-x-1/2 whitespace-nowrap
-                  text-[8px] tracking-[-.01em] text-[#171717]/65
-                  max-[800px]:top-[68%]"
-                style={{
-                  left: `${railPosition(
-                    hovered,
-                    products.length,
-                  )}%`,
-                }}
-              >
-                {displayTitle(products[hovered].title)}
-              </p>
-            )}
+              {/* active product label, directly under the open garment */}
+              {hovered !== null && products[hovered] && (
+                <p
+                  className="absolute top-[calc(min(43vh,420px,min(300px,21vw)*1.12)+14px)] z-[12]
+                    -translate-x-1/2 whitespace-nowrap
+                    text-[10px] tracking-[-.01em] text-[#171717]/80
+                    max-[800px]:top-[calc(min(42vh,360px,204px)+12px)]"
+                  style={{
+                    left: railPosition(hovered, products.length),
+                  }}
+                >
+                  {displayTitle(products[hovered].title)}
+                </p>
+              )}
+            </div>
 
             {/* =================================================
                 FIXED CTA
@@ -828,8 +821,9 @@ export function ShopView({
             {/* blurred ghost rack */}
             <div
               className="pointer-events-none absolute
-                left-[14%] right-[14%] top-[25%]
-                h-[48vh] opacity-[.075] blur-[11px]
+                left-[11%] right-[11%] top-[25%]
+                h-[48vh] opacity-[.075] blur-[11px] [--rack-step:9.5%]
+                max-[800px]:[--rack-step:14.5%]
                 max-[800px]:left-[-12%] max-[800px]:right-[-12%]"
               aria-hidden="true"
             >
@@ -844,10 +838,7 @@ export function ShopView({
                     className="absolute top-0 h-[41vh] w-[106px]
                       -translate-x-1/2"
                     style={{
-                      left: `${railPosition(
-                        index,
-                        products.length,
-                      )}%`,
+                      left: railPosition(index, products.length),
                     }}
                   >
                     {renderProduct(product, "side")}
