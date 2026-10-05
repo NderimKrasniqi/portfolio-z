@@ -48,7 +48,7 @@ function Hanger({ view }: { view: "front" | "side" }) {
         <>
           {/* shoulder bar, hidden inside the garment */}
           <path
-            d="M14 56C37 49.5 48 48 60 48s23 1.5 46 8c2 .5 1.5 2.1-.9 2C83 52.6 71 52 60 52S37 52.6 14.9 58c-2.4.1-2.9-1.5-.9-2Z"
+            d="M28 55C42 49.5 50 48 60 48s18 1.5 32 7c2 .6 1.5 2.1-.9 2C80 52.6 70 52 60 52S40 52.6 28.9 57c-2.4.1-2.9-1.4-.9-2Z"
             fill={`url(#${wood})`}
           />
           {/* wooden neck that shows above the collar */}
@@ -147,6 +147,8 @@ export function ShopView({
 
   const rackReady = useRef(false);
 
+  const activeLabel = useRef<HTMLParagraphElement>(null);
+
   const detail =
     useRef<HTMLDivElement>(null);
 
@@ -236,6 +238,33 @@ export function ShopView({
         ? Math.min(window.innerHeight * 0.42, 360)
         : Math.min(window.innerHeight * 0.43, 420);
 
+      /*
+       * The rail ends at the outer garments plus --rack-margin. Pushed
+       * neighbours stop short of the ends, so every hook stays on the rail.
+       */
+      const rack = rackItems.current.find(Boolean)?.parentElement;
+      const rackStyle = rack ? getComputedStyle(rack) : null;
+      const step = rack && rackStyle
+        ? (parseFloat(rackStyle.getPropertyValue("--rack-step")) / 100) * rack.clientWidth
+        : 0;
+      const railHalf = rackStyle
+        ? ((products.length - 1) / 2) * step + parseFloat(rackStyle.getPropertyValue("--rack-margin"))
+        : Infinity;
+      const hookLimit = railHalf - 14;
+
+      /*
+       * An open garment near an end moves inward until it fits inside the
+       * rack; its neighbours on the inner side move with it.
+       */
+      const openLimit = rack ? rack.clientWidth / 2 - openWidth / 2 : Infinity;
+      const openBase = hovered === null ? 0 : (hovered - (products.length - 1) / 2) * step;
+      const openShift = Math.max(-openLimit, Math.min(openLimit, openBase)) - openBase;
+
+      // the name label follows the open garment
+      if (activeLabel.current) {
+        gsap.set(activeLabel.current, { xPercent: -50, x: openShift });
+      }
+
       rackItems.current.forEach((element, index) => {
         if (!element) return;
 
@@ -262,6 +291,12 @@ export function ShopView({
           } else if (absolute === 3) {
             push = direction * (mobile ? 8 : 26);
           }
+
+          const base = (index - (products.length - 1) / 2) * step;
+          const target = Math.max(-hookLimit, Math.min(hookLimit, base + push + openShift));
+          push = target - base;
+        } else if (isOpen) {
+          push = openShift;
         }
 
         const vars = {
@@ -746,6 +781,7 @@ export function ShopView({
               {/* active product label, directly under the open garment */}
               {hovered !== null && products[hovered] && (
                 <p
+                  ref={activeLabel}
                   className="absolute top-[calc(min(43vh,420px,min(300px,21vw)*1.12)+14px)] z-[12]
                     -translate-x-1/2 whitespace-nowrap
                     text-[10px] tracking-[-.01em] text-[#171717]/80
