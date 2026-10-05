@@ -170,6 +170,8 @@ export function useHomeFilmstrip({
 
     const update = () => {
       const thumbs = [
+        // The track is a DOM ref owned by HomeView; laying it out here is intended.
+        // eslint-disable-next-line react-hooks/immutability
         ...strip.querySelectorAll<HTMLButtonElement>(
           ".thumb",
         ),
