@@ -21,18 +21,21 @@ import { SHOP_ASSETS } from "./shop-assets";
 type Product = Content["products"][number];
 
 /*
- * Wooden hanger with a metal hook. The front view shows the full shoulder
- * bar; the side view shows the hanger edge-on, like the garment photo.
- * Height is a share of the garment box, so it scales with the garment.
+ * Wooden hanger with a metal hook. The hook curls over the rail; the rest
+ * sits behind the garment, so only the hook and the wooden neck come out of
+ * the collar. Units: the SVG is 30 units tall and 12% of the garment box.
+ * The hook loop is centred on y=8, and the SVG is shifted up so that this
+ * point lands on the rail (3.2% = 8/30 of 12%).
  */
 function Hanger({ view }: { view: "front" | "side" }) {
   const wood = `hanger-wood-${useId()}`;
   const front = view === "front";
+  const x = front ? 60 : 12;
 
   return (
     <svg
       viewBox={front ? "0 0 120 30" : "0 0 24 30"}
-      className="pointer-events-none absolute left-1/2 top-0 z-0 h-[12%] w-auto -translate-x-1/2 overflow-visible"
+      className="pointer-events-none absolute left-1/2 top-[calc(-.5px-3.2%)] z-0 h-[12%] w-auto -translate-x-1/2 overflow-visible"
       aria-hidden="true"
     >
       <defs>
@@ -41,26 +44,25 @@ function Hanger({ view }: { view: "front" | "side" }) {
           <stop offset="1" stopColor="#74391b" />
         </linearGradient>
       </defs>
-      <path
-        d={front
-          ? "M60 16V12C60 8 66 7.5 66 4C66 1.4 63.6 0 61.2 .3C58.8 .6 57.6 2.2 57.6 3.8"
-          : "M12 16V12C12 8 18 7.5 18 4C18 1.4 15.6 0 13.2 .3C10.8 .6 9.6 2.2 9.6 3.8"}
-        fill="none"
-        stroke="#9d9d9b"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      {front ? (
+      {front && (
         <>
-          <rect x="56.6" y="12.8" width="6.8" height="5" rx="1.2" fill={`url(#${wood})`} />
+          {/* shoulder bar, hidden inside the garment */}
           <path
-            d="M6 26.6C30 19.6 45 16 60 16s30 3.6 54 10.6c2 .6 1.5 2.2-.9 2.1C90 22.6 75 21.6 60 21.6S30 22.6 6.9 28.7c-2.4.1-2.9-1.5-.9-2.1Z"
+            d="M14 56C37 49.5 48 48 60 48s23 1.5 46 8c2 .5 1.5 2.1-.9 2C83 52.6 71 52 60 52S37 52.6 14.9 58c-2.4.1-2.9-1.5-.9-2Z"
             fill={`url(#${wood})`}
           />
+          {/* wooden neck that shows above the collar */}
+          <rect x="56.8" y="12.5" width="6.4" height="37" rx="1.4" fill={`url(#${wood})`} />
         </>
-      ) : (
-        <rect x="9" y="13" width="6" height="17" rx="2" fill={`url(#${wood})`} />
       )}
+      {/* metal hook: stem up out of the collar, then over the rail */}
+      <path
+        d={`M${x} ${front ? 13 : 34}V8A4.6 4.6 0 1 0 ${x - 9.2} 8v1.6`}
+        fill="none"
+        stroke="#9d9d9b"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -191,7 +193,7 @@ export function ShopView({
           alt={view === "front" ? product.title : ""}
           aria-hidden={view === "side" ? true : undefined}
           draggable={false}
-          className={`absolute inset-x-0 bottom-0 z-[1] w-full select-none object-contain object-top ${view === "front" ? "top-[4.5%] h-[95.5%]" : "top-[5%] h-[95%]"}`}
+          className={`absolute inset-x-0 bottom-0 z-[1] w-full select-none object-contain object-top ${view === "front" ? "top-[3%] h-[97%]" : "top-[1.5%] h-[98.5%]"}`}
         />
       </span>
     );
