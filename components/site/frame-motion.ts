@@ -6,9 +6,24 @@ import {
   restingOpacity,
 } from "./motion";
 
+// GSAP interpolates clip-path only between values with the same number of parts.
+const OPEN_CLIP = "inset(0% 0% 0% 0%)";
+
+// On a direct load the server HTML is already painted. Hiding it again to play
+// an enter animation would flash, so enter animations wait for a client navigation.
+let clientNavigated = false;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", () => {
+    clientNavigated = true;
+  });
+}
+
 export function runFrameExitTransition(
   onComplete: () => void,
 ) {
+  clientNavigated = true;
+
   if (prefersReducedMotion()) {
     onComplete();
     return;
@@ -54,7 +69,7 @@ export function runFrameExitTransition(
           "about-panel",
         )
       ) {
-        timeline.to(target, {
+        timeline.fromTo(target, { clipPath: OPEN_CLIP }, {
           clipPath:
             "inset(0 100% 0 0)",
           duration: 0.58,
@@ -65,7 +80,7 @@ export function runFrameExitTransition(
           "contact-panel",
         )
       ) {
-        timeline.to(target, {
+        timeline.fromTo(target, { clipPath: OPEN_CLIP }, {
           clipPath:
             "inset(100% 0 0 0)",
           duration: 0.56,
@@ -76,7 +91,7 @@ export function runFrameExitTransition(
           "shop-panel",
         )
       ) {
-        timeline.to(target, {
+        timeline.fromTo(target, { clipPath: OPEN_CLIP }, {
           clipPath:
             "inset(0 0 0 100%)",
           duration: 0.56,
@@ -101,7 +116,8 @@ export function runFrameEnterTransition() {
 
   if (
     !root ||
-    prefersReducedMotion()
+    prefersReducedMotion() ||
+    !clientNavigated
   ) {
     return () => {};
   }
@@ -268,7 +284,7 @@ export function runFrameEnterTransition() {
       });
 
       gsap.to(panel, {
-        clipPath: "inset(0)",
+        clipPath: OPEN_CLIP,
         duration: 0.72,
         ease: "power4.inOut",
       });
