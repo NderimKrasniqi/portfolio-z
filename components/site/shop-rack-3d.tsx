@@ -79,6 +79,25 @@ function restX(index: number, count: number) {
   return (index - (count - 1) / 2) * SPACING;
 }
 
+/* Half of the visible width at the rail's depth, from the camera. */
+function visibleHalfWidth(camera: THREE.Camera, aspect: number) {
+  const perspective = camera as THREE.PerspectiveCamera;
+  return perspective.position.z * Math.tan(THREE.MathUtils.degToRad(perspective.fov / 2)) * aspect;
+}
+
+const FRONT_HALF = GARMENT_HEIGHT * 0.45; // half the width of an open garment
+const SIDE_HALF = GARMENT_HEIGHT * 0.23; // half the width of a garment seen from the side
+const EDGE = 0.06;
+
+/*
+ * Where the open garment hangs: at its place on the rail, moved inward
+ * when it would not fit on screen.
+ */
+function openX(open: number, count: number, halfWidth: number) {
+  const limit = Math.max(0, halfWidth - FRONT_HALF - EDGE);
+  return THREE.MathUtils.clamp(restX(open, count), -limit, limit);
+}
+
 function Garment({
   asset,
   index,
@@ -95,6 +114,7 @@ function Garment({
   onLeave: (index: number) => void;
 }) {
   const [front, side] = useLoader(THREE.TextureLoader, [asset.front, asset.side]);
+  const { camera, size } = useThree();
   const slideGroup = useRef<THREE.Group>(null);
   const swingGroup = useRef<THREE.Group>(null);
   const yawGroup = useRef<THREE.Group>(null);
@@ -105,6 +125,7 @@ function Garment({
     yaw: SIDE_YAW, yawVelocity: 0,
     swing: 0, swingVelocity: 0,
     ready: false,
+    still: 0, // frames without motion; the cloth sleeps after a while
   });
   const pointer = useRef<{ point: THREE.Vector3; velocity: THREE.Vector3 } | null>(null);
 
@@ -135,9 +156,18 @@ function Garment({
     // but every hook stays on the rail
     const open = active.current;
     const distance = open === null ? 0 : index - open;
-    const railHalf = ((count - 1) / 2) * SPACING + RAIL_MARGIN - 0.12;
-    const pushed = restX(index, count) + Math.sign(distance) * (PUSH[Math.abs(distance)] ?? 0);
-    const targetX = Math.max(-railHalf, Math.min(railHalf, pushed));
+    const halfWidth = visibleHalfWidth(camera, size.width / size.height);
+    // neighbours keep their hook on the rail and their body on screen
+    const limit = Math.min(((count - 1) / 2) * SPACING + RAIL_MARGIN - 0.12, halfWidth - SIDE_HALF - EDGE);
+    const shift = open === null ? 0 : openX(open, count, halfWidth) - restX(open, count);
+    const targetX =
+      open === index
+        ? restX(index, count) + shift
+        : THREE.MathUtils.clamp(
+            restX(index, count) + shift + Math.sign(distance) * (PUSH[Math.abs(distance)] ?? 0),
+            -limit,
+            limit,
+          );
     const slideForce = (targetX - m.x) * 60 - m.xVelocity * 13;
     m.xVelocity += slideForce * dt;
     m.x += m.xVelocity * dt;
@@ -162,6 +192,13 @@ function Garment({
     yawNode.rotation.y = m.yaw;
     slideNode.updateMatrixWorld(true);
     const world = yawNode.matrixWorld;
+
+    // sleep: once the garment has settled, skip the cloth until it moves again
+    const moving =
+      Math.abs(m.xVelocity) + Math.abs(m.yawVelocity) + Math.abs(m.swingVelocity) > 0.004 ||
+      (pointer.current?.velocity.lengthSq() ?? 0) > 1e-4;
+    m.still = moving ? 0 : m.still + 1;
+    if (m.ready && m.still > 90) return;
 
     for (const [n, sheet] of sheets.entries()) {
       const { cloth, local, geometry, material } = sheet;
@@ -190,8 +227,10 @@ function Garment({
       const facing = n === 0 ? Math.abs(Math.cos(m.yaw)) : Math.abs(Math.sin(m.yaw));
       material.opacity = THREE.MathUtils.smoothstep(facing, 0.35, 0.8);
       if (n === 0 && barMaterial.current) {
-        barMaterial.current.opacity = material.opacity;
-        barMaterial.current.visible = material.opacity > 0.02;
+        // the bar shows only when the garment fully faces the camera
+        const bar = THREE.MathUtils.smoothstep(facing, 0.82, 0.97);
+        barMaterial.current.opacity = bar;
+        barMaterial.current.visible = bar > 0.02;
       }
     }
     m.ready = true;
@@ -326,7 +365,7 @@ function LabelTracker({
       onLabel(null);
       return;
     }
-    point.set(restX(open, count), RAIL_Y - HANGER_DROP - GARMENT_HEIGHT * 0.98, 0.25).project(camera);
+    point.set(openX(open, count, visibleHalfWidth(camera, size.width / size.height)), RAIL_Y - HANGER_DROP - GARMENT_HEIGHT * 0.98, 0.25).project(camera);
     onLabel({ x: ((point.x + 1) / 2) * size.width, y: ((1 - point.y) / 2) * size.height + 10 });
   });
   return null;
