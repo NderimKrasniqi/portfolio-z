@@ -33,6 +33,30 @@ export type RackItem = { id: string; asset: ShopAsset };
 
 type PointerState = { point: THREE.Vector3; velocity: THREE.Vector3 };
 
+/* Soft shadow texture, drawn once: an ellipse that fades out at its edges. */
+const shadowTextures: { blob?: THREE.Texture } = {};
+
+function shadowTexture(kind: "blob") {
+  const cached = shadowTextures[kind];
+  if (cached) return cached;
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d")!;
+  const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+  // an alphaMap is read from the green channel: white = shadow, black = none
+  gradient.addColorStop(0, "#fff");
+  gradient.addColorStop(0.55, "#8c8c8c");
+  gradient.addColorStop(1, "#000");
+  context.fillStyle = "#000";
+  context.fillRect(0, 0, 128, 128);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 128, 128);
+  const texture = new THREE.CanvasTexture(canvas);
+  shadowTextures[kind] = texture;
+  return texture;
+}
+
 type Sheet = {
   cloth: Cloth;
   geometry: THREE.BufferGeometry;
@@ -68,7 +92,7 @@ function makeSheet(
   const material = new THREE.MeshStandardMaterial({
     map: texture,
     transparent: true,
-    alphaTest: 0.04,
+    alphaTest: 0.3, // cut the light, half-transparent photo edges that ghost during the turn
     side: THREE.DoubleSide,
     roughness: 0.92,
     metalness: 0,
@@ -119,6 +143,8 @@ function Garment({
   const swingGroup = useRef<THREE.Group>(null);
   const yawGroup = useRef<THREE.Group>(null);
   const barMaterial = useRef<THREE.MeshStandardMaterial>(null);
+  const shadow = useRef<THREE.Mesh>(null);
+  const shadowMaterial = useRef<THREE.MeshBasicMaterial>(null);
   const motion = useRef({
     x: restX(index, count), xVelocity: 0,
     yaw: SIDE_YAW, yawVelocity: 0,
@@ -183,6 +209,13 @@ function Garment({
     m.swing += m.swingVelocity * dt;
 
     slideNode.position.x = m.x;
+    // soft shadow on the wall behind: wider and darker as the garment turns forward
+    const frontness = Math.abs(Math.cos(m.yaw));
+    if (shadow.current && shadowMaterial.current) {
+      shadow.current.position.x = m.x + 0.08 + m.swing * 0.6;
+      shadow.current.scale.x = THREE.MathUtils.lerp(0.95, 2.05, frontness);
+      shadowMaterial.current.opacity = THREE.MathUtils.lerp(0.09, 0.16, frontness);
+    }
     slideNode.position.z = open === index ? 0.25 : 0;
     swingNode.rotation.z = m.swing;
     yawNode.rotation.y = m.yaw;
@@ -221,7 +254,7 @@ function Garment({
       geometry.computeBoundingSphere();
       // each sheet shows while it faces the camera
       const facing = n === 0 ? Math.abs(Math.cos(m.yaw)) : Math.abs(Math.sin(m.yaw));
-      material.opacity = THREE.MathUtils.smoothstep(facing, 0.35, 0.8);
+      material.opacity = THREE.MathUtils.smoothstep(facing, 0.45, 0.8);
       if (n === 0 && barMaterial.current) {
         // the bar shows only when the garment fully faces the camera
         const bar = THREE.MathUtils.smoothstep(facing, 0.82, 0.97);
@@ -244,6 +277,21 @@ function Garment({
 
   return (
     <>
+      <mesh
+        ref={shadow}
+        position={[restX(index, count), RAIL_Y - HANGER_DROP - GARMENT_HEIGHT * 0.52, -0.45]}
+        renderOrder={-1}
+        raycast={() => null}
+      >
+        <planeGeometry args={[1, GARMENT_HEIGHT * 0.95]} />
+        <meshBasicMaterial
+          ref={shadowMaterial}
+          color="#000"
+          alphaMap={shadowTexture("blob")}
+          transparent
+          depthWrite={false}
+        />
+      </mesh>
       <group ref={slideGroup} position={[restX(index, count), RAIL_Y, 0]}>
         <group ref={swingGroup}>
           <group ref={yawGroup}>
@@ -280,6 +328,11 @@ function Rail({ count }: { count: number }) {
   const half = ((count - 1) / 2) * SPACING + RAIL_MARGIN;
   return (
     <group position={[0, RAIL_Y, 0]}>
+      {/* soft shadow under the rail, on the wall behind */}
+      <mesh position={[0, -0.06, -0.45]} renderOrder={-1} raycast={() => null}>
+        <planeGeometry args={[half * 2.1, 0.1]} />
+        <meshBasicMaterial color="#000" alphaMap={shadowTexture("blob")} transparent opacity={0.1} depthWrite={false} />
+      </mesh>
       <mesh rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.028, 0.028, half * 2, 24]} />
         <meshStandardMaterial {...METAL} />

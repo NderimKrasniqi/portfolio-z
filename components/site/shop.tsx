@@ -737,7 +737,7 @@ export function ShopView({
             <p
               ref={rackLabel}
               className="pointer-events-none absolute z-[12] -translate-x-1/2 whitespace-nowrap
-                text-[10px] tracking-[-.01em] text-[#171717]/80 opacity-0 transition-opacity"
+                text-[12px] tracking-[-.01em] text-[#171717] opacity-0 transition-opacity"
               aria-live="polite"
             >
               {hovered !== null && products[hovered] ? displayTitle(products[hovered].title) : ""}
