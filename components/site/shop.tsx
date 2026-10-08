@@ -25,14 +25,26 @@ const ShopRack3D = dynamic(() => import("./shop-rack-3d"), { ssr: false });
 
 const noSubscribe = () => () => {};
 
-/* WebGL is available and the visitor does not prefer reduced motion. */
+/*
+ * WebGL2 is available and the visitor does not prefer reduced motion.
+ * React calls this on every render, so the WebGL test runs once and its
+ * context is released at once: browsers drop the oldest context (the
+ * rack's own) when too many are open.
+ */
+let webgl2Available: boolean | undefined;
+
 function canRun3d() {
   if (prefersReducedMotion()) return false;
-  try {
-    return Boolean(document.createElement("canvas").getContext("webgl2"));
-  } catch {
-    return false;
+  if (webgl2Available === undefined) {
+    try {
+      const context = document.createElement("canvas").getContext("webgl2");
+      webgl2Available = Boolean(context);
+      context?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch {
+      webgl2Available = false;
+    }
   }
+  return webgl2Available;
 }
 
 type Product = Content["products"][number];
