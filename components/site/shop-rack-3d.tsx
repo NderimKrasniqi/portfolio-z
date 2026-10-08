@@ -31,6 +31,8 @@ const PUSH = [0, 0.78, 0.38, 0.14];
 
 export type RackItem = { id: string; asset: ShopAsset };
 
+type PointerState = { point: THREE.Vector3; velocity: THREE.Vector3 };
+
 type Sheet = {
   cloth: Cloth;
   geometry: THREE.BufferGeometry;
@@ -103,15 +105,13 @@ function Garment({
   index,
   count,
   active,
-  onEnter,
-  onLeave,
+  pointer,
 }: {
   asset: ShopAsset;
   index: number;
   count: number;
   active: RefObject<number | null>;
-  onEnter: (index: number) => void;
-  onLeave: (index: number) => void;
+  pointer: RefObject<PointerState | null>;
 }) {
   const [front, side] = useLoader(THREE.TextureLoader, [asset.front, asset.side]);
   const { camera, size } = useThree();
@@ -119,7 +119,6 @@ function Garment({
   const swingGroup = useRef<THREE.Group>(null);
   const yawGroup = useRef<THREE.Group>(null);
   const barMaterial = useRef<THREE.MeshStandardMaterial>(null);
-  const hit = useRef<THREE.Mesh>(null);
   const motion = useRef({
     x: restX(index, count), xVelocity: 0,
     yaw: SIDE_YAW, yawVelocity: 0,
@@ -127,7 +126,6 @@ function Garment({
     ready: false,
     still: 0, // frames without motion; the cloth sleeps after a while
   });
-  const pointer = useRef<{ point: THREE.Vector3; velocity: THREE.Vector3 } | null>(null);
 
   const sheets = useMemo(() => {
     const frontImage = front.image as HTMLImageElement;
@@ -186,8 +184,6 @@ function Garment({
 
     slideNode.position.x = m.x;
     slideNode.position.z = open === index ? 0.25 : 0;
-    // the open garment is wider, so its hover area widens and comes first
-    if (hit.current) hit.current.scale.x = open === index ? 2.9 : 1;
     swingNode.rotation.z = m.swing;
     yawNode.rotation.y = m.yaw;
     slideNode.updateMatrixWorld(true);
@@ -234,7 +230,6 @@ function Garment({
       }
     }
     m.ready = true;
-    if (pointer.current) pointer.current.velocity.multiplyScalar(0.85);
   });
 
   const hangerCurve = useMemo(
@@ -272,30 +267,6 @@ function Garment({
             </mesh>
           </group>
         </group>
-        {/* invisible hover target: a column under the hook */}
-        <mesh
-          ref={hit}
-          position={[0, -HANGER_DROP - GARMENT_HEIGHT / 2, 0.3]}
-          onPointerOver={(event) => {
-            event.stopPropagation();
-            onEnter(index);
-          }}
-          onPointerOut={() => onLeave(index)}
-          onClick={(event) => {
-            event.stopPropagation();
-            onEnter(index);
-          }}
-          onPointerMove={(event) => {
-            const previous = pointer.current?.point ?? event.point.clone();
-            pointer.current = {
-              point: event.point.clone(),
-              velocity: event.point.clone().sub(previous).multiplyScalar(60),
-            };
-          }}
-        >
-          <planeGeometry args={[SPACING, GARMENT_HEIGHT]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
-        </mesh>
       </group>
 
       {sheets.map((sheet, n) => (
@@ -371,6 +342,89 @@ function LabelTracker({
   return null;
 }
 
+/*
+ * The rack inside the canvas. One invisible plane covers the whole rack;
+ * the garment under the pointer is the nearest fixed slot on the rail, so
+ * the choice does not depend on where the garments have moved. A small
+ * margin keeps the open garment from flickering at slot borders.
+ */
+function Rack({
+  items,
+  onLabel,
+  onActive,
+}: {
+  items: RackItem[];
+  onLabel: (position: { x: number; y: number } | null) => void;
+  onActive: (index: number | null) => void;
+}) {
+  const count = items.length;
+  const active = useRef<number | null>(null);
+  const pointer = useRef<PointerState | null>(null);
+  const leaveTimer = useRef<number | undefined>(undefined);
+
+  const choose = (x: number) => {
+    window.clearTimeout(leaveTimer.current);
+    const open = active.current;
+    if (open !== null && Math.abs(x - restX(open, count)) < SPACING * 0.5 + 0.1) return;
+    const slot = THREE.MathUtils.clamp(Math.round(x / SPACING + (count - 1) / 2), 0, count - 1);
+    if (slot === open) return;
+    active.current = slot;
+    onActive(slot);
+  };
+
+  // leaving the rack closes the open garment after a short pause
+  const leave = () => {
+    window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => {
+      if (active.current === null) return;
+      active.current = null;
+      onActive(null);
+    }, 120);
+  };
+
+  useFrame(() => {
+    pointer.current?.velocity.multiplyScalar(0.85);
+  });
+
+  const width = (count - 1) * SPACING + SPACING;
+
+  return (
+    <>
+      <CameraRig count={count} />
+      <LabelTracker onLabel={onLabel} active={active} count={count} />
+      <Rail count={count} />
+      <mesh
+        position={[0, RAIL_Y - HANGER_DROP - GARMENT_HEIGHT / 2, 0.4]}
+        onPointerMove={(event) => {
+          choose(event.point.x);
+          const previous = pointer.current?.point ?? event.point.clone();
+          pointer.current = {
+            point: event.point.clone(),
+            velocity: event.point.clone().sub(previous).multiplyScalar(60),
+          };
+        }}
+        onClick={(event) => choose(event.point.x)}
+        onPointerLeave={leave}
+      >
+        <planeGeometry args={[width, GARMENT_HEIGHT]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+      </mesh>
+      <Suspense fallback={null}>
+        {items.map((item, index) => (
+          <Garment
+            key={item.id}
+            asset={item.asset}
+            index={index}
+            count={count}
+            active={active}
+            pointer={pointer}
+          />
+        ))}
+      </Suspense>
+    </>
+  );
+}
+
 export default function ShopRack3D({
   items,
   onLabel,
@@ -381,25 +435,6 @@ export default function ShopRack3D({
   onLabel: (position: { x: number; y: number } | null) => void;
   onActive: (index: number | null) => void;
 }) {
-  const active = useRef<number | null>(null);
-  const leaveTimer = useRef<number | undefined>(undefined);
-
-  const enter = (index: number) => {
-    window.clearTimeout(leaveTimer.current);
-    if (active.current === index) return;
-    active.current = index;
-    onActive(index);
-  };
-  // leaving one garment for the next should not close in between
-  const leave = (index: number) => {
-    window.clearTimeout(leaveTimer.current);
-    leaveTimer.current = window.setTimeout(() => {
-      if (active.current !== index) return;
-      active.current = null;
-      onActive(null);
-    }, 120);
-  };
-
   return (
     <Canvas
       className="!absolute inset-0"
@@ -410,22 +445,7 @@ export default function ShopRack3D({
       <ambientLight intensity={1.6} />
       <directionalLight position={[2, 4, 5]} intensity={1.8} />
       <directionalLight position={[-3, 1, 2]} intensity={0.6} />
-      <CameraRig count={items.length} />
-      <LabelTracker onLabel={onLabel} active={active} count={items.length} />
-      <Rail count={items.length} />
-      <Suspense fallback={null}>
-        {items.map((item, index) => (
-          <Garment
-            key={item.id}
-            asset={item.asset}
-            index={index}
-            count={items.length}
-            active={active}
-            onEnter={enter}
-            onLeave={leave}
-          />
-        ))}
-      </Suspense>
+      <Rack items={items} onLabel={onLabel} onActive={onActive} />
     </Canvas>
   );
 }
