@@ -33,8 +33,8 @@ function slotStyle(offset: number, mobile: boolean) {
 }
 
 export function HomeView({ content, base, preview = false }: { content: Content; base: string; preview?: boolean }) {
-  const items = useMemo(() => content.media.filter((item) => item.featured), [content.media]);
-  const photos = useMemo(() => items.filter((item) => item.kind === "image"), [items]);
+  const items = useMemo(() => content.media.filter((item) => item.kind === "video"), [content.media]);
+  const photoCount = content.media.length - items.length;
   const count = items.length;
   const [current, setCurrent] = useState(() => Math.min(lastHomeIndex, Math.max(0, count - 1)));
   const [loading, setLoading] = useState(true);
@@ -109,7 +109,7 @@ export function HomeView({ content, base, preview = false }: { content: Content;
       lists: lists.current.filter((list): list is HTMLDivElement => Boolean(list)),
       center,
       reveal: reveal.current.filter((element): element is HTMLElement => Boolean(element)),
-      pool: photos.map((photo) => mediaUrl(photo.thumbKey, preview)),
+      pool: items.map((entry) => mediaUrl(entry.mediumKey, preview)),
       finalSrc: mediaUrl(items[current].mediumKey, preview),
       onDone: () => {
         introPlayed = true;
@@ -215,7 +215,7 @@ export function HomeView({ content, base, preview = false }: { content: Content;
           </p>
           <SiteLink className="hx-head__link" href={`${base}/gallery`}>
             {content.nav.gallery}
-            <sup>{pad(content.media.length)}</sup>
+            <sup>{pad(photoCount)}</sup>
           </SiteLink>
           <p className="hx-head__logo">
             <span>ZEUDI</span>
@@ -254,7 +254,7 @@ export function HomeView({ content, base, preview = false }: { content: Content;
                 key={index}
                 ref={(element) => { cells.current[index] = element; }}
                 className="hx-grid__cell"
-                src={photos[index % Math.max(1, photos.length)] ? mediaUrl(photos[index % photos.length].thumbKey, preview) : undefined}
+                src={items.length ? mediaUrl(items[index % items.length].mediumKey, preview) : undefined}
                 alt=""
                 decoding="async"
               />
@@ -292,8 +292,10 @@ export function HomeView({ content, base, preview = false }: { content: Content;
                 aria-label={offset === 0 ? entry.title : `Show ${entry.title}`}
                 onClick={() => offset !== 0 && go(index)}
               >
-                {entry.kind === "video" && offset === 0 ? (
+                {offset === 0 ? (
                   <video src={mediaUrl(entry.key, preview)} poster={mediaUrl(entry.mediumKey, preview)} muted loop playsInline preload="metadata" />
+                ) : near ? (
+                  <video src={`${mediaUrl(entry.key, preview)}#t=${offset < 0 ? 1.2 : 3.5}`} muted playsInline preload="metadata" aria-hidden="true" />
                 ) : (
                   <img src={mediaUrl(near ? entry.mediumKey : entry.thumbKey, preview)} alt={entry.alt} loading={near ? "eager" : "lazy"} decoding="async" />
                 )}

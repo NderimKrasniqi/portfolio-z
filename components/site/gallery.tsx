@@ -8,9 +8,7 @@ import { prefersReducedMotion } from "./motion";
 
 type Item = Content["media"][number];
 
-type Spot = { angle: number; radius: number; height: number; width: number; delay: number };
-
-const TILT = (56 * Math.PI) / 180;
+type Spot = { x: number; y: number; z: number; width: number; delay: number };
 
 function random(seed: number) {
   const value = Math.sin(seed * 9301 + 49297) * 233280;
@@ -18,13 +16,19 @@ function random(seed: number) {
 }
 
 function layout(items: Item[]): Spot[] {
-  return items.map((_, index) => ({
-    angle: (index / items.length) * Math.PI * 2 + (random(index + 1) - 0.5) * 0.7,
-    radius: 0.84 + random(index + 11) * 0.36,
-    height: (random(index + 23) - 0.5) * 0.4,
-    width: 0.1 + random(index + 37) * 0.13,
-    delay: random(index + 51) * 6,
-  }));
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  return items.map((_, index) => {
+    const y = 1 - ((index + 0.5) / items.length) * 2;
+    const ring = Math.sqrt(1 - y * y);
+    const theta = index * golden;
+    return {
+      x: Math.cos(theta) * ring,
+      y,
+      z: Math.sin(theta) * ring,
+      width: 0.2 + random(index + 37) * 0.08,
+      delay: random(index + 51) * 4,
+    };
+  });
 }
 
 const ease = (value: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, value)), 3);
@@ -35,13 +39,13 @@ export function GalleryView({ content, preview = false, onBack }: {
   base: string;
   onBack: () => void;
 }) {
-  const items = useMemo(() => content.media, [content.media]);
+  const items = useMemo(() => content.media.filter((item) => item.kind === "image"), [content.media]);
   const spots = useMemo(() => layout(items), [items]);
   const [focus, setFocus] = useState<number | null>(null);
   const space = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLButtonElement | null)[]>([]);
   const focusRef = useRef<number | null>(null);
-  const motion = useRef({ angle: 0, velocity: 0, dragging: false, lastX: 0, moved: 0, start: 0, blend: [] as number[] });
+  const motion = useRef({ yaw: 0, pitch: -0.25, vx: 0, vy: 0, zoom: 1, dragging: false, lastX: 0, lastY: 0, moved: 0, start: 0, blend: [] as number[] });
 
   const open = useCallback((index: number | null) => {
     focusRef.current = index;
@@ -63,29 +67,30 @@ export function GalleryView({ content, preview = false, onBack }: {
       last = now;
       const width = node.clientWidth;
       const heightPx = node.clientHeight;
-      const radius = Math.min(width, heightPx) * (width <= 800 ? 0.36 : 0.235);
-      const focal = radius * 3.4;
+      const radius = Math.min(width, heightPx) * (width <= 800 ? 0.4 : 0.34) * m.zoom;
+      const focal = radius * 3.2;
       const focused = focusRef.current;
       const focusHeight = Math.min(heightPx * 0.56, 560);
       const elapsed = (now - m.start) / 1000;
 
       if (!m.dragging) {
-        m.velocity *= Math.pow(0.04, dt);
-        m.angle += (focused === null && !still ? 0.06 : 0) * dt + m.velocity * dt;
+        m.vx *= Math.pow(0.04, dt);
+        m.vy *= Math.pow(0.04, dt);
+        m.yaw += (focused === null && !still ? 0.08 : 0) * dt + m.vx * dt;
+        m.pitch = Math.max(-1.3, Math.min(1.3, m.pitch + m.vy * dt));
       }
+      const cy = Math.cos(m.yaw), sy = Math.sin(m.yaw), cp = Math.cos(m.pitch), sp = Math.sin(m.pitch);
 
       cards.current.forEach((card, index) => {
         if (!card) return;
         const spot = spots[index];
         const item = items[index];
         const grow = still ? 1 : ease((elapsed - 0.8 - spot.delay) / 1.4);
-        const angle = spot.angle + m.angle;
-        const r = radius * spot.radius;
-        const x = Math.cos(angle) * r;
-        const z0 = Math.sin(angle) * r;
-        const y0 = spot.height * radius;
-        const y = y0 * Math.cos(TILT) - z0 * Math.sin(TILT);
-        const z = y0 * Math.sin(TILT) + z0 * Math.cos(TILT);
+        const x1 = spot.x * cy + spot.z * sy;
+        const z1 = -spot.x * sy + spot.z * cy;
+        const y = (spot.y * cp - z1 * sp) * radius * grow;
+        const z = (spot.y * sp + z1 * cp) * radius;
+        const x = x1 * radius * grow;
         const depth = focal / (focal - z);
         const cardWidth = radius * spot.width * depth * (0.15 + 0.85 * grow);
         const cardHeight = cardWidth * (item.height / item.width);
@@ -101,7 +106,7 @@ export function GalleryView({ content, preview = false, onBack }: {
         const w = cardWidth + (fullWidth - cardWidth) * b;
         const h = cardHeight + (fullHeight - cardHeight) * b;
         const dim = focused !== null && focused !== index ? 0.12 : 1;
-        const opacity = (0.55 + 0.45 * front) * grow * dim + b * (1 - (0.55 + 0.45 * front) * grow * dim);
+        const opacity = (0.25 + 0.75 * front) * grow * dim + b * (1 - (0.25 + 0.75 * front) * grow * dim);
 
         card.style.width = `${w}px`;
         card.style.height = `${h}px`;
@@ -122,22 +127,27 @@ export function GalleryView({ content, preview = false, onBack }: {
     const down = (event: PointerEvent) => {
       m.dragging = true;
       m.lastX = event.clientX;
+      m.lastY = event.clientY;
       m.moved = 0;
     };
     const move = (event: PointerEvent) => {
       if (!m.dragging || focusRef.current !== null) return;
       const dx = event.clientX - m.lastX;
+      const dy = event.clientY - m.lastY;
       m.lastX = event.clientX;
-      m.moved += Math.abs(dx);
-      m.angle += dx * 0.004;
-      m.velocity = dx * 0.25;
+      m.lastY = event.clientY;
+      m.moved += Math.abs(dx) + Math.abs(dy);
+      m.yaw += dx * 0.005;
+      m.pitch = Math.max(-1.3, Math.min(1.3, m.pitch - dy * 0.005));
+      m.vx = dx * 0.3;
+      m.vy = -dy * 0.3;
     };
     const up = () => {
       m.dragging = false;
     };
     const wheel = (event: WheelEvent) => {
       if (focusRef.current !== null) return;
-      m.velocity += (Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX) * 0.004;
+      m.zoom = Math.max(0.6, Math.min(1.8, m.zoom - event.deltaY * 0.001));
     };
     node.addEventListener("pointerdown", down);
     window.addEventListener("pointermove", move);
