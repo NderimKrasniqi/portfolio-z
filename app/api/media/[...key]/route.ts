@@ -23,7 +23,7 @@ export async function GET(
       const file = await readFile(resolve(".local/media", key));
       return new Response(file, {
         headers: {
-          "Content-Type": "image/webp",
+          "Content-Type": key.endsWith(".mp4") ? "video/mp4" : "image/webp",
           "Cache-Control": "private, max-age=300",
         },
       });
