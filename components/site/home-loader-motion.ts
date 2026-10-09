@@ -143,7 +143,7 @@ export function runHomeLoaderTransition({
 
       const introUi = [
         ...stage.querySelectorAll<HTMLElement>(
-          ".desktop-main-nav,.mobile-menu-toggle,.socials",
+          ".mobile-menu-toggle",
         ),
       ];
 

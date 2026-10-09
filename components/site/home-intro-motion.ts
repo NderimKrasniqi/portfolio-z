@@ -2,30 +2,29 @@
 
 import { loadGsap, prefersReducedMotion } from "./motion";
 
-/*
- * Home intro, after the preloader:
- * 1. a 3×3 picture grid whose pictures change quickly, between two project lists;
- * 2. the grid collapses: the centre picture grows into the centre card while
- *    the other cells and the lists fade away;
- * 3. the side cards, the copy and the name slider appear.
- */
 export function runHomeIntro({
+  stage,
   grid,
   cells,
   lists,
   center,
+  sides,
   reveal,
   pool,
   finalSrc,
+  paper,
   onDone,
 }: {
+  stage: HTMLElement;
   grid: HTMLElement;
   cells: HTMLImageElement[];
   lists: HTMLElement[];
   center: HTMLElement;
+  sides: HTMLElement[];
   reveal: HTMLElement[];
   pool: string[];
   finalSrc: string;
+  paper: string;
   onDone: () => void;
 }) {
   let cancelled = false;
@@ -44,7 +43,6 @@ export function runHomeIntro({
     };
   }
 
-  // preload the small pictures, so a cell is never blank while it changes
   pool.forEach((src) => {
     const image = new Image();
     image.src = src;
@@ -56,69 +54,53 @@ export function runHomeIntro({
     if (cancelled || !gsap) return finish();
 
     gsap.set(grid, { autoAlpha: 1 });
-    gsap.set(reveal, { autoAlpha: 0 });
-    gsap.fromTo(cells, { autoAlpha: 0, scale: 0.92 }, { autoAlpha: 1, scale: 1, duration: 0.4, stagger: 0.035, ease: "power2.out" });
-    gsap.fromTo(lists, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, delay: 0.15 });
+    gsap.set([...reveal, ...sides], { autoAlpha: 0 });
+    gsap.fromTo(cells, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25, stagger: 0.03 });
+    gsap.fromTo(lists, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, delay: 0.1 });
 
-    // 1. pictures change, slowing down before the collapse
     let tick = 0;
-    const steps = 10;
+    const steps = 9;
     const swap = () => {
       if (cancelled) return;
       cells.forEach((cell, index) => {
         cell.src = pool[(tick * 5 + index * 7) % pool.length];
       });
       tick++;
-      if (tick < steps) {
-        timers.push(window.setTimeout(swap, 120 + tick * 12));
-      } else {
+      if (tick < steps) timers.push(window.setTimeout(swap, 150 + tick * 10));
+      else {
         cells[4].src = finalSrc;
-        timers.push(window.setTimeout(collapse, 380));
+        timers.push(window.setTimeout(collapse, 300));
       }
     };
-    timers.push(window.setTimeout(swap, 300));
+    timers.push(window.setTimeout(swap, 250));
 
-    // 2. the centre cell grows into the centre card
     const collapse = () => {
       if (cancelled) return;
-      const from = cells[4].getBoundingClientRect();
-      const to = center.getBoundingClientRect();
       const others = cells.filter((_, index) => index !== 4);
-      const timeline = gsap.timeline({ onComplete: finish });
+      const cell = cells[4];
+      const from = cell.getBoundingClientRect();
+      gsap.set(cell, { position: "fixed", left: from.left, top: from.top, width: from.width, height: from.height, margin: 0, zIndex: 10 });
+      const tall = from.width * 1.08;
+      const timeline = gsap.timeline({
+        onComplete: () => {
+          gsap.set(stage, { clearProps: "backgroundColor" });
+          finish();
+        },
+      });
       timeline
-        .to(lists, { autoAlpha: 0, duration: 0.3, ease: "power1.out" }, 0)
-        .to(
-          others,
-          {
-            x: (index: number) => {
-              const box = others[index].getBoundingClientRect();
-              return from.left + from.width / 2 - (box.left + box.width / 2);
-            },
-            y: (index: number) => {
-              const box = others[index].getBoundingClientRect();
-              return from.top + from.height / 2 - (box.top + box.height / 2);
-            },
-            autoAlpha: 0,
-            duration: 0.55,
-            ease: "power3.in",
-          },
-          0,
-        )
-        .to(
-          cells[4],
-          {
-            x: to.left - from.left,
-            y: to.top - from.top,
-            scaleX: to.width / from.width,
-            scaleY: to.height / from.height,
-            transformOrigin: "0 0",
-            duration: 0.85,
-            ease: "power4.inOut",
-          },
-          0.3,
-        )
-        .set(center, { autoAlpha: 1 })
-        .to(reveal, { autoAlpha: 1, duration: 0.6, stagger: 0.06, ease: "power2.out" });
+        .to(lists, { autoAlpha: 0, duration: 0.35 }, 0)
+        .to(others, { scaleY: 0.3, transformOrigin: "50% 0%", duration: 0.45, ease: "power2.in" }, 0)
+        .to(others, { scaleY: 0, autoAlpha: 0, duration: 0.3, ease: "power2.in" }, 0.45)
+        .to(cell, { top: from.top - (tall - from.height) / 2, height: tall, duration: 0.6, ease: "power3.inOut" }, 0.1)
+        .add(() => {
+          const to = center.getBoundingClientRect();
+          gsap.to(cell, { left: to.left, top: to.top, width: to.width, height: to.height, duration: 0.95, ease: "power4.inOut" });
+        }, 1.05)
+        .to(stage, { backgroundColor: paper, duration: 0.5, ease: "power1.inOut" }, 1.1)
+        .set(center, { autoAlpha: 1 }, 2.0)
+        .set(cell, { autoAlpha: 0 }, 2.0)
+        .fromTo(sides, { x: 0, rotationY: 0, rotation: 0, scale: 0.9, autoAlpha: 1 }, { x: (index: number) => Number(sides[index].dataset.x), rotationY: (index: number) => Number(sides[index].dataset.ry), rotation: (index: number) => Number(sides[index].dataset.rz), scale: 0.86, duration: 0.8, ease: "power3.out", immediateRender: false }, 2.15)
+        .to(reveal, { autoAlpha: 1, duration: 0.6, stagger: 0.05, ease: "power2.out" }, 2.4);
     };
   });
 

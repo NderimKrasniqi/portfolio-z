@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("home cards advance and a gallery picture opens and closes", async ({ page }) => {
   await page.goto("/en");
 
-  const footer = page.locator(".hx-footer");
+  const footer = page.locator(".hx-footer__count");
   await expect(page.locator(".hx-card.is-center")).toBeVisible();
   await expect(footer).toContainText("01");
 

@@ -13,18 +13,15 @@ import { loadGsap, prefersReducedMotion } from "./motion";
 
 type Item = Content["media"][number];
 
-// Keeps the position and skips the intro while the user visits other sections.
 let lastHomeIndex = 0;
 let introPlayed = false;
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
-/* Height of the centre card; it keeps the 3:4 shape of the photos. */
 export function cardHeight(mobile: boolean) {
   return mobile ? Math.min(window.innerHeight * 0.46, 380) : Math.min(window.innerHeight * 0.52, 470);
 }
 
-/* Card slots: -1 left, 0 centre, 1 right; further cards wait behind the centre. */
 function slotStyle(offset: number, mobile: boolean) {
   const side = Math.sign(offset);
   const width = cardHeight(mobile) * 0.79;
@@ -53,6 +50,15 @@ export function HomeView({ content, base, preview = false }: { content: Content;
   const track = useRef<HTMLDivElement>(null);
   const titles = useRef<(HTMLButtonElement | null)[]>([]);
   const lock = useRef(false);
+  const [clock, setClock] = useState("");
+
+  useEffect(() => {
+    const update = () =>
+      setClock(new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "Europe/Rome" }).format(new Date()));
+    update();
+    const timer = window.setInterval(update, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
   const { musicOpen, musicPlaying, musicFrame, toggleMusic, handleMusicFrameLoad } = useHomeMusic();
 
   const go = useCallback(
@@ -75,7 +81,6 @@ export function HomeView({ content, base, preview = false }: { content: Content;
     [count, current],
   );
 
-  // preloader: cream page, signature, fade-out; the grid fades in after it
   useLayoutEffect(
     () =>
       runHomeLoaderTransition({
@@ -89,12 +94,16 @@ export function HomeView({ content, base, preview = false }: { content: Content;
     [preview],
   );
 
-  // intro: changing grid, then the collapse into the cards
   useLayoutEffect(() => {
     if (loading || phase !== "intro" || !grid.current) return;
     const center = cards.current[current];
     if (!center) return;
+    const node = stage.current;
+    if (!node) return;
     return runHomeIntro({
+      stage: node,
+      paper: getComputedStyle(node).getPropertyValue("--paper").trim() || "#f6f2ee",
+      sides: cards.current.filter((card, index): card is HTMLButtonElement => Boolean(card) && Math.abs(offsetOf(index)) === 1),
       grid: grid.current,
       cells: cells.current.filter((cell): cell is HTMLImageElement => Boolean(cell)),
       lists: lists.current.filter((list): list is HTMLDivElement => Boolean(list)),
@@ -107,11 +116,8 @@ export function HomeView({ content, base, preview = false }: { content: Content;
         setPhase("cards");
       },
     });
-    // the intro runs once, with the position it started from
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, phase]);
 
-  // cards and slider follow the current item
   useLayoutEffect(() => {
     let cancelled = false;
     const mobile = window.innerWidth <= 800;
@@ -122,7 +128,9 @@ export function HomeView({ content, base, preview = false }: { content: Content;
         if (!card) return;
         const offset = offsetOf(index);
         const vars = slotStyle(offset, mobile);
-        // during the intro the centre card stays hidden until the grid has collapsed
+        card.dataset.x = String(vars.x);
+        card.dataset.ry = String(vars.rotationY);
+        card.dataset.rz = String(vars.rotation);
         if (phase === "intro" && Math.abs(offset) <= 1) delete (vars as { autoAlpha?: number }).autoAlpha;
         if (instant) gsap.set(card, vars);
         else gsap.to(card, { ...vars, duration: 0.8, ease: "power3.out", overwrite: "auto" });
@@ -139,7 +147,6 @@ export function HomeView({ content, base, preview = false }: { content: Content;
     };
   }, [current, offsetOf, phase]);
 
-  // play only the centre card's video
   useEffect(() => {
     cards.current.forEach((card, index) => {
       const video = card?.querySelector("video");
@@ -149,7 +156,6 @@ export function HomeView({ content, base, preview = false }: { content: Content;
     });
   }, [current, phase]);
 
-  // wheel, keys and swipe move one card at a time
   useEffect(() => {
     const node = stage.current;
     if (!node || phase !== "cards") return;
@@ -203,12 +209,26 @@ export function HomeView({ content, base, preview = false }: { content: Content;
         </div>
       )}
       <main id="stage" ref={stage} className="stage hx" data-phase={phase}>
-        <nav className="desktop-main-nav" aria-label="Primary navigation">
-          <SiteLink className="gallery-open" href={`${base}/gallery`}>{content.nav.gallery}</SiteLink>
-          <SiteLink className="about-open" href={`${base}/about`}>{content.nav.about}</SiteLink>
-          <SiteLink className="shop-open" href={`${base}/shop`}>{content.nav.shop}</SiteLink>
-          <SiteLink className="contact-open" href={`${base}/contact`}>{content.nav.contact}</SiteLink>
-        </nav>
+        <header className="hx-head" ref={addReveal}>
+          <p className="hx-head__place">
+            NAPLES, (IT) <span aria-hidden="true">{"//"}</span> <span className="hx-head__dot" aria-hidden="true" /> {clock}
+          </p>
+          <SiteLink className="hx-head__link" href={`${base}/gallery`}>
+            {content.nav.gallery}
+            <sup>{pad(content.media.length)}</sup>
+          </SiteLink>
+          <p className="hx-head__logo">
+            <span>ZEUDI</span>
+            <span>DI PALMA</span>
+          </p>
+          <SiteLink className="hx-head__link" href={`${base}/shop`}>
+            {content.nav.shop}
+          </SiteLink>
+          <nav className="hx-head__nav" aria-label="Primary navigation">
+            <SiteLink href={`${base}/about`}>{content.nav.about}</SiteLink>
+            <SiteLink href={`${base}/contact`}>{content.nav.contact}</SiteLink>
+          </nav>
+        </header>
         <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} aria-controls="mobileNavPanel" onClick={() => setMenuOpen(!menuOpen)}>
           <span className="mobile-menu-toggle__icon" aria-hidden="true" />
         </button>
@@ -220,9 +240,7 @@ export function HomeView({ content, base, preview = false }: { content: Content;
             <SiteLink className="mobile-nav-link" href={`${base}/contact`}>{content.nav.contact}</SiteLink>
           </div>
         </nav>
-        <SocialLinks content={content} className="socials" />
 
-        {/* 1. the 3×3 grid between two project lists */}
         <div ref={grid} className="hx-grid" aria-hidden="true">
           <div ref={(element) => { lists.current[0] = element; }} className="hx-list hx-list--left">
             <p className="hx-list__head"><span>PROJECT</span><span>CATEGORY</span></p>
@@ -250,7 +268,6 @@ export function HomeView({ content, base, preview = false }: { content: Content;
           </div>
         </div>
 
-        {/* 2. three tilted cards */}
         <div className="hx-copy hx-copy--left" ref={addReveal}>
           <p><strong>{content.name.replace(/\.$/, "")}.</strong></p>
           <p>{item?.category}</p>
@@ -268,7 +285,6 @@ export function HomeView({ content, base, preview = false }: { content: Content;
                 key={entry.id}
                 ref={(element) => {
                   cards.current[index] = element;
-                  if (Math.abs(offset) === 1) addReveal(element);
                 }}
                 type="button"
                 className={`hx-card${offset === 0 ? " is-center" : ""}`}
@@ -286,7 +302,6 @@ export function HomeView({ content, base, preview = false }: { content: Content;
           })}
         </div>
 
-        {/* name slider on a ruler, and the counter */}
         <div className="hx-slider" ref={addReveal}>
           <div ref={track} className="hx-slider__track">
             {items.map((entry, index) => (
@@ -303,13 +318,19 @@ export function HomeView({ content, base, preview = false }: { content: Content;
             ))}
           </div>
         </div>
-        <div className="hx-footer" ref={addReveal}>
-          <button type="button" onClick={() => step(-1)} aria-label="Previous work">◂◂</button>
-          <span>{pad(current + 1)}</span>
-          <span aria-hidden="true">{"//"}</span>
-          <span>{pad(count)}</span>
-          <button type="button" onClick={() => step(1)} aria-label="Next work">▸▸</button>
-        </div>
+        <footer className="hx-footer" ref={addReveal}>
+          <div className="hx-footer__left">
+            <span>©{new Date().getFullYear()}</span>
+            <SocialLinks content={content} className="socials hx-footer__socials" />
+          </div>
+          <p className="hx-footer__count">
+            <button type="button" onClick={() => step(-1)} aria-label="Previous work">◂◂</button>
+            <span>{pad(current + 1)}</span>
+            <span aria-hidden="true">{"//"}</span>
+            <span>{pad(count)}</span>
+            <button type="button" onClick={() => step(1)} aria-label="Next work">▸▸</button>
+          </p>
+        </footer>
       </main>
       <button id="homeMusicToggle" className={`home-music-toggle${musicPlaying ? "" : " is-muted"}`} type="button" aria-label={musicPlaying ? "Pause Nuvole Bianche" : "Play Nuvole Bianche"} aria-pressed={musicPlaying} aria-expanded={musicOpen} aria-controls="homeMusicPlayer" title="Nuvole Bianche — Ludovico Einaudi" onClick={toggleMusic}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
