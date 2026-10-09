@@ -3,11 +3,27 @@
 import {
   loadGsap,
   prefersReducedMotion,
+  restingOpacity,
 } from "./motion";
+
+// GSAP interpolates clip-path only between values with the same number of parts.
+const OPEN_CLIP = "inset(0% 0% 0% 0%)";
+
+// On a direct load the server HTML is already painted. Hiding it again to play
+// an enter animation would flash, so enter animations wait for a client navigation.
+let clientNavigated = false;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", () => {
+    clientNavigated = true;
+  });
+}
 
 export function runFrameExitTransition(
   onComplete: () => void,
 ) {
+  clientNavigated = true;
+
   if (prefersReducedMotion()) {
     onComplete();
     return;
@@ -53,7 +69,7 @@ export function runFrameExitTransition(
           "about-panel",
         )
       ) {
-        timeline.to(target, {
+        timeline.fromTo(target, { clipPath: OPEN_CLIP }, {
           clipPath:
             "inset(0 100% 0 0)",
           duration: 0.58,
@@ -64,7 +80,7 @@ export function runFrameExitTransition(
           "contact-panel",
         )
       ) {
-        timeline.to(target, {
+        timeline.fromTo(target, { clipPath: OPEN_CLIP }, {
           clipPath:
             "inset(100% 0 0 0)",
           duration: 0.56,
@@ -75,7 +91,7 @@ export function runFrameExitTransition(
           "shop-panel",
         )
       ) {
-        timeline.to(target, {
+        timeline.fromTo(target, { clipPath: OPEN_CLIP }, {
           clipPath:
             "inset(0 0 0 100%)",
           duration: 0.56,
@@ -100,7 +116,8 @@ export function runFrameEnterTransition() {
 
   if (
     !root ||
-    prefersReducedMotion()
+    prefersReducedMotion() ||
+    !clientNavigated
   ) {
     return () => {};
   }
@@ -175,6 +192,8 @@ export function runFrameEnterTransition() {
           Boolean(piece),
       );
 
+      pieces.forEach(restingOpacity);
+
       gsap.set(pieces, {
         opacity: 0,
       });
@@ -203,7 +222,8 @@ export function runFrameEnterTransition() {
         .to(
           close,
           {
-            opacity: 1,
+            opacity: (_index: number, target: Element) =>
+              restingOpacity(target),
             duration: 0.22,
             ease: "power3.out",
           },
@@ -212,7 +232,8 @@ export function runFrameEnterTransition() {
         .to(
           portrait,
           {
-            opacity: 1,
+            opacity: (_index: number, target: Element) =>
+              restingOpacity(target),
             duration: 0.46,
             ease: "power2.out",
           },
@@ -221,7 +242,8 @@ export function runFrameEnterTransition() {
         .to(
           intro,
           {
-            opacity: 1,
+            opacity: (_index: number, target: Element) =>
+              restingOpacity(target),
             y: 0,
             duration: 0.46,
             stagger: 0.035,
@@ -262,7 +284,7 @@ export function runFrameEnterTransition() {
       });
 
       gsap.to(panel, {
-        clipPath: "inset(0)",
+        clipPath: OPEN_CLIP,
         duration: 0.72,
         ease: "power4.inOut",
       });

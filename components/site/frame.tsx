@@ -72,12 +72,12 @@ export function Frame({ content, locale, locales, section, preview = false }: {
 
   return (
     <NavigationProvider navigate={navigate}>
-    <div className={`portfolio zeudi-preload-complete${section !== "home" ? " zeudi-subpage-open" : ""}`}>
+    <div className="portfolio">
       <LocaleDocument locale={locale} />
 
       <a className="reference-skip" href={section === "home" ? "#stage" : "#main"}>Skip to content</a>
       {preview && <div className="reference-preview-banner">Draft preview · <Link href="/admin">Return to editor</Link></div>}
-      <HomeView content={content} base={base} active={section === "home"} preview={preview} />
+      {section === "home" && <HomeView content={content} base={base} preview={preview} />}
       {section === "home" && (
         <div key={`${locale}-${section}`} className={`language-picker${languageOpen ? " is-open" : ""}`} ref={languagePicker}>
           <button
@@ -115,7 +115,7 @@ export function Frame({ content, locale, locales, section, preview = false }: {
       )}
       {section === "gallery" && <GalleryView content={content} preview={preview} base={base} onBack={goHome} />}
       {section === "about" && <AboutView content={content} preview={preview} onBack={goHome} />}
-      {section === "shop" && <ShopView content={content} preview={preview} onBack={goHome} />}
+      {section === "shop" && <ShopView content={content} base={base} preview={preview} onBack={goHome} />}
       {section === "contact" && <ContactView content={content} onBack={goHome} />}
 
     </div>

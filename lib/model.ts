@@ -88,6 +88,3 @@ export function parseContent(input: unknown): Content {
 export function isLocale(s: string): s is Locale {
   return locales.includes(s as Locale);
 }
-export function referencedMedia(content: Content) {
-  return new Set(content.media.map((m) => m.id));
-}

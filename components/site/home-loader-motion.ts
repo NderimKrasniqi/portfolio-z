@@ -5,8 +5,14 @@ import {
   prefersReducedMotion,
 } from "./motion";
 
+/*
+ * Preloader: a cream page, the signature drawn stroke by stroke, then a
+ * slow fade-out. The signature's 9 strokes take about 2.6s at this speed.
+ */
+const DRAW_SPEED = 0.55;
+const STROKE_SCALE = 1.45;
+
 export function runHomeLoaderTransition({
-  active,
   preview,
   stage,
   loader,
@@ -14,7 +20,6 @@ export function runHomeLoaderTransition({
   front,
   onDone,
 }: {
-  active: boolean;
   preview: boolean;
   stage: HTMLElement | null;
   loader: HTMLDivElement | null;
@@ -23,7 +28,6 @@ export function runHomeLoaderTransition({
   onDone: () => void;
 }) {
   if (
-    !active ||
     preview ||
     !loader ||
     !stage ||
@@ -32,7 +36,7 @@ export function runHomeLoaderTransition({
     ) ||
     prefersReducedMotion()
   ) {
-    if (active && stage) {
+    if (stage) {
       stage.style.visibility = "visible";
       stage.style.opacity = "1";
     }
@@ -139,7 +143,7 @@ export function runHomeLoaderTransition({
 
       const introUi = [
         ...stage.querySelectorAll<HTMLElement>(
-          ".identity,.desktop-main-nav,.mobile-menu-toggle,.meta,.socials,.browse,.filmstrip",
+          ".mobile-menu-toggle",
         ),
       ];
 
@@ -178,6 +182,10 @@ export function runHomeLoaderTransition({
           strokeDashoffset:
             length + 12,
           strokeLinecap: "round",
+          // the signature is shown small, so its strokes are thickened
+          // to keep the bold pen weight of the reference
+          strokeWidth:
+            Number(path.getAttribute("stroke-width") || 26) * STROKE_SCALE,
         });
       });
 
@@ -197,7 +205,7 @@ export function runHomeLoaderTransition({
         const start =
           Number(
             path.dataset.delay || 0,
-          ) * 0.72;
+          ) * DRAW_SPEED;
 
         write
           .set(
@@ -213,16 +221,15 @@ export function runHomeLoaderTransition({
                 Number(
                   path.dataset.duration ||
                     0.5,
-                ) * 0.72,
+                ) * DRAW_SPEED,
               ease: "none",
             },
             start,
           );
       });
 
-      // Match the original HTML choreography: let the completed
-      // signature breathe briefly before the page reveal begins.
-      write.to({}, { duration: 0.25 });
+      // Like the reference: the finished signature rests for a moment.
+      write.to({}, { duration: 0.45 });
 
       await new Promise<void>(
         (resolve) =>
@@ -254,8 +261,8 @@ export function runHomeLoaderTransition({
           ),
           {
             opacity: 0,
-            duration: 0.26,
-            ease: "power1.inOut",
+            duration: 0.6,
+            ease: "power2.inOut",
           },
           0,
         )
@@ -266,7 +273,8 @@ export function runHomeLoaderTransition({
             duration: 0.58,
             ease: "power2.inOut",
           },
-          0.04,
+          // the cream page leaves only once the signature has faded
+          0.55,
         )
         .to(
           media,
@@ -275,7 +283,7 @@ export function runHomeLoaderTransition({
             duration: 0.62,
             ease: "power2.out",
           },
-          0.1,
+          0.6,
         )
         .to(
           introUi,
@@ -285,7 +293,7 @@ export function runHomeLoaderTransition({
             stagger: 0.045,
             ease: "power2.out",
           },
-          0.16,
+          0.66,
         );
 
       await new Promise<void>(

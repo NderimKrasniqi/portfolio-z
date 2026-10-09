@@ -8,9 +8,6 @@ export const localReference =
   process.env.LOCAL_REFERENCE_PREVIEW === "true" &&
   process.env.SITE_MODE !== "production";
 // Locale/publication visibility stays live so published language changes apply immediately.
-export async function getVisibility() {
-  return getLiveVisibility();
-}
 export async function getLiveVisibility() {
   if (localReference)
     return {

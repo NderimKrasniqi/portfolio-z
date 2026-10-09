@@ -1,0 +1,277 @@
+/* About: story panel, chapters and portrait. */
+.portfolio .about-close::before{content:"";position:absolute;left:50%;top:50%;width:max(40px,100%);height:max(40px,100%);transform:translate(-50%,-50%)}
+.portfolio .about-close:focus-visible{outline:1px solid currentColor;outline-offset:5px}
+.portfolio .about-panel{position:fixed;inset:0;z-index:var(--z-panel);background:var(--paper);color:#080808;visibility:hidden;pointer-events:none;opacity:1;clip-path:inset(0 100% 0 0);-webkit-clip-path:inset(0 100% 0 0);will-change:clip-path;isolation:isolate}
+.portfolio .about-panel.is-ready{pointer-events:auto}
+.portfolio .about-close{position:fixed;right:var(--side);top:24px;z-index:var(--z-panel-chrome);color:#080808;font-size:8px;line-height:1;letter-spacing:.21em;text-transform:uppercase;cursor:pointer}
+.portfolio .about-sheet{overflow:auto}
+.portfolio .about-inner{width:min(1120px,calc(100vw - (var(--side) * 2)));margin:0 auto;display:grid;grid-template-columns:minmax(260px,430px) minmax(280px,470px);gap:clamp(54px,9vw,138px);align-items:center;justify-content:center}
+.portfolio .about-body p{margin:0 0 15px}
+.portfolio .about-location{opacity:.48}
+@media (max-width:800px){
+.portfolio .about-close{right:16px;top:17px}
+.portfolio .about-inner{width:100%;grid-template-columns:1fr;grid-template-rows:auto auto;gap:24px;align-content:center}
+.portfolio .about-copy h2{margin-bottom:20px}
+}
+@media (max-width:520px){
+.portfolio .about-sheet{padding-bottom:16px}
+}
+@media (prefers-reduced-motion:reduce){
+.portfolio .about-panel{clip-path:none!important;-webkit-clip-path:none!important}
+.portfolio .about-close,
+.portfolio .about-copy,
+.portfolio .about-portrait{transform:none!important}
+}
+.portfolio .about-location{opacity:1}
+.portfolio .about-panel{overflow:hidden}
+.portfolio .about-sheet{height:100%!important;overflow-y:auto;overflow-x:hidden;padding:0!important;display:block!important;align-items:initial;overscroll-behavior:contain;scrollbar-width:none}
+.portfolio .about-sheet::-webkit-scrollbar{display:none}
+.portfolio .about-story-shell{width:min(1280px,calc(100vw - (var(--side) * 2)))!important;min-height:100%;margin:0 auto!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(330px,40vw);gap:clamp(64px,8vw,128px);align-items:start;justify-content:stretch}
+.portfolio .about-copy{max-width:none!important;padding:0 0 15vh!important;min-width:0}
+.portfolio .about-intro{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;max-width:680px;padding:84px 0 72px}
+.portfolio .about-eyebrow{margin:0 0 19px!important;font-size:8px;letter-spacing:.18em;text-transform:uppercase;opacity:.46}
+.portfolio .about-copy h2{margin:0!important;font-size:clamp(66px,7.6vw,116px);line-height:.82;letter-spacing:-.065em;font-weight:400;text-transform:uppercase}
+.portfolio .about-lead{margin:36px 0 0;max-width:560px;font-size:clamp(18px,1.75vw,27px);line-height:1.08;letter-spacing:-.035em;font-weight:400}
+.portfolio .about-location{margin-top:34px!important;padding-top:0!important;border-top:0;font-size:8px;letter-spacing:.17em;text-transform:uppercase}
+.portfolio .about-scroll-hint{margin-top:46px;display:flex;align-items:center;gap:10px;font-size:7px;letter-spacing:.16em;text-transform:uppercase;opacity:.36}
+.portfolio .about-scroll-hint span{display:block;width:30px;height:1px;background:#080808;transform-origin:left center}
+.portfolio .about-body{max-width:650px!important;font-size:inherit;line-height:inherit;letter-spacing:normal}
+.portfolio .about-chapter{min-height:66vh;padding:13vh 0 12vh;border-top:1px solid rgba(8,8,8,.13)}
+.portfolio .about-chapter-index{padding-top:7px;font-size:8px;letter-spacing:.16em;font-variant-numeric:tabular-nums;opacity:.38;will-change:transform,opacity}
+.portfolio .about-chapter-copy{max-width:555px}
+.portfolio .about-chapter-kicker{margin:0 0 12px!important;font-size:8px;letter-spacing:.17em;text-transform:uppercase;opacity:.42;will-change:transform,opacity}
+.portfolio .about-chapter h3{margin:0 0 25px;font-size:clamp(34px,3.8vw,62px);font-weight:400;line-height:.94;letter-spacing:-.05em;max-width:540px;will-change:transform,opacity}
+.portfolio .about-chapter-copy>p:last-child{margin:0!important;font-size:clamp(13px,1.08vw,15px);line-height:1.67;letter-spacing:-.012em;max-width:525px;will-change:transform,opacity}
+.portfolio .about-visual{position:sticky;top:0;height:100vh;align-self:start;display:flex;flex-direction:column;justify-content:center;padding:64px 0 48px;min-width:0}
+.portfolio .about-portrait{margin:0!important;width:min(36vw,500px)!important;height:min(70vh,690px)!important;justify-self:auto;overflow:hidden;background:#f2f2f2;transform-origin:center center}
+.portfolio .about-portrait img{width:100%;height:100%;display:block;object-fit:cover;object-position:center 40%;will-change:transform}
+.portfolio .about-portrait-meta{width:min(36vw,500px);display:flex;justify-content:space-between;align-items:center;margin-top:11px;font-size:7px;letter-spacing:.15em;text-transform:uppercase;opacity:.46}
+.portfolio .about-story-progress{display:flex;gap:4px;font-variant-numeric:tabular-nums}
+.portfolio .about-story-progress__now{opacity:1}
+.portfolio .about-story-progress__slash{opacity:.32}
+.portfolio .about-progress-track{position:absolute;top:15vh;width:1px;height:70vh;background:rgba(8,8,8,.10);overflow:hidden}
+.portfolio .about-progress-track span{position:absolute;background:#080808;transform-origin:top center;will-change:transform}
+@media (max-width:900px){
+.portfolio .about-story-shell{grid-template-columns:minmax(0,1fr) minmax(280px,36vw)!important;gap:46px}
+.portfolio .about-copy h2{font-size:clamp(58px,8vw,88px)}
+.portfolio .about-lead{font-size:18px}
+.portfolio .about-chapter h3{font-size:clamp(32px,4.4vw,48px)}
+}
+@media (max-width:800px){
+.portfolio .about-story-shell{grid-template-columns:1fr!important}
+.portfolio .about-visual{grid-row:1}
+.portfolio .about-copy{grid-row:2;padding:0 0 70px!important}
+.portfolio .about-intro{max-width:560px}
+}
+@media (max-width:520px){
+.portfolio .about-sheet{padding:0 16px!important}
+.portfolio .about-visual{padding-top:62px}
+.portfolio .about-portrait{width:76vw!important;height:min(42vh,360px)!important}
+.portfolio .about-portrait-meta{width:76vw}
+.portfolio .about-intro{padding-top:46px}
+.portfolio .about-chapter{padding:60px 0}
+.portfolio .about-scroll-hint{margin-top:28px}
+}
+@media (prefers-reduced-motion:reduce){
+.portfolio .about-chapter-index,
+.portfolio .about-chapter-kicker,
+.portfolio .about-chapter h3,
+.portfolio .about-chapter-copy>p:last-child,
+.portfolio .about-portrait img,
+.portfolio .about-progress-track span{transform:none!important;opacity:1!important}
+}
+.portfolio .about-close.unified-back{position:fixed;display:flex!important;align-items:center;gap:7px;padding:0!important;border:0!important;background:transparent;font-size:8px;line-height:1;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;opacity:1;z-index:var(--z-panel-chrome)!important}
+.portfolio .about-close.unified-back{color:#080808;-webkit-text-fill-color:#080808}
+.portfolio .about-close.unified-back::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.portfolio .about-close.unified-back:hover{opacity:.62!important}
+.portfolio .about-close.unified-back:focus-visible{outline:1px solid #080808;outline-offset:5px}
+.portfolio .about-close.unified-back{left:auto!important;right:var(--side)!important;top:24px!important}
+.portfolio .about-close.unified-back::before{width:calc(100% + 28px)!important;height:44px!important}
+.portfolio .about-panel{height:100dvh;min-height:100dvh}
+@media (max-width:800px){
+.portfolio .about-close.unified-back{left:auto!important;top:max(18px,env(safe-area-inset-top))!important;font-size:7px;gap:6px;letter-spacing:.17em}
+.portfolio .about-panel{overflow:hidden}
+.portfolio .about-sheet{height:100dvh!important;padding:0 max(18px,env(safe-area-inset-right)) 0 max(18px,env(safe-area-inset-left))!important;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+.portfolio .about-story-shell{width:100%!important;display:flex!important;flex-direction:column;gap:0;min-height:100dvh!important}
+.portfolio .about-copy{display:contents!important}
+.portfolio .about-intro{order:1;width:100%!important;min-height:auto!important;padding:max(98px,calc(env(safe-area-inset-top) + 82px)) 0 54px!important}
+.portfolio .about-eyebrow{margin-bottom:15px!important;font-size:7px}
+.portfolio .about-copy h2{font-size:clamp(50px,15vw,70px);line-height:.84;letter-spacing:-.06em}
+.portfolio .about-lead{max-width:92%!important;margin-top:27px!important;font-size:clamp(17px,4.8vw,21px);line-height:1.13}
+.portfolio .about-location{margin-top:26px!important;font-size:7px}
+.portfolio .about-scroll-hint{margin-top:30px!important;font-size:6px;opacity:.32}
+.portfolio .about-visual{order:2;width:100%!important;padding:0 0 72px!important}
+.portfolio .about-portrait{width:min(78vw,330px)!important;height:auto!important;aspect-ratio:4/5}
+.portfolio .about-portrait img{object-position:center 38%}
+.portfolio .about-portrait-meta{width:min(78vw,330px)!important;margin-top:10px!important;font-size:6px}
+.portfolio .about-progress-track{display:none!important}
+.portfolio .about-body{order:3;padding-bottom:max(54px,env(safe-area-inset-bottom))!important}
+.portfolio .about-chapter{min-height:auto!important}
+.portfolio .about-chapter-index{padding-top:5px!important;font-size:7px}
+.portfolio .about-chapter-kicker{font-size:7px;margin-bottom:11px!important}
+.portfolio .about-chapter h3{margin-bottom:19px!important;font-size:clamp(30px,8.8vw,42px);line-height:.97;letter-spacing:-.045em}
+.portfolio .about-chapter-copy>p:last-child{font-size:13px;line-height:1.62;letter-spacing:-.008em}
+}
+@media (max-width:430px){
+.portfolio .about-intro{padding-top:max(90px,calc(env(safe-area-inset-top) + 76px))!important;padding-bottom:48px!important}
+.portfolio .about-lead{max-width:100%!important}
+.portfolio .about-visual{padding-bottom:62px!important}
+.portfolio .about-portrait,
+.portfolio .about-portrait-meta{width:80vw!important}
+.portfolio .about-chapter h3{font-size:clamp(29px,8.7vw,38px)}
+}
+@media (max-width:900px) and (max-height:560px) and (orientation:landscape){
+.portfolio .about-intro{padding-top:74px!important;padding-bottom:38px!important}
+.portfolio .about-copy h2{font-size:48px}
+.portfolio .about-lead{font-size:16px;max-width:72%!important}
+.portfolio .about-visual{align-items:flex-start;padding-bottom:48px!important}
+.portfolio .about-portrait{width:42vw!important;max-width:260px!important}
+.portfolio .about-portrait-meta{width:42vw!important;max-width:260px!important}
+.portfolio .about-chapter{padding:42px 0!important}
+}
+@media (max-width:800px){
+.portfolio .about-portrait{align-self:center;margin-left:auto!important;margin-right:auto!important}
+.portfolio .about-portrait-meta{margin-left:auto!important;margin-right:auto!important}
+}
+@media (max-width:900px) and (max-height:560px) and (orientation:landscape){
+.portfolio .about-portrait,
+.portfolio .about-portrait-meta{margin-left:auto!important;margin-right:auto!important}
+}
+@media (max-width:800px){
+.portfolio .about-visual{align-items:center}
+.portfolio .about-portrait,
+.portfolio .about-portrait-meta{margin-left:auto!important;margin-right:auto!important}
+.portfolio .about-body{width:100%!important;max-width:none!important}
+.portfolio .about-chapter{width:100%!important;padding:62px 0 66px!important}
+.portfolio .about-chapter-copy{width:100%!important;max-width:none!important}
+.portfolio .about-chapter h3{width:100%!important;max-width:none!important}
+.portfolio .about-chapter-copy>p:last-child{width:100%!important;max-width:none!important}
+}
+@media (max-width:430px){
+.portfolio .about-sheet{padding-left:18px!important;padding-right:18px!important}
+.portfolio .about-chapter{padding:56px 0 60px!important}
+}
+.portfolio .about-chapter{display:grid!important;grid-template-columns:48px minmax(0,1fr);gap:clamp(18px,3vw,36px);align-items:start}
+.portfolio .about-chapter-index{display:block!important;align-self:start;margin:0!important;padding:0!important;line-height:1}
+.portfolio .about-chapter-kicker{margin-top:0!important;line-height:1}
+@media (max-width:800px){
+.portfolio .about-chapter{display:grid!important;grid-template-columns:30px minmax(0,1fr)!important;gap:13px}
+.portfolio .about-chapter-index{margin:0!important;padding:0!important;line-height:1}
+.portfolio .about-chapter-kicker{line-height:1}
+}
+@media (max-width:430px){
+.portfolio .about-chapter{grid-template-columns:28px minmax(0,1fr)!important;gap:11px}
+}
+@media (min-width:901px){
+.portfolio .about-story-shell{width:calc(100vw - (var(--side) * 2))!important;max-width:none!important;margin-left:var(--side)!important;margin-right:var(--side)!important;gap:clamp(56px,6vw,116px)}
+.portfolio .about-copy{width:100%!important;max-width:680px!important}
+.portfolio .about-intro{width:100%!important;max-width:680px!important}
+.portfolio .about-body{width:100%!important;max-width:680px!important}
+.portfolio .about-chapter-copy{max-width:600px!important}
+.portfolio .about-chapter h3{max-width:590px!important}
+.portfolio .about-chapter-copy>p:last-child{max-width:575px!important}
+}
+@media (min-width:801px){
+.portfolio .about-story-shell{grid-template-columns:minmax(0,680px) minmax(360px,500px)!important;gap:clamp(48px,5vw,88px)}
+.portfolio .about-visual{align-items:flex-end;padding-right:clamp(42px,5.5vw,104px)!important;box-sizing:border-box}
+.portfolio .about-portrait,
+.portfolio .about-portrait-meta{width:min(30vw,500px)!important;margin-left:auto!important;margin-right:0!important}
+}
+@media (max-width:800px){
+.portfolio .about-close.unified-back{right:max(20px,env(safe-area-inset-right))!important}
+.portfolio .about-sheet{padding-left:20px!important;padding-right:20px!important}
+}
+@media (min-width:801px){
+.portfolio .about-visual{position:sticky;top:0!important;height:100dvh!important;align-self:start}
+}
+@media (max-width:800px){
+.portfolio .about-visual{position:relative;top:auto!important;height:auto!important}
+}
+@media (min-width:901px){
+.portfolio .about-story-shell{grid-template-columns:minmax(0,50%) minmax(350px,36%)!important;justify-content:start;column-gap:4%}
+.portfolio .about-copy,
+.portfolio .about-intro,
+.portfolio .about-body{max-width:650px!important}
+.portfolio .about-visual{width:100%!important;padding-right:0!important;align-items:flex-start}
+.portfolio .about-portrait,
+.portfolio .about-portrait-meta{width:min(34vw,540px)!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}
+}
+@media (min-width:801px) and (max-width:1180px){
+.portfolio .about-story-shell{column-gap:clamp(32px,4vw,54px)}
+}
+@media (min-width:801px) and (max-width:900px){
+.portfolio .about-story-shell{width:calc(100vw - (var(--side) * 2))!important;grid-template-columns:minmax(0,55%) minmax(0,36%)!important;column-gap:5%;justify-content:start}
+.portfolio .about-copy,
+.portfolio .about-intro,
+.portfolio .about-body{width:100%!important;max-width:none!important}
+.portfolio .about-intro{padding-top:78px!important;padding-bottom:64px!important}
+.portfolio .about-copy h2{font-size:clamp(58px,8vw,72px)}
+.portfolio .about-lead{font-size:17px;line-height:1.16}
+.portfolio .about-chapter{grid-template-columns:34px minmax(0,1fr)!important;gap:12px}
+.portfolio .about-chapter h3{font-size:clamp(31px,4.25vw,38px);line-height:.99}
+.portfolio .about-chapter-copy>p:last-child{font-size:12.5px;line-height:1.58}
+.portfolio .about-visual{width:100%!important;padding-right:0!important;align-items:flex-start}
+.portfolio .about-portrait,
+.portfolio .about-portrait-meta{width:100%!important;max-width:330px!important;margin-left:0!important;margin-right:0!important}
+}
+@media (min-width:901px) and (max-height:720px){
+.portfolio .about-intro{padding-top:68px!important;padding-bottom:54px!important}
+.portfolio .about-copy h2{font-size:clamp(58px,6.8vw,92px)}
+.portfolio .about-lead{margin-top:28px!important}
+.portfolio .about-portrait{height:min(66vh,610px)!important}
+.portfolio .about-progress-track{top:17vh!important;height:66vh!important}
+}
+@media (min-width:1900px){
+.portfolio .about-story-shell{max-width:1500px!important}
+.portfolio .about-copy,
+.portfolio .about-intro,
+.portfolio .about-body{max-width:690px!important}
+.portfolio .about-portrait,
+.portfolio .about-portrait-meta{width:min(30vw,570px)!important}
+}
+.portfolio .about-panel .about-sheet{position:relative;z-index:2}
+.portfolio .about-panel .about-close{z-index:4!important}
+@media (min-width:801px){
+.portfolio .about-story-shell{width:min(var(--site-max),calc(100vw - (var(--side) * 2)))!important;max-width:var(--site-max)!important;margin-left:auto!important;margin-right:auto!important}
+}
+@media (max-width:800px){
+.portfolio .about-sheet{padding-left:var(--side)!important;padding-right:var(--side)!important}
+}
+.portfolio .about-panel .about-eyebrow{opacity:.62}
+.portfolio .about-panel .about-scroll-hint{opacity:.58}
+.portfolio .about-panel .about-chapter-index{opacity:.58}
+.portfolio .about-panel .about-chapter-kicker{opacity:.62}
+.portfolio .about-panel .about-portrait-meta{opacity:.64!important}
+.portfolio .about-panel .about-story-progress__slash{opacity:.50!important}
+.portfolio .about-panel.open{visibility:visible;pointer-events:auto;clip-path:inset(0);-webkit-clip-path:inset(0);animation:reference-about-in .7s cubic-bezier(.22,1,.36,1) both}
+@keyframes reference-about-in{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+.portfolio .about-close{opacity:1}
+.portfolio .about-portrait{opacity:1}
+.portfolio .about-chapter{transition:opacity .65s ease,transform .65s ease}
+.portfolio .about-chapter:not(.is-visible){opacity:.48;transform:translateY(18px)}
+.portfolio .about-chapter.is-visible{opacity:1;transform:none}
+.portfolio .about-portrait img,
+.portfolio .about-portrait video{width:100%;height:100%;object-fit:cover}
+@media(prefers-reduced-motion:reduce){
+.portfolio .about-panel.open{animation:none!important}
+.portfolio .about-chapter:not(.is-visible){opacity:1;transform:none}
+}
+.portfolio.motion-gsap .about-panel.open{animation:none!important}
+/* The public panels are driven by one GSAP clock. Browser CSS transitions on
+   the same clip path make each frame chase the previous one and create a
+   visible hitch on entry/exit. Keep the CSS animation as the no-JS fallback. */
+.portfolio.motion-gsap .about-panel{transition:none!important}
+/* Chapter reveals are also driven by the scroll clock. Leaving the fallback
+   transition active makes the text chase the current scroll position and
+   produces the same delayed feeling as the portrait/progress mismatch. */
+.portfolio.motion-gsap .about-chapter{transition:none}
+/* About uses a real height fill, matching the reference scroll track. The
+   inline height is updated once per animation frame by AboutView. */
+.portfolio .about-progress-track span{inset:0 0 auto 0!important;width:auto!important;height:0;transform:none!important}
+/* Leave a little breathing room between the portrait and the progress rule. */
+.portfolio .about-progress-track{right:clamp(-32px,-2.4vw,-22px)!important}
+@media (max-width:800px){
+.portfolio .about-progress-track{right:clamp(-24px,-4vw,-16px)!important}
+}
+.portfolio .about-panel{background-color:var(--paper);background-image:none}
+.portfolio .about-sheet{background-color:transparent;background-image:none}

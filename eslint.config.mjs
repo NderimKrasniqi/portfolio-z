@@ -6,4 +6,9 @@ export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypescript,
   globalIgnores(["convex/_generated", ".next", ".open-next", ".local"]),
+  {
+    // Images are pre-generated variants and next/image runs unoptimized on
+    // Cloudflare Workers, so <Image> would add nothing over <img>.
+    rules: { "@next/next/no-img-element": "off" },
+  },
 ]);

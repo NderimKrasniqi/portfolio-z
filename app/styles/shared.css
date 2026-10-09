@@ -1,0 +1,4 @@
+/* Rules that target elements in more than one view (Back buttons, shared labels). */
+.portfolio :is(
+  .language-picker__panel
+){background-color:var(--paper);background-image:none}

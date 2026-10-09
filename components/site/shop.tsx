@@ -3,90 +3,177 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import type { Content } from "@/lib/model";
-import { mediaUrl } from "./media";
+import { SiteLink } from "./navigation";
 import {
   loadGsap,
   prefersReducedMotion,
 } from "./motion";
+import { SHOP_ASSETS } from "./shop-assets";
+
+// 3D rack with cloth physics. Loaded on demand, only where it can run.
+const ShopRack3D = dynamic(() => import("./shop-rack-3d"), { ssr: false });
+
+const noSubscribe = () => () => {};
+
+/*
+ * WebGL2 is available and the visitor does not prefer reduced motion.
+ * React calls this on every render, so the WebGL test runs once and its
+ * context is released at once: browsers drop the oldest context (the
+ * rack's own) when too many are open.
+ */
+let webgl2Available: boolean | undefined;
+
+function canRun3d() {
+  if (prefersReducedMotion()) return false;
+  if (webgl2Available === undefined) {
+    try {
+      const context = document.createElement("canvas").getContext("webgl2");
+      webgl2Available = Boolean(context);
+      context?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch {
+      webgl2Available = false;
+    }
+  }
+  return webgl2Available;
+}
 
 type Product = Content["products"][number];
 
-const demoImages: Record<string, string> = {
-  "closet-01":
-    "https://images.unsplash.com/photo-1601663363857-2da8128c1917?auto=format&fit=crop&w=1600&q=82",
-  "closet-02":
-    "https://images.unsplash.com/photo-1771072426459-1ab467cd80f0?auto=format&fit=crop&w=1600&q=82",
-  "closet-03":
-    "https://images.unsplash.com/photo-1761646238225-6aa73c578344?auto=format&fit=crop&w=1600&q=82",
-  "closet-04":
-    "https://images.unsplash.com/photo-1661525244755-3dc7926c347a?auto=format&fit=crop&w=1600&q=82",
-  "closet-05":
-    "https://images.unsplash.com/photo-1669671943625-e20799ee5f42?auto=format&fit=crop&w=1600&q=82",
-  "closet-06":
-    "https://images.unsplash.com/photo-1781782333004-7487a66d0f83?auto=format&fit=crop&w=1600&q=82",
-  "closet-07":
-    "https://images.unsplash.com/photo-1770012117407-02aa4bd203ec?auto=format&fit=crop&w=1600&q=82",
-  "closet-08":
-    "https://images.unsplash.com/photo-1647412983527-5aa4b12febe8?auto=format&fit=crop&w=1600&q=82",
-  "drop-01":
-    "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=1600&q=82",
-};
-
-function wrapIndex(
-  index: number,
-  length: number,
-) {
-  if (!length) return 0;
+/*
+ * Wooden hanger with a metal hook. The hook curls over the rail; the rest
+ * sits behind the garment, so only the hook and the wooden neck come out of
+ * the collar. Units: the SVG is 30 units tall and 12% of the garment box.
+ * The hook loop is centred on y=8, and the SVG is shifted up so that this
+ * point lands on the rail (3.2% = 8/30 of 12%).
+ */
+function Hanger({ view }: { view: "front" | "side" }) {
+  const wood = `hanger-wood-${useId()}`;
+  const front = view === "front";
+  const x = front ? 60 : 12;
 
   return (
-    (index % length + length) %
-    length
+    <svg
+      viewBox={front ? "0 0 120 30" : "0 0 24 30"}
+      className="pointer-events-none absolute left-1/2 top-[calc(-.5px-3.2%)] z-0 h-[12%] w-auto -translate-x-1/2 overflow-visible"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={wood} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#b8743f" />
+          <stop offset="1" stopColor="#74391b" />
+        </linearGradient>
+      </defs>
+      {front && (
+        <>
+          {/* shoulder bar, hidden inside the garment */}
+          <path
+            d="M28 55C42 49.5 50 48 60 48s18 1.5 32 7c2 .6 1.5 2.1-.9 2C80 52.6 70 52 60 52S40 52.6 28.9 57c-2.4.1-2.9-1.4-.9-2Z"
+            fill={`url(#${wood})`}
+          />
+          {/* wooden neck that shows above the collar */}
+          <rect x="56.8" y="12.5" width="6.4" height="37" rx="1.4" fill={`url(#${wood})`} />
+        </>
+      )}
+      {/* metal hook: stem up out of the collar, then over the rail */}
+      <path
+        d={`M${x} ${front ? 13 : 34}V8A4.6 4.6 0 1 0 ${x - 9.2} 8v1.6`}
+        fill="none"
+        stroke="#9d9d9b"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
   );
+}
+
+function wrapIndex(index: number, length: number) {
+  if (!length) return 0;
+  return (index % length + length) % length;
+}
+
+function railPosition(index: number, length: number) {
+  /*
+   * Garments hang close together around the centre of the rail. The step
+   * comes from --rack-step on the rack container, so it can differ on mobile.
+   */
+  return `calc(50% + ${index - (length - 1) / 2} * var(--rack-step))`;
+}
+
+function displayTitle(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 export function ShopView({
   content,
-  preview = false,
   onBack,
+  base,
 }: {
   content: Content;
   preview?: boolean;
   onBack: () => void;
+  base?: string;
 }) {
-  const products = content.products;
+  const pathname = usePathname();
+  // ?rack2d keeps the flat rack, for comparison and as a manual fallback
+  const force2d = useSearchParams().has("rack2d");
+  const supports3d = useSyncExternalStore(noSubscribe, canRun3d, () => false);
+  const rack3d = supports3d && !force2d;
+  const rackLabel = useRef<HTMLParagraphElement>(null);
 
-  const mediaById = useMemo(
-    () =>
-      new Map(
-        content.media.map((item) => [
-          item.id,
-          item,
-        ]),
-      ),
-    [content.media],
+  const resolvedBase =
+    base ??
+    (() => {
+      const pieces = pathname.split("/").filter(Boolean);
+
+      if (
+        pieces[0] === "admin" &&
+        pieces[1] === "preview" &&
+        pieces[2]
+      ) {
+        return `/admin/preview/${pieces[2]}`;
+      }
+
+      return pieces[0] ? `/${pieces[0]}` : "/en";
+    })();
+
+  // Only garments hang on the rack; items without hanger assets stay off it.
+  const products = useMemo(
+    () => content.products.filter((product) => product.id in SHOP_ASSETS),
+    [content.products],
   );
 
-  const [active, setActive] =
-    useState(0);
+  /*
+   * hovered:
+   * visual rack state only.
+   *
+   * current:
+   * remembers the last garment the visitor interacted with,
+   * so the CTA can still open it after the pointer leaves the rack.
+   */
+  const [hovered, setHovered] =
+    useState<number | null>(null);
+
+  const [current, setCurrent] = useState(
+    Math.max(
+      0,
+      products.findIndex((product) => product.id === "closet-07"),
+    ),
+  );
 
   const [selected, setSelected] =
     useState<string | null>(null);
-
-  const [bagOpen, setBagOpen] =
-    useState(false);
-
-  const [bag, setBag] = useState<
-    string[]
-  >([]);
-
-  const rack =
-    useRef<HTMLDivElement>(null);
 
   const rackItems = useRef<
     Array<HTMLButtonElement | null>
@@ -94,26 +181,21 @@ export function ShopView({
 
   const rackReady = useRef(false);
 
+  const activeLabel = useRef<HTMLParagraphElement>(null);
+
   const detail =
     useRef<HTMLDivElement>(null);
 
   const detailHero =
     useRef<HTMLDivElement>(null);
 
-  const detailOpened =
-    useRef(false);
+  const detailReady = useRef(false);
 
   const ticker =
     useRef<HTMLDivElement>(null);
 
-  const current =
-    products[active] ?? null;
-
   const selectedIndex = selected
-    ? products.findIndex(
-        (product) =>
-          product.id === selected,
-      )
+    ? products.findIndex((product) => product.id === selected)
     : -1;
 
   const selectedProduct =
@@ -121,109 +203,54 @@ export function ShopView({
       ? products[selectedIndex]
       : null;
 
-  const previousProduct =
-    selectedProduct && products.length
-      ? products[
-          wrapIndex(
-            selectedIndex - 1,
-            products.length,
-          )
-        ]
-      : null;
+  const assetFor = (product: Product) =>
+    SHOP_ASSETS[product.id] ?? null;
 
-  const nextProduct =
-    selectedProduct && products.length
-      ? products[
-          wrapIndex(
-            selectedIndex + 1,
-            products.length,
-          )
-        ]
-      : null;
-
-  const bagTotal = bag.reduce(
-    (sum, id) =>
-      sum +
-      (products.find(
-        (product) =>
-          product.id === id,
-      )?.price ?? 0),
-    0,
-  );
-
-  const artwork = (
+  const renderProduct = (
     product: Product,
-    priority = false,
+    view: "front" | "side",
+    className = "",
   ) => {
-    const media = product.mediaId
-      ? mediaById.get(product.mediaId)
-      : null;
+    const asset = assetFor(product);
 
-    if (media) {
-      const key =
-        media.kind === "image"
-          ? media.mediumKey
-          : media.thumbKey;
-
+    if (!asset) {
       return (
-        <img
-          src={mediaUrl(key, preview)}
-          alt={product.title}
-          width={media.width}
-          height={media.height}
-          loading={
-            priority ? "eager" : "lazy"
-          }
-          fetchPriority={
-            priority ? "high" : "auto"
-          }
-          draggable={false}
-          className="h-full w-full select-none object-contain"
-        />
-      );
-    }
-
-    const fallback =
-      demoImages[product.id];
-
-    if (fallback) {
-      return (
-        <img
-          src={fallback}
-          alt={product.title}
-          loading={
-            priority ? "eager" : "lazy"
-          }
-          draggable={false}
-          className="h-full w-full select-none object-contain"
-        />
+        <span className="grid h-full w-full place-items-center text-[7px] uppercase tracking-[.12em] opacity-30">
+          {product.title}
+        </span>
       );
     }
 
     return (
-      <span className="grid h-full w-full place-items-center text-[8px] uppercase tracking-[.15em] opacity-40">
-        {product.title}
+      <span className={`relative block h-full w-full ${className}`}>
+        <Hanger view={view} />
+        <img
+          src={asset[view]}
+          alt={view === "front" ? product.title : ""}
+          aria-hidden={view === "side" ? true : undefined}
+          draggable={false}
+          className={`absolute inset-x-0 bottom-0 z-[1] w-full select-none object-contain object-top ${view === "front" ? "top-[3%] h-[97%]" : "top-[1.5%] h-[98.5%]"}`}
+        />
       </span>
     );
   };
 
-  useEffect(() => {
-    if (
-      active >= products.length &&
-      products.length
-    ) {
-      setActive(
-        products.length - 1,
-      );
-    }
-  }, [active, products.length]);
-
   /*
-   * Rack choreography.
+   * ------------------------------------------------------------
+   * BROWSE RACK
+   * ------------------------------------------------------------
    *
-   * Every item is anchored at the
-   * centre. GSAP spreads the rack
-   * relative to the active garment.
+   * Reference behavior:
+   *
+   * idle:
+   *   every garment is side-on / collapsed
+   *
+   * hover:
+   *   selected garment opens in its ORIGINAL hanger position
+   *   immediate neighbors physically slide aside
+   *
+   * leave:
+   *   everything collapses again
    */
   useLayoutEffect(() => {
     if (!products.length) return;
@@ -231,129 +258,138 @@ export function ShopView({
     let cancelled = false;
 
     void loadGsap().then((gsap) => {
-      if (
-        cancelled ||
-        !gsap
-      ) {
-        return;
+      if (cancelled || !gsap) return;
+
+      const mobile = window.innerWidth <= 800;
+
+      const openWidth = mobile
+        ? 170
+        : Math.min(300, window.innerWidth * 0.21);
+
+      const closedWidth = mobile ? 70 : 112;
+
+      const itemHeight = mobile
+        ? Math.min(window.innerHeight * 0.42, 360)
+        : Math.min(window.innerHeight * 0.43, 420);
+
+      /*
+       * The rail ends at the outer garments plus --rack-margin. Pushed
+       * neighbours stop short of the ends, so every hook stays on the rail.
+       */
+      const rack = rackItems.current.find(Boolean)?.parentElement;
+      const rackStyle = rack ? getComputedStyle(rack) : null;
+      const step = rack && rackStyle
+        ? (parseFloat(rackStyle.getPropertyValue("--rack-step")) / 100) * rack.clientWidth
+        : 0;
+      const railHalf = rackStyle
+        ? ((products.length - 1) / 2) * step + parseFloat(rackStyle.getPropertyValue("--rack-margin"))
+        : Infinity;
+      const hookLimit = railHalf - 14;
+
+      /*
+       * An open garment near an end moves inward until it fits inside the
+       * rack; its neighbours on the inner side move with it.
+       */
+      const openLimit = rack ? rack.clientWidth / 2 - openWidth / 2 : Infinity;
+      const openBase = hovered === null ? 0 : (hovered - (products.length - 1) / 2) * step;
+      const openShift = Math.max(-openLimit, Math.min(openLimit, openBase)) - openBase;
+
+      // the name label follows the open garment
+      if (activeLabel.current) {
+        gsap.set(activeLabel.current, { xPercent: -50, x: openShift });
       }
 
-      const mobile =
-        window.innerWidth <= 800;
+      rackItems.current.forEach((element, index) => {
+        if (!element) return;
 
-      const slot = mobile
-        ? 58
-        : Math.min(
-            94,
-            Math.max(
-              68,
-              window.innerWidth /
-                Math.max(
-                  products.length + 2,
-                  11,
-                ),
-            ),
+        const isOpen = hovered === index;
+
+        const distance =
+          hovered === null ? 99 : index - hovered;
+
+        const absolute = Math.abs(distance);
+
+        let push = 0;
+
+        if (hovered !== null && distance !== 0) {
+          const direction = Math.sign(distance);
+
+          /*
+           * Strong displacement immediately beside the open shirt,
+           * then quickly decay. This is what the reference does.
+           */
+          if (absolute === 1) {
+            push = direction * (mobile ? 50 : 118);
+          } else if (absolute === 2) {
+            push = direction * (mobile ? 22 : 62);
+          } else if (absolute === 3) {
+            push = direction * (mobile ? 8 : 26);
+          }
+
+          const base = (index - (products.length - 1) / 2) * step;
+          const target = Math.max(-hookLimit, Math.min(hookLimit, base + push + openShift));
+          push = target - base;
+        } else if (isOpen) {
+          push = openShift;
+        }
+
+        const vars = {
+          xPercent: -50,
+          x: push,
+          width: isOpen ? openWidth : closedWidth,
+          height: itemHeight,
+          y: isOpen ? -4 : 0,
+          zIndex: isOpen ? 20 : 5,
+          opacity: 1,
+          transformOrigin: "50% 0%",
+        };
+
+        const front =
+          element.querySelector<HTMLElement>(
+            '[data-shop-view="front"]',
           );
 
-      const activeGap = mobile
-        ? 22
-        : 46;
+        const side =
+          element.querySelector<HTMLElement>(
+            '[data-shop-view="side"]',
+          );
 
-      rackItems.current.forEach(
-        (element, index) => {
-          if (!element) return;
+        if (
+          !rackReady.current ||
+          prefersReducedMotion()
+        ) {
+          gsap.set(element, vars);
 
-          const distance =
-            index - active;
+          gsap.set(front, {
+            opacity: isOpen ? 1 : 0,
+          });
 
-          const absolute =
-            Math.abs(distance);
+          gsap.set(side, {
+            opacity: isOpen ? 0 : 1,
+          });
+        } else {
+          gsap.to(element, {
+            ...vars,
+            duration: 0.56,
+            ease: "power4.out",
+            overwrite: "auto",
+          });
 
-          const x =
-            distance * slot +
-            (distance < 0
-              ? -activeGap
-              : distance > 0
-                ? activeGap
-                : 0);
+          gsap.to(front, {
+            opacity: isOpen ? 1 : 0,
+            duration: isOpen ? 0.3 : 0.16,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
 
-          const scale =
-            distance === 0
-              ? mobile
-                ? 1.42
-                : 1.65
-              : Math.max(
-                  0.78,
-                  1 -
-                    Math.min(
-                      absolute,
-                      5,
-                    ) *
-                      0.035,
-                );
-
-          const vars = {
-            xPercent: -50,
-            x,
-            y:
-              distance === 0
-                ? mobile
-                  ? -7
-                  : -12
-                : 0,
-            scale,
-            opacity:
-              absolute > 7
-                ? 0
-                : 1,
-            zIndex:
-              distance === 0
-                ? 12
-                : 10 - absolute,
-            transformOrigin:
-              "50% 0%",
-          };
-
-          if (
-            !rackReady.current ||
-            prefersReducedMotion()
-          ) {
-            gsap.set(
-              element,
-              vars,
-            );
-          } else {
-            gsap.to(
-              element,
-              {
-                ...vars,
-                duration: 0.62,
-                ease: "power4.out",
-                overwrite: true,
-              },
-            );
-          }
-        },
-      );
-
-      if (
-        !rackReady.current &&
-        rack.current
-      ) {
-        gsap.fromTo(
-          rack.current,
-          {
-            opacity: 0,
-            y: 8,
-          },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.72,
-            ease: "power3.out",
-          },
-        );
-      }
+          gsap.to(side, {
+            opacity: isOpen ? 0 : 1,
+            duration: 0.2,
+            ease: "power2.out",
+            overwrite: "auto",
+          });
+        }
+      });
 
       rackReady.current = true;
     });
@@ -361,14 +397,15 @@ export function ShopView({
     return () => {
       cancelled = true;
     };
-  }, [active, products.length]);
+  }, [hovered, products.length]);
 
   /*
-   * Bottom ticker.
+   * ------------------------------------------------------------
+   * BOTTOM TICKER
+   * ------------------------------------------------------------
    */
   useLayoutEffect(() => {
-    const element =
-      ticker.current;
+    const element = ticker.current;
 
     if (!element) return;
 
@@ -389,7 +426,7 @@ export function ShopView({
 
       gsap.to(element, {
         xPercent: -50,
-        duration: 26,
+        duration: 27,
         ease: "none",
         repeat: -1,
       });
@@ -398,65 +435,56 @@ export function ShopView({
     return () => {
       cancelled = true;
 
-      void loadGsap().then(
-        (gsap) =>
-          gsap?.killTweensOf(
-            element,
-          ),
-      );
+      void loadGsap().then((gsap) => {
+        gsap?.killTweensOf(element);
+      });
     };
   }, []);
 
   /*
-   * Detail viewer entrance and
-   * product-to-product swap.
+   * ------------------------------------------------------------
+   * DETAIL ENTRY / PRODUCT CHANGE
+   * ------------------------------------------------------------
    */
+  const selectedProductId = selectedProduct?.id;
+
   useLayoutEffect(() => {
     if (
-      !selectedProduct ||
+      !selectedProductId ||
       !detail.current ||
       !detailHero.current
     ) {
+      detailReady.current = false;
       return;
     }
 
     let cancelled = false;
 
     void loadGsap().then((gsap) => {
-      if (
-        cancelled ||
-        !gsap
-      ) {
+      if (cancelled || !gsap) return;
+
+      if (prefersReducedMotion()) {
+        gsap.set(detail.current, {
+          opacity: 1,
+        });
+
+        gsap.set(detailHero.current, {
+          opacity: 1,
+          scale: 1,
+          y: 0,
+        });
+
+        detailReady.current = true;
         return;
       }
 
-      const reduced =
-        prefersReducedMotion();
-
-      if (
-        !detailOpened.current
-      ) {
-        detailOpened.current = true;
-
-        if (reduced) {
-          gsap.set(detail.current, {
-            opacity: 1,
-          });
-
-          gsap.set(
-            detailHero.current,
-            {
-              opacity: 1,
-              scale: 1,
-              y: 0,
-            },
-          );
-
-          return;
-        }
-
-        const timeline =
-          gsap.timeline();
+      /*
+       * First opening:
+       * fade the detail surface over the rack while the main
+       * garment grows into the centre.
+       */
+      if (!detailReady.current) {
+        const timeline = gsap.timeline();
 
         timeline
           .fromTo(
@@ -466,7 +494,7 @@ export function ShopView({
             },
             {
               opacity: 1,
-              duration: 0.34,
+              duration: 0.38,
               ease: "power2.out",
             },
             0,
@@ -475,45 +503,38 @@ export function ShopView({
             detailHero.current,
             {
               opacity: 0,
-              scale: 0.82,
-              y: 20,
+              scale: 0.72,
+              y: -14,
             },
             {
               opacity: 1,
               scale: 1,
               y: 0,
-              duration: 0.72,
+              duration: 0.66,
               ease: "power4.out",
             },
-            0.05,
+            0.04,
           );
 
+        detailReady.current = true;
         return;
       }
 
-      if (reduced) {
-        gsap.set(
-          detailHero.current,
-          {
-            opacity: 1,
-            scale: 1,
-          },
-        );
-
-        return;
-      }
-
+      /*
+       * Previous/next:
+       * quiet crossfade like the reference.
+       */
       gsap.fromTo(
         detailHero.current,
         {
           opacity: 0,
-          scale: 0.92,
+          scale: 0.94,
         },
         {
           opacity: 1,
           scale: 1,
-          duration: 0.48,
-          ease: "power4.out",
+          duration: 0.42,
+          ease: "power3.out",
         },
       );
     });
@@ -521,203 +542,126 @@ export function ShopView({
     return () => {
       cancelled = true;
     };
-  }, [selectedProduct?.id]);
+  }, [selectedProductId]);
 
-  const openDetail =
-    useCallback(() => {
-      if (!current) return;
+  const openDetail = useCallback(() => {
+    if (!products[current]) return;
 
-      setSelected(current.id);
-    }, [current]);
+    setHovered(null);
+    setSelected(products[current].id);
+  }, [current, products]);
 
-  const closeDetail =
-    useCallback(() => {
-      if (!selected) return;
+  const closeDetail = useCallback(() => {
+    if (!selected) return;
 
-      if (
-        prefersReducedMotion() ||
-        !detail.current
-      ) {
-        detailOpened.current =
-          false;
+    if (
+      prefersReducedMotion() ||
+      !detail.current
+    ) {
+      detailReady.current = false;
+      setSelected(null);
+      return;
+    }
+
+    void loadGsap().then((gsap) => {
+      if (!gsap || !detail.current) {
+        detailReady.current = false;
         setSelected(null);
         return;
       }
 
-      void loadGsap().then((gsap) => {
-        if (
-          !gsap ||
-          !detail.current
-        ) {
-          detailOpened.current =
-            false;
+      gsap.to(detail.current, {
+        opacity: 0,
+        duration: 0.3,
+        ease: "power2.inOut",
+        onComplete: () => {
+          detailReady.current = false;
           setSelected(null);
-          return;
-        }
-
-        gsap.to(detail.current, {
-          opacity: 0,
-          duration: 0.32,
-          ease: "power2.inOut",
-          onComplete: () => {
-            detailOpened.current =
-              false;
-            setSelected(null);
-          },
-        });
+        },
       });
-    }, [selected]);
+    });
+  }, [selected]);
 
-  const navigateDetail =
-    useCallback(
-      (direction: number) => {
-        if (
-          selectedIndex < 0 ||
-          !products.length
-        ) {
-          return;
-        }
-
-        const next =
-          wrapIndex(
-            selectedIndex +
-              direction,
-            products.length,
-          );
-
-        setActive(next);
-        setSelected(
-          products[next].id,
-        );
-      },
-      [
-        products,
-        selectedIndex,
-      ],
-    );
-
-  const addToBag =
-    useCallback(() => {
+  const navigateDetail = useCallback(
+    (direction: number) => {
       if (
-        !selectedProduct ||
-        selectedProduct.sold
-      ) {
-        return;
-      }
-
-      setBag((old) => [
-        ...old,
-        selectedProduct.id,
-      ]);
-
-      setBagOpen(true);
-    }, [selectedProduct]);
-
-  useEffect(() => {
-    const onKey = (
-      event: KeyboardEvent,
-    ) => {
-      if (event.key === "Escape") {
-        if (bagOpen) {
-          setBagOpen(false);
-          return;
-        }
-
-        if (selected) {
-          closeDetail();
-        }
-
-        return;
-      }
-
-      if (
-        bagOpen ||
+        selectedIndex < 0 ||
         !products.length
       ) {
         return;
       }
 
-      if (
-        event.key ===
-        "ArrowRight"
-      ) {
+      const next = wrapIndex(
+        selectedIndex + direction,
+        products.length,
+      );
+
+      setCurrent(next);
+      setSelected(products[next].id);
+    },
+    [products, selectedIndex],
+  );
+
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && selected) {
+        closeDetail();
+        return;
+      }
+
+      if (!products.length) return;
+
+      if (event.key === "ArrowRight") {
         event.preventDefault();
 
         if (selected) {
           navigateDetail(1);
         } else {
-          setActive((old) =>
-            wrapIndex(
-              old + 1,
-              products.length,
-            ),
+          setCurrent((old) =>
+            wrapIndex(old + 1, products.length),
           );
         }
       }
 
-      if (
-        event.key ===
-        "ArrowLeft"
-      ) {
+      if (event.key === "ArrowLeft") {
         event.preventDefault();
 
         if (selected) {
           navigateDetail(-1);
         } else {
-          setActive((old) =>
-            wrapIndex(
-              old - 1,
-              products.length,
-            ),
+          setCurrent((old) =>
+            wrapIndex(old - 1, products.length),
           );
         }
       }
     };
 
-    window.addEventListener(
-      "keydown",
-      onKey,
-    );
+    window.addEventListener("keydown", key);
 
-    return () =>
-      window.removeEventListener(
-        "keydown",
-        onKey,
-      );
+    return () => {
+      window.removeEventListener("keydown", key);
+    };
   }, [
-    bagOpen,
     closeDetail,
     navigateDetail,
     products.length,
     selected,
   ]);
 
-  const tickerText = (
+  const tickerCopy = (
     <>
-      <span>
-        NEW PIECES DAILY
-      </span>
-      <span aria-hidden="true">
-        •
-      </span>
-      <span>
-        ZEUDI&apos;S CLOSET
-      </span>
-      <span aria-hidden="true">
-        •
-      </span>
-      <span>
-        ONE OF ONE
-      </span>
-      <span aria-hidden="true">
-        •
-      </span>
-      <span>
-        SELECTED PIECES
-      </span>
-      <span aria-hidden="true">
-        •
-      </span>
+      <span>NEW DESIGNS DAILY</span>
+      <span>•</span>
+      <span>ZEUDI DI PALMA</span>
+      <span>•</span>
+      <span>SELECTED PIECES</span>
+      <span>•</span>
+      <span>NEW DESIGNS DAILY</span>
+      <span>•</span>
+      <span>ZEUDI DI PALMA</span>
+      <span>•</span>
+      <span>SELECTED PIECES</span>
+      <span>•</span>
     </>
   );
 
@@ -727,513 +671,394 @@ export function ShopView({
       className="shop-panel shop-rack-panel open"
       role="dialog"
       aria-modal="true"
-      aria-label={
-        content.shopTitle
-      }
+      aria-label={content.shopTitle}
     >
-      <div className="relative z-[2] h-full w-full overflow-hidden">
-        {/* Subtle reference-style wall pattern */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[.28]
-            [background-image:radial-gradient(circle,rgba(8,8,8,.075)_0_1px,transparent_1.2px)]
-            [background-size:42px_42px]"
-          aria-hidden="true"
-        />
+      <div
+        className="relative z-[2] h-full w-full overflow-hidden
+          bg-[var(--paper)] text-[#171d38]"
+      >
+        {/* =====================================================
+            HEADER
+            ===================================================== */}
+        <header className="absolute inset-x-0 top-0 z-30 h-[70px]">
+          <SiteLink
+            href={`${resolvedBase}/about`}
+            className="absolute left-[2.2vw] top-[28px]
+              text-[8px] uppercase tracking-[.05em]"
+          >
+            ABOUT
+          </SiteLink>
 
-        {/* Minimal masthead */}
-        <header className="absolute inset-x-0 top-0 z-30 flex h-16 items-center justify-between px-[var(--side)]">
           <button
             type="button"
             onClick={onBack}
-            className="border-0 bg-transparent p-0 text-[8px] uppercase tracking-[.08em] text-[#080808] opacity-80"
+            aria-label="Return home"
+            className="absolute left-1/2 top-[15px]
+              -translate-x-1/2 border-0 bg-transparent
+              p-0 text-center font-serif italic leading-[.72]"
           >
-            {content.nav.home}
-          </button>
-
-          <div
-            className="absolute left-1/2 top-1/2 max-w-[180px] -translate-x-1/2 -translate-y-1/2 text-center
-              font-serif text-[13px] italic leading-[.82] tracking-[-.035em]"
-          >
-            {content.shopTitle.replace(
-              /\.$/,
-              "",
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              setBagOpen(true)
-            }
-            className="border-0 bg-transparent p-0 text-[8px] uppercase tracking-[.08em] text-[#080808] opacity-80"
-          >
-            BAG{" "}
-            <span className="opacity-45">
-              {String(
-                bag.length,
-              ).padStart(2, "0")}
+            <span className="block text-[15px] tracking-[-.08em]">
+              ZEUDI
+            </span>
+            <span className="block text-[15px] tracking-[-.08em]">
+              DI PALMA
             </span>
           </button>
+
+          <SiteLink
+            href={`${resolvedBase}/contact`}
+            className="absolute right-[2.2vw] top-[28px]
+              text-[8px] uppercase tracking-[.05em]"
+          >
+            CONTACT
+          </SiteLink>
         </header>
 
-        {!products.length ? (
+        {rack3d && products.length ? (
+          <main id="main" className="relative h-full w-full">
+            <ShopRack3D
+              items={products.map((product) => ({ id: product.id, asset: SHOP_ASSETS[product.id] }))}
+              onLabel={(position) => {
+                const element = rackLabel.current;
+                if (!element) return;
+                element.style.opacity = position ? "1" : "0";
+                if (position) {
+                  element.style.left = `${position.x}px`;
+                  element.style.top = `${position.y}px`;
+                }
+              }}
+              onActive={(index) => {
+                setHovered(index);
+                if (index !== null) setCurrent(index);
+              }}
+            />
+
+            {/* name of the open garment; the 3D scene keeps it under the garment */}
+            <p
+              ref={rackLabel}
+              className="pointer-events-none absolute z-[12] -translate-x-1/2 whitespace-nowrap
+                text-[12px] tracking-[-.01em] text-[#171717] opacity-0 transition-opacity"
+              aria-live="polite"
+            >
+              {hovered !== null && products[hovered] ? displayTitle(products[hovered].title) : ""}
+            </p>
+
+            <button
+              type="button"
+              onClick={openDetail}
+              className="absolute bottom-[49px] left-1/2 z-[15]
+                min-w-[176px] -translate-x-1/2 rounded-full
+                border border-[#171d38]/70 bg-transparent
+                px-6 py-[8px]
+                text-[8px] uppercase tracking-[.06em]
+                transition-opacity hover:opacity-55"
+            >
+              SEE AVAILABILITY
+            </button>
+          </main>
+        ) : !products.length ? (
           <main
             id="main"
-            className="grid h-full place-items-center px-6 text-center"
+            className="grid h-full place-items-center"
           >
-            <div>
-              <p className="text-[9px] uppercase tracking-[.15em] opacity-40">
-                SHOP
-              </p>
-              <h1 className="mt-3 font-serif text-[clamp(32px,5vw,72px)] italic">
-                {content.shopTitle}
-              </h1>
-              <p className="mx-auto mt-5 max-w-md text-[11px] leading-6 opacity-50">
-                {content.shopIntro}
-              </p>
-            </div>
+            <p className="text-[9px] uppercase tracking-[.12em] opacity-40">
+              No products available.
+            </p>
           </main>
         ) : (
           <main
             id="main"
-            ref={rack}
-            className="relative h-full w-full opacity-100"
+            className="relative h-full w-full"
           >
-            {/* Metal rail */}
+            {/* =================================================
+                CLOTHING RACK
+                ================================================= */}
             <div
-              className="pointer-events-none absolute left-[8vw] right-[8vw] top-[30.5%] z-[1] h-[6px] rounded-full
-                border border-black/15
-                [background:linear-gradient(180deg,#8f8f8a_0%,#ecece9_46%,#a2a29d_100%)]
-                shadow-[0_2px_2px_rgba(0,0,0,.12)]
-                max-[800px]:left-[4vw] max-[800px]:right-[4vw] max-[800px]:top-[29%]"
-              aria-hidden="true"
+              className="absolute left-[11%] right-[11%] top-[25.9%]
+                z-[4] h-[48vh]
+                [--rack-margin:90px] [--rack-step:9.5%]
+                max-[800px]:left-[2%] max-[800px]:right-[2%] max-[800px]:top-[31%]
+                max-[800px]:[--rack-margin:26px] max-[800px]:[--rack-step:14.5%]"
+              onPointerLeave={() => {
+                setHovered(null);
+              }}
             >
-              <span
-                className="absolute left-[-7px] top-1/2 h-[25px] w-[10px] -translate-y-1/2 rounded-sm border border-black/20
-                  [background:linear-gradient(90deg,#aaa,#eee,#999)]"
-              />
-              <span
-                className="absolute right-[-7px] top-1/2 h-[25px] w-[10px] -translate-y-1/2 rounded-sm border border-black/20
-                  [background:linear-gradient(90deg,#999,#eee,#aaa)]"
-              />
-            </div>
+              {/* rail: as long as the garments plus a margin */}
+              <div
+                className="pointer-events-none absolute top-0 z-[1] h-[5px]
+                  rounded-full border border-black/10
+                  [background:linear-gradient(180deg,#949493_0%,#e8e8e6_46%,#979795_100%)]
+                  shadow-[0_2px_3px_rgba(0,0,0,.12)]"
+                style={{
+                  left: `calc(50% - ${(products.length - 1) / 2} * var(--rack-step) - var(--rack-margin))`,
+                  right: `calc(50% - ${(products.length - 1) / 2} * var(--rack-step) - var(--rack-margin))`,
+                }}
+                aria-hidden="true"
+              >
+                <span
+                  className="absolute left-[-9px] top-1/2 h-[28px] w-[13px]
+                    -translate-y-1/2 border border-black/15
+                    [background:linear-gradient(90deg,#999,#eee,#888)]"
+                />
 
-            {/* Hanging products */}
-            <div className="absolute inset-0 z-[3]">
-              {products.map(
-                (
-                  product,
-                  index,
-                ) => (
+                <span
+                  className="absolute right-[-9px] top-1/2 h-[28px] w-[13px]
+                    -translate-y-1/2 border border-black/15
+                    [background:linear-gradient(90deg,#888,#eee,#999)]"
+                />
+              </div>
+
+              {products.map((product, index) => {
+                const left = railPosition(index, products.length);
+
+                return (
                   <button
                     key={product.id}
                     ref={(element) => {
-                      rackItems.current[
-                        index
-                      ] = element;
+                      rackItems.current[index] = element;
                     }}
                     type="button"
-                    aria-label={`Select ${product.title}`}
-                    aria-current={
-                      active === index
-                        ? "true"
-                        : undefined
-                    }
-                    onPointerEnter={() =>
-                      setActive(index)
-                    }
-                    onFocus={() =>
-                      setActive(index)
-                    }
-                    onClick={() =>
-                      setActive(index)
-                    }
-                    className="absolute left-1/2 top-[31.5%] h-[clamp(180px,31vh,350px)]
-                      w-[clamp(78px,7.1vw,116px)] origin-top border-0 bg-transparent p-0
-                      max-[800px]:top-[30%] max-[800px]:h-[clamp(150px,27vh,255px)] max-[800px]:w-[68px]"
+                    aria-label={`View ${product.title}`}
+                    onPointerEnter={() => {
+                      setCurrent(index);
+                      setHovered(index);
+                    }}
+                    onFocus={() => {
+                      setCurrent(index);
+                      setHovered(index);
+                    }}
+                    onClick={() => {
+                      setCurrent(index);
+                      setHovered(index);
+                    }}
+                    className="absolute top-[3px] h-[42vh] w-[112px]
+                      -translate-x-1/2 origin-top
+                      border-0 bg-transparent p-0
+                      max-[800px]:h-[42vh] max-[800px]:w-[70px]"
+                    style={{
+                      left,
+                    }}
                   >
-                    {/* hanger hook */}
                     <span
-                      className="pointer-events-none absolute left-1/2 top-[-24px] h-[25px] w-[16px]
-                        -translate-x-1/2 rounded-t-full border border-b-0 border-black/35"
-                      aria-hidden="true"
-                    />
-
-                    {/* hanger shoulders */}
-                    <span
-                      className="pointer-events-none absolute left-1/2 top-[-3px] h-px w-[48%]
-                        origin-left -rotate-[17deg] bg-black/30"
-                      aria-hidden="true"
-                    />
-                    <span
-                      className="pointer-events-none absolute right-1/2 top-[-3px] h-px w-[48%]
-                        origin-right rotate-[17deg] bg-black/30"
-                      aria-hidden="true"
-                    />
-
-                    <span
-                      className={`relative block h-full w-full overflow-visible ${
-                        active ===
-                        index
-                          ? "drop-shadow-[0_15px_15px_rgba(0,0,0,.08)]"
-                          : ""
-                      }`}
+                      data-shop-view="side"
+                      className="absolute inset-0 block"
                     >
-                      {artwork(
-                        product,
-                        index ===
-                          active,
-                      )}
+                      {renderProduct(product, "side")}
+                    </span>
+
+                    <span
+                      data-shop-view="front"
+                      className="absolute inset-0 block opacity-0"
+                    >
+                      {renderProduct(product, "front")}
                     </span>
                   </button>
-                ),
+                );
+              })}
+
+              {/* active product label, directly under the open garment */}
+              {hovered !== null && products[hovered] && (
+                <p
+                  ref={activeLabel}
+                  className="absolute top-[calc(min(43vh,420px,min(300px,21vw)*1.12)+14px)] z-[12]
+                    -translate-x-1/2 whitespace-nowrap
+                    text-[10px] tracking-[-.01em] text-[#171717]/80
+                    max-[800px]:top-[calc(min(42vh,360px,204px)+12px)]"
+                  style={{
+                    left: railPosition(hovered, products.length),
+                  }}
+                >
+                  {displayTitle(products[hovered].title)}
+                </p>
               )}
             </div>
 
-            {/* Active product metadata */}
-            {current && (
-              <div
-                className="absolute bottom-[74px] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center text-center
-                  max-[800px]:bottom-[70px]"
-              >
-                <p className="max-w-[320px] whitespace-nowrap text-[9px] tracking-[-.015em] opacity-55">
-                  {current.title}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={openDetail}
-                  className="mt-7 min-w-[150px] rounded-full border border-[#080808]/65 bg-transparent
-                    px-5 py-[7px] text-[8px] uppercase tracking-[.08em] text-[#080808]
-                    transition-opacity hover:opacity-55
-                    max-[800px]:mt-5"
-                >
-                  {current.sold
-                    ? "VIEW ITEM"
-                    : "SEE AVAILABILITY"}
-                </button>
-              </div>
-            )}
+            {/* =================================================
+                FIXED CTA
+                ================================================= */}
+            <button
+              type="button"
+              onClick={openDetail}
+              className="absolute bottom-[49px] left-1/2 z-[15]
+                min-w-[176px] -translate-x-1/2 rounded-full
+                border border-[#171d38]/70 bg-transparent
+                px-6 py-[8px]
+                text-[8px] uppercase tracking-[.06em]
+                transition-opacity hover:opacity-55"
+            >
+              SEE AVAILABILITY
+            </button>
           </main>
         )}
 
-        {/* Bottom ticker */}
-        <div
-          className="absolute inset-x-0 bottom-0 z-30 h-[27px] overflow-hidden bg-[#182348] text-white"
-          aria-hidden="true"
-        >
+        {/* =====================================================
+            TICKER — browse state only
+            ===================================================== */}
+        {!selected && (
           <div
-            ref={ticker}
-            className="flex h-full w-max items-center whitespace-nowrap text-[7px] uppercase tracking-[.04em]"
+            className="absolute inset-x-0 bottom-0 z-[25]
+              h-[28px] overflow-hidden
+              bg-[#17264f] text-white"
+            aria-hidden="true"
           >
-            <div className="flex shrink-0 items-center gap-7 pr-7">
-              {tickerText}
-              {tickerText}
-            </div>
+            <div
+              ref={ticker}
+              className="flex h-full w-max items-center whitespace-nowrap"
+            >
+              <div
+                className="flex shrink-0 items-center gap-7 pr-7
+                  text-[7px] italic uppercase tracking-[.025em]"
+              >
+                {tickerCopy}
+              </div>
 
-            <div className="flex shrink-0 items-center gap-7 pr-7">
-              {tickerText}
-              {tickerText}
+              <div
+                className="flex shrink-0 items-center gap-7 pr-7
+                  text-[7px] italic uppercase tracking-[.025em]"
+              >
+                {tickerCopy}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Product viewer */}
+        {/* =====================================================
+            DETAIL
+            ===================================================== */}
         {selectedProduct && (
           <div
             ref={detail}
-            className="absolute inset-0 z-40 overflow-hidden bg-[#f4f4f0]"
+            className="absolute inset-0 z-40 overflow-hidden
+              bg-[rgba(245,245,241,.965)]"
             role="dialog"
             aria-modal="true"
-            aria-label={
-              selectedProduct.title
-            }
+            aria-label={selectedProduct.title}
           >
+            {/* blurred ghost rack */}
             <div
-              className="pointer-events-none absolute inset-0 opacity-[.22]
-                [background-image:radial-gradient(circle,rgba(8,8,8,.055)_0_1px,transparent_1.2px)]
-                [background-size:42px_42px]"
+              className="pointer-events-none absolute
+                left-[11%] right-[11%] top-[25%]
+                h-[48vh] opacity-[.075] blur-[11px] [--rack-step:9.5%]
+                max-[800px]:[--rack-step:14.5%]
+                max-[800px]:left-[-12%] max-[800px]:right-[-12%]"
               aria-hidden="true"
-            />
+            >
+              {products.map((product, index) => {
+                if (index === selectedIndex) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={product.id}
+                    className="absolute top-0 h-[41vh] w-[106px]
+                      -translate-x-1/2"
+                    style={{
+                      left: railPosition(index, products.length),
+                    }}
+                  >
+                    {renderProduct(product, "side")}
+                  </div>
+                );
+              })}
+            </div>
 
             <button
               type="button"
               onClick={closeDetail}
-              className="absolute right-[var(--side)] top-7 z-30 border-0 bg-transparent p-0
-                text-[8px] uppercase tracking-[.08em]"
+              className="absolute right-[2.2vw] top-[29px]
+                z-30 border-0 bg-transparent p-0
+                text-[8px] uppercase tracking-[.05em]"
             >
               CLOSE
             </button>
 
-            {/* Ghosted neighboring garments */}
-            {previousProduct && (
-              <div
-                className="pointer-events-none absolute left-[9vw] top-1/2 h-[47vh] w-[22vw]
-                  -translate-y-1/2 opacity-[.07] blur-[7px]
-                  max-[800px]:left-[-10vw] max-[800px]:w-[42vw]"
-                aria-hidden="true"
-              >
-                {artwork(
-                  previousProduct,
-                )}
-              </div>
-            )}
-
-            {nextProduct && (
-              <div
-                className="pointer-events-none absolute right-[9vw] top-1/2 h-[47vh] w-[22vw]
-                  -translate-y-1/2 opacity-[.07] blur-[7px]
-                  max-[800px]:right-[-10vw] max-[800px]:w-[42vw]"
-                aria-hidden="true"
-              >
-                {artwork(
-                  nextProduct,
-                )}
-              </div>
-            )}
-
-            {/* Previous */}
+            {/* left arrow */}
             <button
               type="button"
-              onClick={() =>
-                navigateDetail(-1)
-              }
+              onClick={() => navigateDetail(-1)}
               aria-label="Previous product"
-              className="absolute left-[31%] top-[45%] z-20 grid h-9 w-9 place-items-center rounded-full
-                border border-black/30 bg-transparent text-[15px]
-                transition-colors hover:bg-[#080808] hover:text-white
-                max-[800px]:left-5 max-[800px]:top-1/2"
+              className="absolute left-[31.5%] top-[45%]
+                z-20 grid h-[38px] w-[38px]
+                -translate-y-1/2 place-items-center
+                rounded-full border border-[#171d38]/30
+                bg-transparent text-[14px]
+                transition-colors hover:bg-[#171d38]
+                hover:text-white
+                max-[800px]:left-5"
             >
               ←
             </button>
 
-            {/* Next */}
+            {/* right arrow */}
             <button
               type="button"
-              onClick={() =>
-                navigateDetail(1)
-              }
+              onClick={() => navigateDetail(1)}
               aria-label="Next product"
-              className="absolute right-[31%] top-[45%] z-20 grid h-9 w-9 place-items-center rounded-full
-                border border-black/30 bg-transparent text-[15px]
-                transition-colors hover:bg-[#080808] hover:text-white
-                max-[800px]:right-5 max-[800px]:top-1/2"
+              className="absolute right-[31.5%] top-[45%]
+                z-20 grid h-[38px] w-[38px]
+                -translate-y-1/2 place-items-center
+                rounded-full border border-[#171d38]/30
+                bg-transparent text-[14px]
+                transition-colors hover:bg-[#171d38]
+                hover:text-white
+                max-[800px]:right-5"
             >
               →
             </button>
 
-            {/* Hero garment */}
+            {/* selected product */}
             <div
               ref={detailHero}
-              className="absolute left-1/2 top-[44%] h-[52vh] w-[min(31vw,430px)]
+              className="absolute left-1/2 top-[40%]
+                h-[55vh] w-[min(29vw,430px)]
                 -translate-x-1/2 -translate-y-1/2
-                max-[800px]:top-[42%] max-[800px]:h-[44vh] max-[800px]:w-[68vw]"
+                max-[800px]:top-[39%]
+                max-[800px]:h-[43vh]
+                max-[800px]:w-[65vw]"
             >
-              {artwork(
-                selectedProduct,
-                true,
-              )}
+              {renderProduct(selectedProduct, "front")}
             </div>
 
-            {/* Detail metadata */}
+            {/* detail metadata */}
             <div
-              className="absolute bottom-[42px] left-1/2 z-20 flex w-[min(520px,88vw)]
-                -translate-x-1/2 flex-col items-center text-center"
+              className="absolute bottom-[34px] left-1/2 z-20
+                flex -translate-x-1/2 flex-col
+                items-center text-center"
             >
-              <p className="text-[8px] tracking-[.08em] opacity-45">
-                {String(
-                  selectedIndex + 1,
-                ).padStart(
-                  2,
-                  "0",
-                )}{" "}
-                /{" "}
-                {String(
-                  products.length,
-                ).padStart(
-                  2,
-                  "0",
-                )}
+              <p className="text-[7px] tracking-[.08em] opacity-45">
+                {String(selectedIndex + 1).padStart(2, "0")}
+                {" / "}
+                {String(products.length).padStart(2, "0")}
               </p>
 
-              <h2 className="mt-2 font-serif text-[clamp(24px,2.5vw,36px)] italic leading-none tracking-[-.035em]">
-                {
-                  selectedProduct.title
-                }
+              <h2
+                className="mt-[7px] whitespace-nowrap
+                  text-[clamp(18px,1.8vw,30px)]
+                  font-normal italic leading-none
+                  tracking-[-.025em]"
+              >
+                {displayTitle(selectedProduct.title)}
               </h2>
-
-              <p className="mt-3 text-[7px] uppercase tracking-[.12em] opacity-40">
-                SIZE{" "}
-                {
-                  selectedProduct.size
-                }
-                {" · "}
-                {
-                  selectedProduct.condition
-                }
-                {" · "}
-                €{
-                  selectedProduct.price
-                }
-              </p>
 
               <button
                 type="button"
-                disabled={
-                  selectedProduct.sold
-                }
-                onClick={addToBag}
-                className="mt-4 min-w-[150px] rounded-full border border-[#080808]/65 bg-transparent
-                  px-5 py-[7px] text-[8px] uppercase tracking-[.08em]
-                  disabled:cursor-not-allowed disabled:opacity-35"
+                className="mt-[15px] min-w-[176px]
+                  rounded-full border border-[#171d38]/70
+                  bg-transparent px-6 py-[8px]
+                  text-[8px] uppercase tracking-[.06em]"
               >
-                {selectedProduct.sold
-                  ? "SOLD"
-                  : "ADD TO BAG"}
+                SEE AVAILABILITY
               </button>
+
+              {/* little bottom drag/position marker from reference */}
+              <span
+                className="mt-[17px] block h-[5px] w-[33px]
+                  rounded-full bg-[#171d38]/55"
+                aria-hidden="true"
+              />
             </div>
           </div>
-        )}
-
-        {/* Bag */}
-        {bagOpen && (
-          <>
-            <button
-              type="button"
-              aria-label="Close bag"
-              onClick={() =>
-                setBagOpen(false)
-              }
-              className="absolute inset-0 z-50 cursor-default border-0 bg-black/10 backdrop-blur-[2px]"
-            />
-
-            <aside
-              className="absolute bottom-0 right-0 top-0 z-[51] flex w-[min(420px,100vw)]
-                flex-col border-l border-black/10 bg-[#f7f7f3] px-7 pb-7 pt-7"
-              aria-label="Bag"
-            >
-              <div className="flex items-center justify-between border-b border-black/10 pb-5">
-                <h2 className="text-[9px] uppercase tracking-[.15em]">
-                  BAG
-                </h2>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setBagOpen(
-                      false,
-                    )
-                  }
-                  className="border-0 bg-transparent text-[8px] uppercase tracking-[.1em]"
-                >
-                  CLOSE
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-auto py-3">
-                {!bag.length ? (
-                  <p className="mt-8 max-w-[230px] text-[11px] leading-6 opacity-45">
-                    Your bag is
-                    empty.
-                  </p>
-                ) : (
-                  bag.map(
-                    (
-                      id,
-                      index,
-                    ) => {
-                      const product =
-                        products.find(
-                          (
-                            item,
-                          ) =>
-                            item.id ===
-                            id,
-                        );
-
-                      if (!product) {
-                        return null;
-                      }
-
-                      return (
-                        <div
-                          key={`${id}-${index}`}
-                          className="flex items-start justify-between gap-5 border-b border-black/10 py-5"
-                        >
-                          <div>
-                            <p className="text-[10px] uppercase">
-                              {
-                                product.title
-                              }
-                            </p>
-                            <p className="mt-1 text-[7px] uppercase tracking-[.1em] opacity-40">
-                              {
-                                product.size
-                              }{" "}
-                              ·{" "}
-                              {
-                                product.condition
-                              }
-                            </p>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setBag(
-                                  (
-                                    old,
-                                  ) =>
-                                    old.filter(
-                                      (
-                                        _,
-                                        itemIndex,
-                                      ) =>
-                                        itemIndex !==
-                                        index,
-                                    ),
-                                )
-                              }
-                              className="mt-4 border-0 bg-transparent p-0 text-[7px] uppercase tracking-[.1em] underline underline-offset-4 opacity-45"
-                            >
-                              REMOVE
-                            </button>
-                          </div>
-
-                          <span className="text-[10px]">
-                            €
-                            {
-                              product.price
-                            }
-                          </span>
-                        </div>
-                      );
-                    },
-                  )
-                )}
-              </div>
-
-              <div className="border-t border-black/10 pt-5">
-                <div className="flex justify-between text-[9px] uppercase tracking-[.1em]">
-                  <span>
-                    TOTAL
-                  </span>
-                  <span>
-                    €
-                    {bagTotal}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  disabled
-                  className="mt-5 h-11 w-full border border-[#080808] bg-[#080808]
-                    text-[8px] uppercase tracking-[.15em] text-white opacity-25"
-                >
-                  CHECKOUT DEMO
-                </button>
-              </div>
-            </aside>
-          </>
         )}
       </div>
     </section>

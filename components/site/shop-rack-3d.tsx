@@ -1,0 +1,504 @@
+"use client";
+
+import { Suspense, useMemo, useRef, type RefObject } from "react";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+import { Cloth, type Vec3 } from "./shop-cloth";
+import type { ShopAsset } from "./shop-assets";
+
+/*
+ * 3D shop rack with cloth physics.
+ *
+ * Every garment hangs from a hanger that slides along the rail, swings
+ * (pendulum around the rail) and turns (yaw). Two cloth sheets hang from
+ * each hanger at 90° to each other: the front photo and the side photo.
+ * At rest the garments are turned sideways, so the side sheets face the
+ * camera. The hovered garment turns its front to the camera and its
+ * neighbours slide aside; the cloth lags, sways and settles. Each sheet
+ * fades with the angle it shows to the camera.
+ */
+
+const RAIL_Y = 1.15;
+const GARMENT_HEIGHT = 2.1;
+const HANGER_DROP = 0.2; // hook on the rail to the top of the garment
+const SIDE_YAW = Math.PI * 0.42;
+const SPACING = 0.62;
+const RAIL_MARGIN = 0.5;
+const METAL = { color: "#e4e4e2", metalness: 0.35, roughness: 0.35 };
+
+/* Push of a neighbour at distance 1, 2, 3 from the open garment. */
+const PUSH = [0, 0.78, 0.38, 0.14];
+
+export type RackItem = { id: string; asset: ShopAsset };
+
+type PointerState = { point: THREE.Vector3; velocity: THREE.Vector3 };
+
+/* Soft shadow texture, drawn once: an ellipse that fades out at its edges. */
+const shadowTextures: { blob?: THREE.Texture } = {};
+
+function shadowTexture(kind: "blob") {
+  const cached = shadowTextures[kind];
+  if (cached) return cached;
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d")!;
+  const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+  // an alphaMap is read from the green channel: white = shadow, black = none
+  gradient.addColorStop(0, "#fff");
+  gradient.addColorStop(0.55, "#8c8c8c");
+  gradient.addColorStop(1, "#000");
+  context.fillStyle = "#000";
+  context.fillRect(0, 0, 128, 128);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 128, 128);
+  const texture = new THREE.CanvasTexture(canvas);
+  shadowTextures[kind] = texture;
+  return texture;
+}
+
+type Sheet = {
+  cloth: Cloth;
+  geometry: THREE.BufferGeometry;
+  material: THREE.MeshStandardMaterial;
+  local: (x: number, y: number) => THREE.Vector3;
+};
+
+function makeSheet(
+  texture: THREE.Texture,
+  width: number,
+  local: (x: number, y: number) => THREE.Vector3,
+): Sheet {
+  const cloth = new Cloth(width, GARMENT_HEIGHT);
+  const geometry = new THREE.BufferGeometry();
+  const uv = new Float32Array(cloth.cols * cloth.rows * 2);
+  const index: number[] = [];
+  for (let r = 0; r < cloth.rows; r++) {
+    for (let c = 0; c < cloth.cols; c++) {
+      const i = cloth.index(c, r);
+      uv[i * 2] = c / (cloth.cols - 1);
+      uv[i * 2 + 1] = 1 - r / (cloth.rows - 1);
+      if (c < cloth.cols - 1 && r < cloth.rows - 1) {
+        const a = i, b = cloth.index(c + 1, r), d = cloth.index(c, r + 1), e = cloth.index(c + 1, r + 1);
+        index.push(a, d, b, b, d, e);
+      }
+    }
+  }
+  geometry.setAttribute("position", new THREE.BufferAttribute(cloth.positions, 3));
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  geometry.setIndex(index);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  const material = new THREE.MeshStandardMaterial({
+    map: texture,
+    transparent: true,
+    alphaTest: 0.3, // cut the light, half-transparent photo edges that ghost during the turn
+    side: THREE.DoubleSide,
+    roughness: 0.92,
+    metalness: 0,
+    depthWrite: false,
+  });
+  return { cloth, geometry, material, local };
+}
+
+function restX(index: number, count: number) {
+  return (index - (count - 1) / 2) * SPACING;
+}
+
+/* Half of the visible width at the rail's depth, from the camera. */
+function visibleHalfWidth(camera: THREE.Camera, aspect: number) {
+  const perspective = camera as THREE.PerspectiveCamera;
+  return perspective.position.z * Math.tan(THREE.MathUtils.degToRad(perspective.fov / 2)) * aspect;
+}
+
+const FRONT_HALF = GARMENT_HEIGHT * 0.45; // half the width of an open garment
+const SIDE_HALF = GARMENT_HEIGHT * 0.23; // half the width of a garment seen from the side
+const EDGE = 0.06;
+
+/*
+ * Where the open garment hangs: at its place on the rail, moved inward
+ * when it would not fit on screen.
+ */
+function openX(open: number, count: number, halfWidth: number) {
+  const limit = Math.max(0, halfWidth - FRONT_HALF - EDGE);
+  return THREE.MathUtils.clamp(restX(open, count), -limit, limit);
+}
+
+function Garment({
+  asset,
+  index,
+  count,
+  active,
+  pointer,
+}: {
+  asset: ShopAsset;
+  index: number;
+  count: number;
+  active: RefObject<number | null>;
+  pointer: RefObject<PointerState | null>;
+}) {
+  const [front, side] = useLoader(THREE.TextureLoader, [asset.front, asset.side]);
+  const { camera, size } = useThree();
+  const slideGroup = useRef<THREE.Group>(null);
+  const swingGroup = useRef<THREE.Group>(null);
+  const yawGroup = useRef<THREE.Group>(null);
+  const barMaterial = useRef<THREE.MeshStandardMaterial>(null);
+  const shadow = useRef<THREE.Mesh>(null);
+  const shadowMaterial = useRef<THREE.MeshBasicMaterial>(null);
+  const motion = useRef({
+    x: restX(index, count), xVelocity: 0,
+    yaw: SIDE_YAW, yawVelocity: 0,
+    swing: 0, swingVelocity: 0,
+    ready: false,
+    still: 0, // frames without motion; the cloth sleeps after a while
+  });
+
+  const sheets = useMemo(() => {
+    const frontImage = front.image as HTMLImageElement;
+    const sideImage = side.image as HTMLImageElement;
+    // The top edge follows the hanger: a gentle slope down to the shoulders.
+    const shoulder = (x: number, w: number) => -HANGER_DROP - 0.18 * (x / (w / 2)) ** 2;
+    const frontWidth = GARMENT_HEIGHT * (frontImage.width / frontImage.height);
+    const sideWidth = GARMENT_HEIGHT * (sideImage.width / sideImage.height);
+    return [
+      makeSheet(front, frontWidth, (lx, ly) => new THREE.Vector3(lx, ly + shoulder(lx, frontWidth), 0)),
+      makeSheet(side, sideWidth, (lx, ly) => new THREE.Vector3(0, ly + shoulder(lx, sideWidth) * 0.4, lx)),
+    ];
+  }, [front, side]);
+
+  const temp = useMemo(() => new THREE.Vector3(), []);
+
+  useFrame((_, delta) => {
+    const dt = Math.min(delta, 1 / 30);
+    const m = motion.current;
+    const slideNode = slideGroup.current;
+    const swingNode = swingGroup.current;
+    const yawNode = yawGroup.current;
+    if (!slideNode || !swingNode || !yawNode) return;
+
+    // slide along the rail: neighbours of the open garment move aside,
+    // but every hook stays on the rail
+    const open = active.current;
+    const distance = open === null ? 0 : index - open;
+    const halfWidth = visibleHalfWidth(camera, size.width / size.height);
+    // neighbours keep their hook on the rail and their body on screen
+    const limit = Math.min(((count - 1) / 2) * SPACING + RAIL_MARGIN - 0.12, halfWidth - SIDE_HALF - EDGE);
+    const shift = open === null ? 0 : openX(open, count, halfWidth) - restX(open, count);
+    const targetX =
+      open === index
+        ? restX(index, count) + shift
+        : THREE.MathUtils.clamp(
+            restX(index, count) + shift + Math.sign(distance) * (PUSH[Math.abs(distance)] ?? 0),
+            -limit,
+            limit,
+          );
+    const slideForce = (targetX - m.x) * 60 - m.xVelocity * 13;
+    m.xVelocity += slideForce * dt;
+    m.x += m.xVelocity * dt;
+
+    // turn: spring towards the front (open) or the side
+    const targetYaw = open === index ? 0 : SIDE_YAW;
+    const yawForce = (targetYaw - m.yaw) * 38 - m.yawVelocity * 9;
+    m.yawVelocity += yawForce * dt;
+    m.yaw += m.yawVelocity * dt;
+
+    // swing: pendulum around the rail, kicked by sliding and turning
+    const swingForce =
+      -(9.8 / 1.4) * Math.sin(m.swing) - m.swingVelocity * 1.6 + m.yawVelocity * 0.35 - m.xVelocity * 0.9;
+    m.swingVelocity += swingForce * dt;
+    m.swing += m.swingVelocity * dt;
+
+    slideNode.position.x = m.x;
+    // soft shadow on the wall behind: wider and darker as the garment turns forward
+    const frontness = Math.abs(Math.cos(m.yaw));
+    if (shadow.current && shadowMaterial.current) {
+      shadow.current.position.x = m.x + 0.08 + m.swing * 0.6;
+      shadow.current.scale.x = THREE.MathUtils.lerp(0.95, 2.05, frontness);
+      shadowMaterial.current.opacity = THREE.MathUtils.lerp(0.09, 0.16, frontness);
+    }
+    slideNode.position.z = open === index ? 0.25 : 0;
+    swingNode.rotation.z = m.swing;
+    yawNode.rotation.y = m.yaw;
+    slideNode.updateMatrixWorld(true);
+    const world = yawNode.matrixWorld;
+
+    // sleep: once the garment has settled, skip the cloth until it moves again
+    const moving =
+      Math.abs(m.xVelocity) + Math.abs(m.yawVelocity) + Math.abs(m.swingVelocity) > 0.004 ||
+      (pointer.current?.velocity.lengthSq() ?? 0) > 1e-4;
+    m.still = moving ? 0 : m.still + 1;
+    if (m.ready && m.still > 90) return;
+
+    for (const [n, sheet] of sheets.entries()) {
+      const { cloth, local, geometry, material } = sheet;
+      if (!m.ready) cloth.reset((lx, ly) => local(lx, ly).applyMatrix4(world).toArray() as Vec3);
+      cloth.step(
+        dt,
+        (c) => local(cloth.localX(c), 0).applyMatrix4(world).toArray() as Vec3,
+        pointer.current
+          ? (px, py, pz) => {
+              const p = pointer.current!;
+              const d = temp.set(px, py, pz).distanceTo(p.point);
+              if (d > 0.45) return null;
+              const k = (1 - d / 0.45) * 0.004;
+              return [p.velocity.x * k, p.velocity.y * k * 0.3, p.velocity.x * k * 0.6];
+            }
+          : undefined,
+        {
+          at: (c, r) => local(cloth.localX(c), cloth.localY(r)).applyMatrix4(world).toArray() as Vec3,
+          stiffness: 0.06,
+        },
+      );
+      geometry.attributes.position.needsUpdate = true;
+      geometry.computeVertexNormals();
+      geometry.computeBoundingSphere();
+      // each sheet shows while it faces the camera
+      const facing = n === 0 ? Math.abs(Math.cos(m.yaw)) : Math.abs(Math.sin(m.yaw));
+      material.opacity = THREE.MathUtils.smoothstep(facing, 0.45, 0.8);
+      if (n === 0 && barMaterial.current) {
+        // the bar shows only when the garment fully faces the camera
+        const bar = THREE.MathUtils.smoothstep(facing, 0.82, 0.97);
+        barMaterial.current.opacity = bar;
+        barMaterial.current.visible = bar > 0.02;
+      }
+    }
+    m.ready = true;
+  });
+
+  const hangerCurve = useMemo(
+    () =>
+      new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(-0.26, -HANGER_DROP - 0.32, -0.03),
+        new THREE.Vector3(0, -HANGER_DROP - 0.14, -0.03),
+        new THREE.Vector3(0.26, -HANGER_DROP - 0.32, -0.03),
+      ),
+    [],
+  );
+
+  return (
+    <>
+      <mesh
+        ref={shadow}
+        position={[restX(index, count), RAIL_Y - HANGER_DROP - GARMENT_HEIGHT * 0.52, -0.45]}
+        renderOrder={-1}
+        raycast={() => null}
+      >
+        <planeGeometry args={[1, GARMENT_HEIGHT * 0.95]} />
+        <meshBasicMaterial
+          ref={shadowMaterial}
+          color="#000"
+          alphaMap={shadowTexture("blob")}
+          transparent
+          depthWrite={false}
+        />
+      </mesh>
+      <group ref={slideGroup} position={[restX(index, count), RAIL_Y, 0]}>
+        <group ref={swingGroup}>
+          <group ref={yawGroup}>
+            {/* hook over the rail */}
+            <mesh rotation={[0, Math.PI / 2, 0]}>
+              <torusGeometry args={[0.05, 0.008, 8, 24, Math.PI * 1.25]} />
+              <meshStandardMaterial {...METAL} color="#b4b4b2" />
+            </mesh>
+            <mesh position={[0, -0.12, 0]}>
+              <cylinderGeometry args={[0.008, 0.008, 0.18, 8]} />
+              <meshStandardMaterial {...METAL} color="#b4b4b2" />
+            </mesh>
+            {/* wooden neck, and the shoulder bar hidden inside the garment */}
+            <mesh position={[0, -HANGER_DROP - 0.06, -0.01]}>
+              <boxGeometry args={[0.05, 0.1, 0.035]} />
+              <meshStandardMaterial color="#9a5a2e" roughness={0.6} />
+            </mesh>
+            <mesh>
+              <tubeGeometry args={[hangerCurve, 24, 0.022, 8, false]} />
+              <meshStandardMaterial ref={barMaterial} color="#9a5a2e" roughness={0.6} transparent depthWrite={false} />
+            </mesh>
+          </group>
+        </group>
+      </group>
+
+      {sheets.map((sheet, n) => (
+        <mesh key={n} geometry={sheet.geometry} material={sheet.material} renderOrder={index * 2 + n} raycast={() => null} />
+      ))}
+    </>
+  );
+}
+
+function Rail({ count }: { count: number }) {
+  const half = ((count - 1) / 2) * SPACING + RAIL_MARGIN;
+  return (
+    <group position={[0, RAIL_Y, 0]}>
+      {/* soft shadow under the rail, on the wall behind */}
+      <mesh position={[0, -0.06, -0.45]} renderOrder={-1} raycast={() => null}>
+        <planeGeometry args={[half * 2.1, 0.1]} />
+        <meshBasicMaterial color="#000" alphaMap={shadowTexture("blob")} transparent opacity={0.1} depthWrite={false} />
+      </mesh>
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.028, 0.028, half * 2, 24]} />
+        <meshStandardMaterial {...METAL} />
+      </mesh>
+      {[-half, half].map((x) => (
+        <mesh key={x} position={[x, 0, -0.04]}>
+          <boxGeometry args={[0.07, 0.22, 0.05]} />
+          <meshStandardMaterial {...METAL} color="#cfcfcd" />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/*
+ * Frames the rack: the rail fills a set share of the width, and the rail
+ * sits at a set height on screen (about a quarter from the top).
+ */
+function CameraRig({ count }: { count: number }) {
+  const { camera, size } = useThree();
+  useFrame(() => {
+    const perspective = camera as THREE.PerspectiveCamera;
+    const mobile = size.width <= 800;
+    const railLength = (count - 1) * SPACING + RAIL_MARGIN * 2 + 0.2;
+    const tan = Math.tan(THREE.MathUtils.degToRad(perspective.fov / 2));
+    const aspect = size.width / size.height;
+    const widthShare = mobile ? 0.94 : 0.56;
+    const byWidth = railLength / widthShare / (2 * tan * aspect);
+    const byHeight = (GARMENT_HEIGHT + 0.6) / (mobile ? 0.5 : 0.62) / (2 * tan);
+    const distance = Math.max(byWidth, byHeight);
+    const visibleHeight = 2 * distance * tan;
+    const railFromTop = mobile ? 0.36 : 0.27;
+    perspective.position.set(0, RAIL_Y - (0.5 - railFromTop) * visibleHeight, distance);
+    perspective.updateProjectionMatrix();
+  });
+  return null;
+}
+
+/* Keeps the name label under the open garment, in screen space. */
+function LabelTracker({
+  onLabel,
+  active,
+  count,
+}: {
+  onLabel: (position: { x: number; y: number } | null) => void;
+  active: RefObject<number | null>;
+  count: number;
+}) {
+  const { camera, size } = useThree();
+  const point = useMemo(() => new THREE.Vector3(), []);
+  useFrame(() => {
+    const open = active.current;
+    if (open === null) {
+      onLabel(null);
+      return;
+    }
+    point.set(openX(open, count, visibleHalfWidth(camera, size.width / size.height)), RAIL_Y - HANGER_DROP - GARMENT_HEIGHT * 0.98, 0.25).project(camera);
+    onLabel({ x: ((point.x + 1) / 2) * size.width, y: ((1 - point.y) / 2) * size.height + 10 });
+  });
+  return null;
+}
+
+/*
+ * The rack inside the canvas. One invisible plane covers the whole rack;
+ * the garment under the pointer is the nearest fixed slot on the rail, so
+ * the choice does not depend on where the garments have moved. A small
+ * margin keeps the open garment from flickering at slot borders.
+ */
+function Rack({
+  items,
+  onLabel,
+  onActive,
+}: {
+  items: RackItem[];
+  onLabel: (position: { x: number; y: number } | null) => void;
+  onActive: (index: number | null) => void;
+}) {
+  const count = items.length;
+  const active = useRef<number | null>(null);
+  const pointer = useRef<PointerState | null>(null);
+  const leaveTimer = useRef<number | undefined>(undefined);
+
+  const choose = (x: number) => {
+    window.clearTimeout(leaveTimer.current);
+    const open = active.current;
+    if (open !== null && Math.abs(x - restX(open, count)) < SPACING * 0.5 + 0.1) return;
+    const slot = THREE.MathUtils.clamp(Math.round(x / SPACING + (count - 1) / 2), 0, count - 1);
+    if (slot === open) return;
+    active.current = slot;
+    onActive(slot);
+  };
+
+  // leaving the rack closes the open garment after a short pause
+  const leave = () => {
+    window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => {
+      if (active.current === null) return;
+      active.current = null;
+      onActive(null);
+    }, 120);
+  };
+
+  useFrame(() => {
+    pointer.current?.velocity.multiplyScalar(0.85);
+  });
+
+  const width = (count - 1) * SPACING + SPACING;
+
+  return (
+    <>
+      <CameraRig count={count} />
+      <LabelTracker onLabel={onLabel} active={active} count={count} />
+      <Rail count={count} />
+      <mesh
+        position={[0, RAIL_Y - HANGER_DROP - GARMENT_HEIGHT / 2, 0.4]}
+        onPointerMove={(event) => {
+          choose(event.point.x);
+          const previous = pointer.current?.point ?? event.point.clone();
+          pointer.current = {
+            point: event.point.clone(),
+            velocity: event.point.clone().sub(previous).multiplyScalar(60),
+          };
+        }}
+        onClick={(event) => choose(event.point.x)}
+        onPointerLeave={leave}
+      >
+        <planeGeometry args={[width, GARMENT_HEIGHT]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+      </mesh>
+      <Suspense fallback={null}>
+        {items.map((item, index) => (
+          <Garment
+            key={item.id}
+            asset={item.asset}
+            index={index}
+            count={count}
+            active={active}
+            pointer={pointer}
+          />
+        ))}
+      </Suspense>
+    </>
+  );
+}
+
+export default function ShopRack3D({
+  items,
+  onLabel,
+  onActive,
+}: {
+  items: RackItem[];
+  /** Screen position for the open garment's name, or null when none is open. */
+  onLabel: (position: { x: number; y: number } | null) => void;
+  onActive: (index: number | null) => void;
+}) {
+  return (
+    <Canvas
+      className="!absolute inset-0"
+      camera={{ position: [0, 0, 7], fov: 30 }}
+      dpr={[1, 2]}
+      gl={{ antialias: true, alpha: true }}
+    >
+      <ambientLight intensity={1.6} />
+      <directionalLight position={[2, 4, 5]} intensity={1.8} />
+      <directionalLight position={[-3, 1, 2]} intensity={0.6} />
+      <Rack items={items} onLabel={onLabel} onActive={onActive} />
+    </Canvas>
+  );
+}

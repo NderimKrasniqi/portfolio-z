@@ -10,6 +10,7 @@ import { BackButton } from "./site-controls";
 import {
   loadGsap,
   prefersReducedMotion,
+  restingOpacity,
 } from "./motion";
 
 function nameParts(name: string) {
@@ -185,7 +186,8 @@ export function AboutView({
               !prefersReducedMotion()
             ) {
               gsapApi.to(parts, {
-                opacity: 1,
+                opacity: (_index: number, target: Element) =>
+                  restingOpacity(target),
                 y: 0,
                 duration: 0.56,
                 stagger: 0.035,
@@ -226,6 +228,8 @@ export function AboutView({
             ".about-chapter-index,.about-chapter-kicker,h3,.about-chapter-copy>p:last-child",
           ),
         ];
+
+        parts.forEach(restingOpacity);
 
         gsap.set(parts, {
           opacity: 0,

@@ -9,6 +9,7 @@ import { BackButton } from "./site-controls";
 import {
   loadGsap,
   prefersReducedMotion,
+  restingOpacity,
 } from "./motion";
 
 const MANAGEMENT_URL =
@@ -50,7 +51,7 @@ export function ContactView({
       const elements = [
         ...pieces,
         close,
-      ].filter(Boolean);
+      ].filter((element): element is HTMLElement => Boolean(element));
 
       if (prefersReducedMotion()) {
         gsap.set(elements, {
@@ -59,13 +60,16 @@ export function ContactView({
         return;
       }
 
+      elements.forEach(restingOpacity);
+
       gsap.set(elements, {
         opacity: 0,
         y: 5,
       });
 
       gsap.to(elements, {
-        opacity: 1,
+        opacity: (_index: number, target: Element) =>
+          restingOpacity(target),
         y: 0,
         duration: 0.4,
         stagger: 0.035,

@@ -1,0 +1,56 @@
+.portfolio .gallery-panel{--gallery-bg:var(--paper);--gallery-fg:#080808;background:var(--paper);color:#080808}
+.portfolio .gallery-back{align-items:center}
+.portfolio .gallery-back{position:fixed;left:auto!important;right:var(--side)!important;top:24px!important;z-index:var(--z-panel-chrome)!important;display:block!important;border:0;padding:0;background:transparent;color:#080808;font-size:8px;line-height:1;letter-spacing:.21em;text-transform:uppercase;cursor:pointer;opacity:1!important;gap:0}
+.portfolio .gallery-back::before{content:"";position:absolute;left:50%;top:50%;width:max(40px,100%);height:max(40px,100%);transform:translate(-50%,-50%)}
+.portfolio .gallery-back:hover{opacity:1!important}
+.portfolio .gallery-back:focus-visible{outline:1px solid currentColor;outline-offset:5px}
+@media (max-width:800px){
+.portfolio .gallery-back{right:16px!important;top:17px!important;font-size:8px}
+}
+.portfolio .gallery-back.unified-back{position:fixed;display:flex!important;align-items:center;gap:7px;padding:0;border:0;background:transparent;font-size:8px;line-height:1;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;opacity:1;z-index:var(--z-panel-chrome)!important}
+.portfolio .gallery-back.unified-back{color:#080808;-webkit-text-fill-color:#080808}
+.portfolio .gallery-back.unified-back::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.portfolio .gallery-back.unified-back:hover{opacity:.62!important}
+.portfolio .gallery-back.unified-back:focus-visible{outline:1px solid #080808;outline-offset:5px}
+.portfolio .gallery-back.unified-back{left:auto!important;right:var(--side)!important;top:24px!important}
+.portfolio .gallery-back.unified-back::before{width:calc(100% + 28px)!important;height:44px!important}
+.portfolio .gallery-panel{height:100dvh;min-height:100dvh}
+@media (max-width:800px){
+.portfolio .gallery-back.unified-back{left:auto!important;top:max(18px,env(safe-area-inset-top))!important;font-size:7px;gap:6px;letter-spacing:.17em}
+.portfolio .gallery-panel{overflow:hidden}
+}
+@media (max-width:800px){
+.portfolio .gallery-back.unified-back{right:max(20px,env(safe-area-inset-right))!important}
+}
+.portfolio .gallery-panel.open{visibility:visible;opacity:1;pointer-events:auto}
+@media(prefers-reduced-motion:reduce){
+.portfolio .gallery-panel.open{animation:none!important}
+}
+/* GSAP owns the public panel timelines when motion is available. The CSS
+   animations remain the no-JS fallback and the reduced-motion path. */
+.portfolio.motion-gsap .gallery-panel.open{animation:none!important}
+.portfolio .gallery-panel{background-color:var(--paper);background-image:none}
+
+.portfolio .gx{position:fixed;inset:0;z-index:var(--z-panel);overflow:hidden;background:var(--paper);color:#080808;visibility:visible;opacity:1;pointer-events:auto;font-family:"Arial Narrow","Helvetica Neue",Arial,sans-serif}
+.portfolio .gx-space{position:absolute;inset:0;cursor:grab;touch-action:none;user-select:none}
+.portfolio .gx-space:active{cursor:grabbing}
+.portfolio .gx-card{position:absolute;left:50%;top:50%;width:0;height:0;opacity:0;padding:0;border:0;background:#e9e4de;overflow:hidden;cursor:pointer;will-change:transform,width,height,opacity}
+.portfolio .gx-card :is(img,video){display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.portfolio .gx-card.is-open{cursor:zoom-out}
+.portfolio .gx-card:focus-visible{outline:1px solid #080808;outline-offset:3px}
+.portfolio .gx-veil{position:absolute;inset:0;z-index:999;padding:0;border:0;background:transparent;cursor:zoom-out}
+.portfolio .gx-side{position:absolute;top:50%;z-index:2;margin:0;transform:translateY(-50%);font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;pointer-events:none}
+.portfolio .gx-side--left{left:var(--side)}
+.portfolio .gx-side--right{right:var(--side);font-weight:400}
+.portfolio .gx-caption{position:absolute;left:50%;bottom:34px;z-index:1001;margin:0;transform:translateX(-50%);font-size:11px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;pointer-events:none}
+.portfolio .gx-caption span{opacity:.55}
+@media (max-width:800px){
+  .portfolio .gx-side{top:auto;bottom:70px;transform:none;font-size:10px}
+  .portfolio .gx-caption{bottom:26px}
+}
+
+.portfolio .gx-bar{position:absolute;left:50%;top:14px;z-index:1002;display:flex;align-items:center;gap:6px;transform:translateX(-50%);font-family:Arial,Helvetica,sans-serif;font-size:13px}
+.portfolio .gx-bar strong{margin-right:14px;font-weight:700;letter-spacing:-.02em}
+.portfolio .gx-bar span{padding:6px 12px;border-radius:4px;background:#ece7e1}
+.portfolio .gx-bar sup{margin-left:3px;font-size:8px}
+.portfolio .gx-mark{position:absolute;left:50%;top:50%;z-index:0;margin:0;transform:translate(-50%,-50%);font:700 11px/1 Arial,Helvetica,sans-serif;letter-spacing:-.02em;pointer-events:none}

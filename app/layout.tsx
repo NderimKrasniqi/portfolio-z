@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
+import { Barlow_Condensed } from "next/font/google";
 import "./globals.css";
-import "./reference.css";
-import "./reference-overrides.css";
+import "./styles/base.css";
+import "./styles/home.css";
+import "./styles/gallery.css";
+import "./styles/about.css";
+import "./styles/contact.css";
+import "./styles/shop.css";
+import "./styles/shared.css";
+const condensed = Barlow_Condensed({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-condensed" });
+
 export const metadata: Metadata = {
   title: {
     default: "Zeudi Di Palma — Portfolio",
@@ -19,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={condensed.variable}>
       <body>{children}</body>
     </html>
   );

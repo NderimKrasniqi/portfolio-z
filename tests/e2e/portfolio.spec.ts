@@ -12,8 +12,9 @@ test("home → gallery → home navigation works", async ({
     page.locator(".stage"),
   ).toBeVisible();
 
-  const galleryLink =
-    page.locator(".gallery-open");
+  const galleryLink = page
+    .locator(".hx-head")
+    .getByRole("link", { name: /gallery/i });
 
   await expect(
     galleryLink,
