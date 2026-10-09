@@ -31,11 +31,11 @@
 /* Public base. These were inherited from the old global element rules. */
 .portfolio :is(a, button, input, textarea, select){outline-offset:5px}
 /* React supplies the states that the reference page's inline script supplied. */
-.portfolio{position:fixed;inset:0;overflow:hidden;background:#fff;color:#080808;font-family:Arial,Helvetica,sans-serif;--paper:#fff;--ink:#080808}
+.portfolio{position:fixed;inset:0;overflow:hidden;background:var(--paper);color:#080808;font-family:Arial,Helvetica,sans-serif;--paper:#f6f2ee;--ink:#080808}
 .portfolio .social-icon{display:block;width:100%;height:100%}
 .portfolio .social-icon svg{display:block;width:100%;height:100%}
 .portfolio .social-icon-text{display:block;font-size:11px;font-weight:700;line-height:13px;text-align:center}
-.portfolio .reference-skip{position:fixed;top:-100px;left:16px;z-index:calc(var(--z-system) + 10);background:#fff;padding:12px;font-size:12px}
+.portfolio .reference-skip{position:fixed;top:-100px;left:16px;z-index:calc(var(--z-system) + 10);background:var(--paper);padding:12px;font-size:12px}
 .portfolio .reference-skip:focus{top:12px}
 .portfolio .reference-preview-banner{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:var(--z-system);background:#fff8e1;border:1px solid #080808;padding:7px 12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 .portfolio .reference-preview-banner a{text-decoration:underline}
@@ -44,6 +44,6 @@
 .portfolio .reference-loader{display:none}
 }
 /* Keep the loader a clean signature field. */
-.portfolio .reference-loader{background-color:#fff!important}
-.portfolio{background-color:#fff;background-image:none}
-.portfolio .reference-loader{background-color:#fff!important;background-image:none!important}
+.portfolio .reference-loader{background-color:var(--paper)!important}
+.portfolio{background-color:var(--paper);background-image:none}
+.portfolio .reference-loader{background-color:var(--paper)!important;background-image:none!important}

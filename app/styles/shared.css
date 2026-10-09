@@ -2,4 +2,4 @@
 .portfolio :is(
   .gallery-focus__veil,
   .language-picker__panel
-){background-color:#fff;background-image:none}
+){background-color:var(--paper);background-image:none}

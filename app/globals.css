@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 :root {
-  --paper: #fff;
+  --paper: #f6f2ee;
   --ink: #191919;
   --line: #c8c5be;
   background: var(--paper);

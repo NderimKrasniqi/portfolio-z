@@ -66,7 +66,7 @@
 }
 .portfolio .contact-panel .contact-sheet{position:relative;z-index:2!important}
 .portfolio .contact-panel .contact-close{z-index:4!important}
-.portfolio .contact-panel{background:#fff;background-color:#fff;color:#080808}
+.portfolio .contact-panel{background:var(--paper);background-color:var(--paper);color:#080808}
 .portfolio .contact-panel .contact-sheet{background:transparent;color:#080808}
 .portfolio .contact-panel .contact-close,
 .portfolio .contact-close.unified-back{color:#080808;-webkit-text-fill-color:#080808}
@@ -98,7 +98,7 @@
 }
 .portfolio.motion-gsap .contact-panel.open{animation:none!important}
 .portfolio.motion-gsap .contact-panel{transition:none!important}
-.portfolio .contact-panel{background-color:#fff;background-image:none}
+.portfolio .contact-panel{background-color:var(--paper);background-image:none}
 .portfolio .contact-sheet{background-color:transparent;background-image:none}
 /* Contact has a legacy full-screen white pseudo-surface. */
 .portfolio .contact-panel::before{background:transparent}

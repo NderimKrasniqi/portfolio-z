@@ -15,7 +15,7 @@
 @media (prefers-reduced-motion:reduce){
 .portfolio .gallery-intro-name{will-change:auto}
 }
-.portfolio .gallery-panel{--gallery-bg:#fff;--gallery-fg:#080808;background:#fff;color:#080808}
+.portfolio .gallery-panel{--gallery-bg:var(--paper);--gallery-fg:#080808;background:var(--paper);color:#080808}
 .portfolio .gallery-head--zeudi{display:none!important}
 .portfolio .gallery-socials{position:absolute;left:50%;top:20px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;pointer-events:auto}
 .portfolio .gallery-socials a{position:relative;width:13px;height:13px;display:grid;place-items:center;opacity:.42;color:#080808}
@@ -121,5 +121,5 @@
 /* GSAP owns the public panel timelines when motion is available. The CSS
    animations remain the no-JS fallback and the reduced-motion path. */
 .portfolio.motion-gsap .gallery-panel.open{animation:none!important}
-.portfolio .gallery-panel{background-color:#fff;background-image:none}
+.portfolio .gallery-panel{background-color:var(--paper);background-image:none}
 .portfolio .gallery-space{background-color:transparent;background-image:none}

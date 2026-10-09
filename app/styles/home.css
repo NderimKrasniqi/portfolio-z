@@ -1,9 +1,10 @@
 /* Home: stage, identity, hero media, meta, filmstrip, music, language picker, mobile nav, loader. */
 .portfolio .stage{position:fixed;inset:0;overflow:hidden;background:var(--paper);opacity:0;visibility:hidden}
-.portfolio .loader{position:fixed;inset:0;z-index:var(--z-loader);background:#fff;overflow:hidden;pointer-events:none}
+.portfolio .loader{position:fixed;inset:0;z-index:var(--z-loader);background:var(--paper);overflow:hidden;pointer-events:none}
 .portfolio .loader__veil{position:absolute;inset:0;z-index:1}
 .portfolio .loader__signature-wrap{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden}
-.portfolio .loader__signature{width:min(90vw,1180px);will-change:transform,opacity}
+.portfolio .loader__signature{width:clamp(220px,24vw,340px);will-change:transform,opacity}
+@media (max-width:800px){.portfolio .loader__signature{width:62vw}}
 .portfolio .loader__signature svg{display:block;width:100%;height:auto;overflow:visible}
 .portfolio .loader__signature path{opacity:0}
 .portfolio .loader__signature ellipse{display:none!important}
@@ -67,7 +68,7 @@
 .portfolio .identity__name{clip-path:none!important;transform:none!important}
 .portfolio .meta{transform:translateY(-50%)!important}
 }
-.portfolio .loader{background-color:#fff}
+.portfolio .loader{background-color:var(--paper)}
 .portfolio .loader__veil{background:transparent}
 .portfolio .loader::before,
 .portfolio .loader::after{display:none!important;content:none}
@@ -197,7 +198,7 @@
 .portfolio .mobile-menu-toggle.is-open .mobile-menu-toggle__icon::before{top:4.5px;transform:rotate(45deg)}
 .portfolio .mobile-menu-toggle.is-open .mobile-menu-toggle__icon::after{top:4.5px;transform:rotate(-45deg)}
 .portfolio .mobile-menu-toggle:focus-visible{outline:1px solid currentColor;outline-offset:3px}
-.portfolio .mobile-nav-panel{position:fixed;inset:0;z-index:var(--z-menu);background:#fff;color:#080808;align-items:center;justify-content:center;flex-direction:column;gap:12px;opacity:0;visibility:hidden;pointer-events:none;clip-path:inset(0 0 100% 0);-webkit-clip-path:inset(0 0 100% 0);transition:clip-path .52s cubic-bezier(.22,1,.36,1),-webkit-clip-path .52s cubic-bezier(.22,1,.36,1),opacity .18s ease,visibility 0s linear .52s}
+.portfolio .mobile-nav-panel{position:fixed;inset:0;z-index:var(--z-menu);background:var(--paper);color:#080808;align-items:center;justify-content:center;flex-direction:column;gap:12px;opacity:0;visibility:hidden;pointer-events:none;clip-path:inset(0 0 100% 0);-webkit-clip-path:inset(0 0 100% 0);transition:clip-path .52s cubic-bezier(.22,1,.36,1),-webkit-clip-path .52s cubic-bezier(.22,1,.36,1),opacity .18s ease,visibility 0s linear .52s}
 .portfolio .mobile-nav-panel.is-open{display:flex;-webkit-clip-path:inset(0 0 0 0);transition:clip-path .52s cubic-bezier(.22,1,.36,1),-webkit-clip-path .52s cubic-bezier(.22,1,.36,1),opacity .18s ease,visibility 0s}
 .portfolio .mobile-nav-panel__inner{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;padding:72px 24px}
 .portfolio .mobile-nav-link{position:relative;border:0;background:transparent;padding:8px 14px;color:#080808;cursor:pointer;font-size:clamp(34px,11vw,52px);line-height:.94;letter-spacing:-.045em;text-transform:uppercase;font-weight:400;opacity:0;transform:translateY(14px);transition:opacity .35s ease,transform .5s cubic-bezier(.22,1,.36,1)}
@@ -353,7 +354,7 @@
 .portfolio .reference-loader .loader__signature-wrap{visibility:visible;opacity:1}
 .portfolio .reference-loader .loader__signature path{opacity:0}
 .portfolio .home-music-toggle svg{width:16px;height:16px}
-.portfolio .loader{background-color:#fff!important}
+.portfolio .loader{background-color:var(--paper)!important}
 /* The speaker button is the only music control. Keep the provider frame
    mounted off-canvas so it can play without becoming a second window. */
 .portfolio #homeMusicPlayer.home-music-frame,
@@ -369,7 +370,7 @@
 .portfolio .language-picker__trigger:focus-visible{outline:1px solid currentColor;outline-offset:5px}
 .portfolio .language-picker__chevron{font-size:10px;letter-spacing:0;transform:translateY(-1px);transition:transform .2s ease}
 .portfolio .language-picker.is-open .language-picker__chevron{transform:rotate(180deg) translateY(1px)}
-.portfolio .language-picker__panel{position:absolute;left:-12px;bottom:calc(100% + 9px);width:min(220px,calc(100vw - 32px));max-height:min(62vh,420px);padding:15px 16px 13px;overflow-y:auto;overscroll-behavior:contain;border:1px solid rgba(8,8,8,.16);background-color:#fff;box-shadow:0 12px 32px rgba(8,8,8,.08);letter-spacing:.08em;animation:language-picker-in .2s ease both}
+.portfolio .language-picker__panel{position:absolute;left:-12px;bottom:calc(100% + 9px);width:min(220px,calc(100vw - 32px));max-height:min(62vh,420px);padding:15px 16px 13px;overflow-y:auto;overscroll-behavior:contain;border:1px solid rgba(8,8,8,.16);background-color:var(--paper);box-shadow:0 12px 32px rgba(8,8,8,.08);letter-spacing:.08em;animation:language-picker-in .2s ease both}
 .portfolio .language-picker__panel[hidden]{display:none}
 .portfolio .language-picker__label{margin:0 0 12px;font-size:7px;letter-spacing:.18em;opacity:.42}
 .portfolio .language-picker__panel ul{display:grid;gap:1px;margin:0;padding:0;list-style:none}
@@ -396,7 +397,7 @@
 }
 .portfolio .stage,
 .portfolio .loader,
-.portfolio .mobile-nav-panel{background-color:#fff;background-image:none}
+.portfolio .mobile-nav-panel{background-color:var(--paper);background-image:none}
 /* Actual media remains clean and opaque. */
 .portfolio .media,
 .portfolio .media-layer,

@@ -1,7 +1,7 @@
 /* About: story panel, chapters and portrait. */
 .portfolio .about-close::before{content:"";position:absolute;left:50%;top:50%;width:max(40px,100%);height:max(40px,100%);transform:translate(-50%,-50%)}
 .portfolio .about-close:focus-visible{outline:1px solid currentColor;outline-offset:5px}
-.portfolio .about-panel{position:fixed;inset:0;z-index:var(--z-panel);background:#fff;color:#080808;visibility:hidden;pointer-events:none;opacity:1;clip-path:inset(0 100% 0 0);-webkit-clip-path:inset(0 100% 0 0);will-change:clip-path;isolation:isolate}
+.portfolio .about-panel{position:fixed;inset:0;z-index:var(--z-panel);background:var(--paper);color:#080808;visibility:hidden;pointer-events:none;opacity:1;clip-path:inset(0 100% 0 0);-webkit-clip-path:inset(0 100% 0 0);will-change:clip-path;isolation:isolate}
 .portfolio .about-panel.is-ready{pointer-events:auto}
 .portfolio .about-close{position:fixed;right:var(--side);top:24px;z-index:var(--z-panel-chrome);color:#080808;font-size:8px;line-height:1;letter-spacing:.21em;text-transform:uppercase;cursor:pointer}
 .portfolio .about-sheet{overflow:auto}
@@ -273,5 +273,5 @@
 @media (max-width:800px){
 .portfolio .about-progress-track{right:clamp(-24px,-4vw,-16px)!important}
 }
-.portfolio .about-panel{background-color:#fff;background-image:none}
+.portfolio .about-panel{background-color:var(--paper);background-image:none}
 .portfolio .about-sheet{background-color:transparent;background-image:none}

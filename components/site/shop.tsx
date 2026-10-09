@@ -675,7 +675,7 @@ export function ShopView({
     >
       <div
         className="relative z-[2] h-full w-full overflow-hidden
-          bg-white text-[#171d38]"
+          bg-[var(--paper)] text-[#171d38]"
       >
         {/* =====================================================
             HEADER
