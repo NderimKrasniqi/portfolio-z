@@ -10,7 +10,7 @@ type Item = Content["media"][number];
 
 type Spot = { angle: number; radius: number; height: number; width: number; delay: number };
 
-const TILT = (62 * Math.PI) / 180;
+const TILT = (56 * Math.PI) / 180;
 
 function random(seed: number) {
   const value = Math.sin(seed * 9301 + 49297) * 233280;
@@ -19,11 +19,11 @@ function random(seed: number) {
 
 function layout(items: Item[]): Spot[] {
   return items.map((_, index) => ({
-    angle: (index / items.length) * Math.PI * 2 + (random(index + 1) - 0.5) * 0.35,
-    radius: 0.86 + random(index + 11) * 0.3,
-    height: (random(index + 23) - 0.5) * 0.36,
-    width: 0.11 + random(index + 37) * 0.11,
-    delay: random(index + 51) * 0.5,
+    angle: (index / items.length) * Math.PI * 2 + (random(index + 1) - 0.5) * 0.7,
+    radius: 0.84 + random(index + 11) * 0.36,
+    height: (random(index + 23) - 0.5) * 0.4,
+    width: 0.1 + random(index + 37) * 0.13,
+    delay: random(index + 51) * 6,
   }));
 }
 
@@ -63,7 +63,7 @@ export function GalleryView({ content, preview = false, onBack }: {
       last = now;
       const width = node.clientWidth;
       const heightPx = node.clientHeight;
-      const radius = Math.min(width, heightPx) * (width <= 800 ? 0.36 : 0.31);
+      const radius = Math.min(width, heightPx) * (width <= 800 ? 0.36 : 0.235);
       const focal = radius * 3.4;
       const focused = focusRef.current;
       const focusHeight = Math.min(heightPx * 0.56, 560);
@@ -78,16 +78,16 @@ export function GalleryView({ content, preview = false, onBack }: {
         if (!card) return;
         const spot = spots[index];
         const item = items[index];
-        const grow = still ? 1 : ease((elapsed - spot.delay * 0.6) / 1.1);
+        const grow = still ? 1 : ease((elapsed - 0.8 - spot.delay) / 1.4);
         const angle = spot.angle + m.angle;
-        const r = radius * spot.radius * grow;
+        const r = radius * spot.radius;
         const x = Math.cos(angle) * r;
         const z0 = Math.sin(angle) * r;
         const y0 = spot.height * radius;
         const y = y0 * Math.cos(TILT) - z0 * Math.sin(TILT);
         const z = y0 * Math.sin(TILT) + z0 * Math.cos(TILT);
         const depth = focal / (focal - z);
-        const cardWidth = radius * spot.width * depth;
+        const cardWidth = radius * spot.width * depth * (0.15 + 0.85 * grow);
         const cardHeight = cardWidth * (item.height / item.width);
         const front = (z / radius + 1) / 2;
 
@@ -168,6 +168,14 @@ export function GalleryView({ content, preview = false, onBack }: {
   return (
     <section className="gallery-panel open is-ready gx" aria-label={content.nav.gallery}>
       <BackButton onBack={onBack} className="gallery-back" />
+      <p className="gx-bar">
+        <strong>Z.DP</strong>
+        <span>
+          {content.nav.gallery}
+          <sup>{items.length}</sup>
+        </span>
+      </p>
+      <p className="gx-mark" aria-hidden="true">Z.DP</p>
       <p className="gx-side gx-side--left">{content.name.replace(/\.$/, "")}</p>
       <p className="gx-side gx-side--right">{content.nav.gallery}</p>
       <div ref={space} className={`gx-space${focus !== null ? " is-focus" : ""}`} id="main">
