@@ -5,7 +5,13 @@ import nextTypescript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypescript,
-  globalIgnores(["convex/_generated", ".next", ".open-next", ".local"]),
+  globalIgnores([
+    "convex/_generated",
+    ".next",
+    ".open-next",
+    ".local",
+    "public/skia",
+  ]),
   {
     // Images are pre-generated variants and next/image runs unoptimized on
     // Cloudflare Workers, so <Image> would add nothing over <img>.

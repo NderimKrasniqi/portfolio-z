@@ -86,6 +86,13 @@ test("about content renders", async ({
   await expect(
     page.locator(".about-chapter"),
   ).not.toHaveCount(0);
+  await expect(page.locator(".site-name,.site-header__title,.about-story-progress,.about-progress-track")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "MY STORY", exact: true })).toBeVisible();
+  await page.screenshot({ path: "/tmp/zeudi-about-clean-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "/tmp/zeudi-about-clean-mobile.png" });
+  await page.getByRole("button", { name: "Back to main page" }).click();
+  await expect(page).toHaveURL(/\/en$/);
 });
 
 test("contact representation renders", async ({
@@ -96,4 +103,10 @@ test("contact representation renders", async ({
   await expect(
     page.locator(".rep-row"),
   ).toHaveCount(3);
+  await expect(page.locator(".site-name,.site-header__title")).toHaveCount(0);
+  await page.screenshot({ path: "/tmp/zeudi-contact-clean-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "/tmp/zeudi-contact-clean-mobile.png" });
+  await page.getByRole("button", { name: "Back to main page" }).click();
+  await expect(page).toHaveURL(/\/en$/);
 });

@@ -3,27 +3,14 @@
 import {
   useLayoutEffect,
   useRef,
-  useState,
 } from "react";
 import type { Content } from "@/lib/model";
-import { BackButton } from "./site-controls";
+import { ViewHeader } from "./site-controls";
 import {
   loadGsap,
   prefersReducedMotion,
   restingOpacity,
 } from "./motion";
-
-function nameParts(name: string) {
-  const [first, ...rest] =
-    name.trim().split(/\s+/);
-
-  return [
-    first || "ZEUDI",
-    `${rest
-      .join(" ")
-      .replace(/\.$/, "")}.`,
-  ];
-}
 
 export function AboutView({
   content,
@@ -36,15 +23,6 @@ export function AboutView({
 }) {
   const sheet =
     useRef<HTMLDivElement>(null);
-
-  const progressFill =
-    useRef<HTMLSpanElement>(null);
-
-  const [step, setStep] =
-    useState(1);
-
-  const [first, rest] =
-    nameParts(content.name);
 
   useLayoutEffect(() => {
     const scroller = sheet.current;
@@ -64,9 +42,6 @@ export function AboutView({
         ReturnType<typeof loadGsap>
       > = null;
 
-    let lastProgress = -1;
-    let lastStep = 0;
-
     const update = () => {
       const maximum = Math.max(
         1,
@@ -81,50 +56,6 @@ export function AboutView({
           scroller.scrollTop / maximum,
         ),
       );
-
-      if (
-        progressFill.current &&
-        Math.abs(
-          ratio - lastProgress,
-        ) > 0.0005
-      ) {
-        lastProgress = ratio;
-
-        progressFill.current.style.height =
-          `${ratio * 100}%`;
-
-        progressFill.current.style.transform =
-          "none";
-      }
-
-      const chapters = [
-        ...scroller.querySelectorAll<HTMLElement>(
-          ".about-chapter",
-        ),
-      ];
-
-      let active = 1;
-
-      for (
-        let index = 0;
-        index < chapters.length;
-        index++
-      ) {
-        if (
-          chapters[
-            index
-          ].getBoundingClientRect()
-            .top <=
-          window.innerHeight * 0.57
-        ) {
-          active = index + 1;
-        }
-      }
-
-      if (active !== lastStep) {
-        lastStep = active;
-        setStep(active);
-      }
 
       if (
         portrait &&
@@ -177,7 +108,7 @@ export function AboutView({
 
             const parts = [
               ...entry.target.querySelectorAll<HTMLElement>(
-                ".about-chapter-index,.about-chapter-kicker,h3,.about-chapter-copy>p:last-child",
+                ".about-chapter-kicker,h3,.about-chapter-copy>p:last-child",
               ),
             ];
 
@@ -225,7 +156,7 @@ export function AboutView({
 
         const parts = [
           ...scroller.querySelectorAll<HTMLElement>(
-            ".about-chapter-index,.about-chapter-kicker,h3,.about-chapter-copy>p:last-child",
+            ".about-chapter-kicker,h3,.about-chapter-copy>p:last-child",
           ),
         ];
 
@@ -281,10 +212,7 @@ export function AboutView({
       aria-modal="true"
       aria-label={`About ${content.name}`}
     >
-      <BackButton
-        className="about-close"
-        onBack={onBack}
-      />
+      <ViewHeader onBack={onBack} backClass="about-close" />
 
       <main
         id="main"
@@ -294,30 +222,12 @@ export function AboutView({
         <div className="about-inner about-story-shell">
           <div className="about-copy">
             <header className="about-intro">
-              <p className="about-eyebrow">
-                {content.aboutTitle}
-              </p>
-
-              <h2
-                role="heading"
-                aria-level={1}
-              >
-                {first}
-                <br />
-                {rest}
-              </h2>
+              <h1 className="about-story-title">{content.aboutTitle}</h1>
 
               <p className="about-lead">
                 {content.aboutLead}
               </p>
 
-              <div
-                className="about-scroll-hint"
-                aria-hidden="true"
-              >
-                <span />
-                SCROLL TO READ
-              </div>
             </header>
 
             <div className="about-body">
@@ -328,12 +238,6 @@ export function AboutView({
                     key={chapter.id}
                     data-step={index + 1}
                   >
-                    <div className="about-chapter-index">
-                      {String(
-                        index + 1,
-                      ).padStart(2, "0")}
-                    </div>
-
                     <div className="about-chapter-copy">
                       <p className="about-chapter-kicker">
                         {chapter.label}
@@ -372,32 +276,8 @@ export function AboutView({
                 {content.location}
               </span>
 
-              <div className="about-story-progress">
-                <span className="about-story-progress__now">
-                  {String(step).padStart(
-                    2,
-                    "0",
-                  )}
-                </span>
-
-                <span className="about-story-progress__slash">
-                  /
-                </span>
-
-                <span>
-                  {String(
-                    content.chapters
-                      .length,
-                  ).padStart(2, "0")}
-                </span>
-              </div>
             </div>
 
-            <div className="about-progress-track">
-              <span
-                ref={progressFill}
-              />
-            </div>
           </aside>
         </div>
       </main>

@@ -52,7 +52,7 @@ type YouTubeWindow = Window & {
 };
 
 export const HOME_MUSIC_VIDEO_ID =
-  "qBrgKLPYoNM";
+  "2mJywuJOIgg";
 
 let youTubeApiPromise:
   | Promise<void>

@@ -1,0 +1,12 @@
+Prototype sample images, not Zeudi's belongings or actual merchandise.
+
+jeans.jpg — Jeans BW 2, THOR (Flickr geishaboy500), 20 January 2009.
+Source: https://commons.wikimedia.org/wiki/File:Jeans_BW_2_(3213391837).jpg
+License: Creative Commons Attribution 2.0 Generic
+https://creativecommons.org/licenses/by/2.0/
+Original image unchanged. The shop uses a CSS silhouette crop and multiply blending.
+
+tee.jpg — T-shirt2, Elkagye, 12 August 2008.
+Source: https://commons.wikimedia.org/wiki/File:T-shirt2.jpg
+Public domain, released by its author (PD-self).
+Original image unchanged. The shop uses a CSS silhouette crop.

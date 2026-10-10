@@ -6,6 +6,7 @@ import Link from "next/link";
 import { localeNames, type Content, type Locale } from "@/lib/model";
 import { LocaleDocument } from "./locale-document";
 import { HomeView } from "./home";
+import { SiteMusicControl } from "./site-music";
 import { GalleryView } from "./gallery";
 import { AboutView, ContactView, ShopView } from "./pages";
 import { NavigationProvider, SiteLink } from "./navigation";
@@ -74,6 +75,7 @@ export function Frame({ content, locale, locales, section, preview = false }: {
     <NavigationProvider navigate={navigate}>
     <div className="portfolio">
       <LocaleDocument locale={locale} />
+      <SiteMusicControl />
 
       <a className="reference-skip" href={section === "home" ? "#stage" : "#main"}>Skip to content</a>
       {preview && <div className="reference-preview-banner">Draft preview · <Link href="/admin">Return to editor</Link></div>}

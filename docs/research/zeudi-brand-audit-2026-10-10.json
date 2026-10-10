@@ -1,0 +1,74 @@
+{
+  "reviewed_on": "2026-10-10",
+  "scope": "Public post captions and disclosed brand tags; not an audiovisual review of every video or carousel frame.",
+  "coverage": {
+    "instagram": {
+      "profile": "https://www.instagram.com/zeudidipalma/",
+      "posts_reviewed": 24,
+      "oldest_visible_post": "https://www.instagram.com/zeudidipalma/p/DZFvZoLCGVq/",
+      "newest_visible_post": "https://www.instagram.com/zeudidipalma/reel/DeMLv2lIJuM/",
+      "complete": false,
+      "limitation": "Instagram requires sign-in to continue past the 24 publicly exposed profile posts. Stories, expired stories, and inaccessible older posts were not reviewed."
+    },
+    "tiktok": {
+      "profile": "https://www.tiktok.com/@zeudidipalmaofficial",
+      "posts_reviewed": 89,
+      "oldest_visible_post": "https://www.tiktok.com/@zeudidipalmaofficial/video/7084919268919299333",
+      "newest_visible_post": "https://www.tiktok.com/@zeudidipalmaofficial/video/7692006421973568801",
+      "reached_end_of_public_feed": true,
+      "limitation": "Captions were reviewed from the public feed; this does not establish that deleted, private, or otherwise hidden posts were included."
+    }
+  },
+  "additional_confirmed_brands_found": [],
+  "new_primary_evidence_for_existing_brands": [
+    {
+      "brand": "Pandora",
+      "source": "https://www.instagram.com/zeudidipalma/p/DbYy9IKCPtQ/",
+      "evidence": "Author caption tags Pandora and includes #adv; summer jewellery campaign."
+    },
+    {
+      "brand": "Samsung",
+      "source": "https://www.instagram.com/zeudidipalma/reel/Dd39XxyotYs/",
+      "evidence": "Author caption tags Samsung Italia and includes #adv."
+    },
+    {
+      "brand": "Coca-Cola",
+      "source": "https://www.instagram.com/zeudidipalma/reel/Ddrl07oIkB_/",
+      "evidence": "Author caption tags Coca-Cola Europe and includes #adv; Zero Zero campaign."
+    },
+    {
+      "brand": "ghd",
+      "source": "https://www.instagram.com/zeudidipalma/reel/Dbd_yYYIRmZ/",
+      "evidence": "Author caption tags ghd Italia and includes #adv; Sculpt campaign."
+    }
+  ],
+  "product_mentions_not_confirmed_collaborations": {
+    "source": "https://www.tiktok.com/@zeudidipalmaofficial/video/7514267278909787414",
+    "brands": [
+      "Erborian",
+      "Lancôme",
+      "Virgo",
+      "Benefit Cosmetics",
+      "MAC Cosmetics",
+      "Maybelline",
+      "WYCON"
+    ],
+    "evidence": "Makeup routine caption lists products/brands but contains no visible ad or partnership disclosure.",
+    "action": "Not added to collaboration list without further evidence."
+  },
+  "existing_exclusions": [
+    {
+      "brand": "EF English Live",
+      "source": "https://www.instagram.com/zeudidipalma/reel/DbnVbe6IZM3/",
+      "evidence": "Confirmed #adv caption. Remains excluded at user request."
+    }
+  ],
+  "open_verification": [
+    {
+      "brand": "Tommy Hilfiger",
+      "status": "Included based on site-owner confirmation and secondary reporting. No direct campaign post found in the accessible feed during this audit.",
+      "secondary_source": "https://nicoleugenia.substack.com/p/cosa-di-zeudi-di-palma-ci-rende-cosi"
+    }
+  ],
+  "site_change": "No extra brands added; existing list remains at 13."
+}

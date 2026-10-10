@@ -5,7 +5,7 @@ import {
   useRef,
 } from "react";
 import type { Content } from "@/lib/model";
-import { BackButton } from "./site-controls";
+import { ViewHeader } from "./site-controls";
 import {
   loadGsap,
   prefersReducedMotion,
@@ -101,10 +101,7 @@ export function ContactView({
       aria-modal="true"
       aria-label="Contact and representation"
     >
-      <BackButton
-        className="contact-close"
-        onBack={onBack}
-      />
+      <ViewHeader onBack={onBack} backClass="contact-close" />
 
       <main
         id="main"

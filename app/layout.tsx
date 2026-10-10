@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Barlow_Condensed } from "next/font/google";
+import { SiteMusicProvider } from "@/components/site/site-music";
 import "./globals.css";
 import "./styles/base.css";
 import "./styles/home.css";
@@ -8,7 +8,7 @@ import "./styles/about.css";
 import "./styles/contact.css";
 import "./styles/shop.css";
 import "./styles/shared.css";
-const condensed = Barlow_Condensed({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-condensed" });
+import "./styles/theme.css";
 
 export const metadata: Metadata = {
   title: {
@@ -27,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={condensed.variable}>
-      <body>{children}</body>
+    <html lang="en">
+      <body><SiteMusicProvider>{children}</SiteMusicProvider></body>
     </html>
   );
 }

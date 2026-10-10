@@ -114,3 +114,15 @@ export function BackButton({
     </MotionButton>
   );
 }
+
+/** Quiet navigation for interior views. */
+export function ViewHeader({ onBack, backClass = "" }: {
+  onBack: () => void;
+  backClass?: string;
+}) {
+  return (
+    <header className="site-header site-header--interior">
+      <BackButton onBack={onBack} className={`site-header__back ${backClass}`} />
+    </header>
+  );
+}
